@@ -1,0 +1,399 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+enum StatusPermohonan {
+  DIAJUKAN
+  DISETUJUI
+  DITOLAK
+}
+
+enum JenisPermohonanKTP {
+  BARU
+  PERUBAHAN
+  PENGGANTIAN
+}
+
+enum JenisKelamin {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
+enum GolonganDarah {
+  A
+  B
+  AB
+  O
+  A_PLUS
+  A_MIN
+  B_PLUS
+  B_MIN
+  AB_PLUS
+  AB_MIN
+  O_PLUS
+  O_MIN
+  TIDAK_TAHU
+}
+
+enum StatusPerkawinan {
+  BELUM_KAWIN
+  KAWIN
+  CERAI_HIDUP
+  CERAI_MATI
+}
+
+enum StatusHubunganKeluarga {
+  KEPALA_KELUARGA
+  SUAMI
+  ISTRI
+  ANAK
+  MENANTU
+  CUCU
+  ORANG_TUA
+  MERTUA
+  FAMILI_LAIN
+  PEMBANTU
+  LAINNYA
+}
+
+enum Agama {
+  ISLAM
+  PROTESTAN
+  KATOLIK
+  HINDU
+  BUDDHA
+  KONGHUCU
+}
+
+enum WargaNegara {
+  WNI
+  WNA
+}
+
+enum JenisPermohonanPindah {
+  SKP
+  SKPLN
+  SKTT
+}
+
+model User {
+  userId     String    @id @default(cuid()) @map("user_id")
+  nik        String    @unique
+  name       String
+  email      String    @unique
+  password   String
+  role       Role      @default(USER)
+  address    String?
+  phone      String?
+  status     Status    @default(INACTIVE)
+  verifiedAt DateTime? @map("verified_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  sessions           Session[]
+  forgotPasswords    ForgotPassword[]
+  emailVerifications EmailVerification[]
+  permohonanKTP      PermohonanKTP[]
+  permohonanSKTM     PermohonanSKTM[]
+  permohonanSKL      PermohonanSKL[]
+  permohonanSKK      PermohonanSKK[]
+  permohonanSKU      PermohonanSKU[]
+  permohonanSKD      PermohonanSKD[]
+  permohonanPindah   PermohonanPindah[]
+
+  @@map("users")
+}
+
+model Session {
+  sessionId  String   @id @default(cuid()) @map("session_id")
+  userId     String   @map("user_id")
+  secretHash String   @map("secret_hash")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  expiresAt  DateTime @map("expires_at")
+  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model EmailVerification {
+  emailVerificationId String    @id @default(cuid()) @map("email_verification_id")
+  userId              String    @map("user_id")
+  secretHash          String    @map("secret_hash")
+  consumedAt          DateTime? @map("consumed_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  expiresAt           DateTime  @map("expires_at")
+  user                User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("email_verifications")
+}
+
+model ForgotPassword {
+  forgotPasswordId String    @id @default(cuid()) @map("forgot_password_id")
+  userId           String    @map("user_id")
+  secretHash       String    @map("secret_hash")
+  consumedAt       DateTime? @map("consumed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  expiresAt        DateTime  @map("expires_at")
+  user             User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("forgot_passwords")
+}
+
+model PermohonanKTP {
+  permohonanKtpId    String             @id @default(cuid()) @map("permohonan_ktp_id")
+  userId             String             @map("user_id")
+  nomorPermohonan    String?            @unique @map("nomor_permohonan")
+  jenisPermohonanKTP JenisPermohonanKTP @default(BARU) @map("jenis_permohonan_ktp_id")
+  statusPermohonan   StatusPermohonan   @default(DIAJUKAN)
+  nama               String
+  nik                String
+  jenisKelamin       JenisKelamin       @default(LAKI_LAKI) @map("jenis_kelamin")
+  golonganDarah      GolonganDarah      @default(TIDAK_TAHU) @map("golongan_darah")
+  statusPerkawinan   StatusPerkawinan   @default(BELUM_KAWIN) @map("status_perkawinan")
+  agama              Agama              @default(ISLAM) @map("agama")
+  tempatLahir        String             @map("tempat_lahir")
+  tanggalLahir       DateTime           @map("tanggal_lahir")
+  alamat             String
+  provinsi           String
+  kabupaten          String
+  kecamatan          String
+  desa               String
+  rt                 String             @map("rt") @db.VarChar(3)
+  rw                 String             @map("rw") @db.VarChar(3)
+  kodePos            String             @map("kode_pos") @db.VarChar(5)
+  catatan            String?
+  dokumenPengantar   String?            @map("dokumen_pengantar")
+  dokumenKK          String?            @map("dokumen_kk")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  user               User               @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("permohonan_ktp")
+}
+
+model PermohonanSKTM {
+  permohonanSKTMId String           @id @default(cuid()) @map("permohonan_sktm_id")
+  userId           String           @map("user_id")
+  nomorPermohonan  String?          @unique @map("nomor_permohonan")
+  statusPermohonan StatusPermohonan @default(DIAJUKAN) @map("status_permohonan")
+  nik              String
+  nama             String
+  agama            Agama            @map("agama")
+  tempatLahir      String           @map("tempat_lahir")
+  tanggalLahir     DateTime         @map("tanggal_lahir")
+  jenisKelamin     JenisKelamin     @map("jenis_kelamin")
+  alamat           String
+  keterangan       String
+  catatan          String?
+  dokumenKK        String?          @map("dokumen_kk")
+  dokumenKTP       String?          @map("dokumen_ktp")
+  dokumenPengantar String?          @map("dokumen_pengantar")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  user             User             @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("permohonan_sktm")
+}
+
+model PermohonanSKL {
+  permohonanSKLId   String           @id @default(cuid()) @map("permohonan_keterangan_kelahiran_id")
+  userId            String           @map("user_id")
+  nomorPermohonan   String?          @unique @map("nomor_permohonan")
+  statusPermohonan  StatusPermohonan @default(DIAJUKAN) @map("status_permohonan")
+  nama              String           @map("nama")
+  tempatLahir       String           @map("tempat_lahir")
+  tanggalLahir      DateTime         @map("tanggal_lahir")
+  jenisKelamin      JenisKelamin     @map("jenis_kelamin")
+  alamat            String
+  namaAyah          String           @map("nama_ayah")
+  nikAyah           String           @map("nik_ayah")
+  pekerjaanAyah     String           @map("pekerjaan_ayah")
+  tempatLahirAyah   String           @map("tempat_lahir_ayah")
+  tanggalLahirAyah  DateTime         @map("tanggal_lahir_ayah")
+  agamaAyah         Agama            @map("agama_ayah")
+  namaIbu           String           @map("nama_ibu")
+  nikIbu            String           @map("nik_ibu")
+  pekerjaanIbu      String           @map("pekerjaan_ibu")
+  tempatLahirIbu    String           @map("tempat_lahir_ibu")
+  tanggalLahirIbu   DateTime         @map("tanggal_lahir_ibu")
+  agamaIbu          Agama            @map("agama_ibu")
+  catatan           String?
+  dokumenKK         String?          @map("dokumen_kk")
+  dokumenPengantar  String?          @map("dokumen_pengantar")
+  dokumenSuratLahir String?          @map("dokumen_surat_lahir")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  user              User             @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("permohonan_skl")
+}
+
+model PermohonanSKK {
+  permohonanSKKId  String           @id @default(cuid()) @map("permohonan_skk_id")
+  userId           String           @map("user_id")
+  nomorPermohonan  String?          @unique @map("nomor_permohonan")
+  statusPermohonan StatusPermohonan @default(DIAJUKAN) @map("status_permohonan")
+  nik              String
+  nama             String
+  agama            Agama            @map("agama")
+  umur             Int              @map("umur")
+  alamat           String
+  tanggalMeninggal DateTime?        @map("tanggal_meninggal")
+  tempatMeninggal  String?          @map("tempat_meninggal")
+  catatan          String?
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  user             User             @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("permohonan_skk")
+}
+
+model PermohonanSKU {
+  permohonanSKUId   String           @id @default(cuid()) @map("permohonan_sku_id")
+  userId            String           @map("user_id")
+  nomorPermohonan   String?          @unique @map("nomor_permohonan")
+  statusPermohonan  StatusPermohonan @default(DIAJUKAN) @map("status_permohonan")
+  nik               String
+  nama              String
+  tempatLahir       String           @map("tempat_lahir")
+  tanggalLahir      DateTime         @map("tanggal_lahir")
+  jenisKelamin      JenisKelamin     @map("jenis_kelamin")
+  alamat            String
+  jenisUsaha        String           @map("jenis_usaha")
+  tahunBerdiriUsaha Int              @map("tahun_berdiri_usaha")
+  lokasiUsaha       String           @map("lokasi_usaha")
+  catatan           String?
+  dokumenKK         String?          @map("dokumen_kk")
+  dokumenKTP        String?          @map("dokumen_ktp")
+  dokumenSP         String?          @map("dokumen_sp")
+  dokumenUsaha      String?          @map("dokumen_usaha")
+  expiresAt         DateTime         @map("expires_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  user              User             @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("permohonan_sku")
+}
+
+model PermohonanSKD {
+  permohonanSKDId  String           @id @default(cuid()) @map("permohonan_skd_id")
+  userId           String           @map("user_id")
+  nomorPermohonan  String?          @unique @map("nomor_permohonan")
+  statusPermohonan StatusPermohonan @default(DIAJUKAN) @map("status_permohonan")
+  nik              String
+  nama             String
+  alamatKTP        String           @map("alamat_ktp")
+  alamatDomisili   String           @map("alamat_domisili")
+  agama            Agama
+  tempatLahir      String           @map("tempat_lahir")
+  tanggalLahir     DateTime         @map("tanggal_lahir")
+  jenisKelamin     JenisKelamin     @map("jenis_kelamin")
+  wargaNegara      WargaNegara      @map("warga_negara")
+  catatan          String?
+  dokumenKK        String?          @map("dokumen_kk")
+  dokumenKTP       String?          @map("dokumen_ktp")
+  dokumenSP        String?          @map("dokumen_sp")
+  expiresAt        DateTime         @map("expires_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  user             User             @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("permohonan_skd")
+}
+
+model PermohonanPindah {
+  // DATA PERMOHONAN
+  permohonanPindahId        String                @id @default(cuid()) @map("permohonan_pindah_id")
+  userId                    String                @map("user_id")
+  nomorPermohonan           String?               @unique @map("nomor_permohonan")
+  statusPermohonan          StatusPermohonan      @default(DIAJUKAN) @map("status_permohonan")
+  jenisPermohonanPindah     JenisPermohonanPindah @default(SKP) @map("jenis_permohonan_pindah")
+  // DATA PEMOHON
+  nik                       String
+  nama                      String
+  // DATA ASAL
+  alamatAsal                String                @map("alamat_asal")
+  rtAsal                    String                @map("rt_asal")
+  rwAsal                    String                @map("rw_asal")
+  desaAsal                  String                @map("desa_asal")
+  kecamatanAsal             String                @map("kecamatan_asal")
+  kabupatenAsal             String                @map("kabupaten_asal")
+  provinsiAsal              String                @map("provinsi_asal")
+  // DATA KEPINDAHAN
+  klarifikasiKepindahan     String                @map("klarifikasi_kepindahan")
+  jenisKepindahan           String                @map("jenis_kepindahan")
+  alasanPindah              String                @map("alasan_pindah")
+  anggotaKeluargaYangPindah String                @map("anggota_keluarga_yang_pindah")
+  // DATA TUJUAN JIKA JENIS PERMOHONAN SKP
+  alamatTujuan              String?                @map("alamat_tujuan")
+  rtTujuan                  String?                @map("rt_tujuan")
+  rwTujuan                  String?                @map("rw_tujuan")
+  desaTujuan                String?                @map("desa_tujuan")
+  kecamatanTujuan           String?                @map("kecamatan_tujuan")
+  kabupatenTujuan           String?                @map("kabupaten_tujuan")
+  provinsiTujuan            String?                @map("provinsi_tujuan")
+  // DATA SPONSOR JIKA JENIS PERMOHONAN SKTT
+  namaSponsor               String?               @map("nama_sponsor")
+  tipeSponsor               String?               @map("tipe_sponsor")
+  noKitas                   String?               @map("no_kitas")
+  tanggalKitas              DateTime?             @map("tanggal_kitas")
+  alamatSponsor             String?               @map("alamat_sponsor")
+  // DATA NEGARA JIKA JENIS PERMOHONAN SKTT
+  negaraTujuan              String?               @map("negara_tujuan")
+  alamatNegaraTujuan        String?               @map("alamat_negara_tujuan")
+  penanggungJawab           String?               @map("penanggung_jawab")
+  tanggalRencanaPindah      DateTime?             @map("tanggal_rencana_pindah")
+  catatan                   String?
+
+  // DOKUMEN
+  dokumenKK                 String?               @map("dokumen_kk")
+  dokumenKTP                String?               @map("dokumen_ktp")
+  dokumenSP                 String?               @map("dokumen_sp")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  // DATA ANGGOTA KELUARGA YANG PINDAH
+  permohonanPindahAnggota PermohonanPindahAnggota[]
+
+  @@map("permohonan_pindah")
+}
+
+model PermohonanPindahAnggota {
+  permohonanPindahAnggotaId String   @id @default(cuid()) @map("permohonan_pindah_anggota_id")
+  permohonanPindahId        String   @map("permohonan_pindah_id")
+  nik                       String   @map("nik")
+  nama                      String   @map("nama")
+  shdk                      String   @map("shdk")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  permohonanPindah PermohonanPindah @relation(fields: [permohonanPindahId], references: [permohonanPindahId], onDelete: Cascade)
+
+  @@map("permohonan_pindah_anggota")
+}

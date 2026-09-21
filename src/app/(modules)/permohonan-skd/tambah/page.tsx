@@ -1,0 +1,36 @@
+import { PermohonanSKDCreateForm } from "@/components/permohonan-skd-create-form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Tambah Permohonan SKD",
+  description: "Buat permohonan Surat Keterangan Domisili baru",
+};
+
+export default function PermohonanSKDCreatePage() {
+  return (
+    <div className="flex flex-1 flex-col">
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-bold">Tambah Permohonan SKD</h1>
+          <p className="text-muted-foreground">
+            Silakan isi formulir di bawah ini untuk menambahkan permohonan SKD baru.
+          </p>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Formulir Permohonan SKD</CardTitle>
+            <CardDescription>
+              Isi data dengan lengkap dan benar sesuai dengan dokumen yang dimiliki.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PermohonanSKDCreateForm />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  </div>
+  );
+}
