@@ -11,7 +11,8 @@ import {
   createPermohonanKTPService,
   deletePermohonanKTPService,
   followUpPermohonanKTPService,
-  updatePermohonanKTPService
+  updatePermohonanKTPService,
+  updateStatusPermohonanKTPService
 } from "../services/permohonan-ktp";
 import { findCurrentSessionService } from "../services/session";
 
@@ -73,3 +74,18 @@ export const followUpPermohonanKTPAction = async (payload: unknown) => {
     return errorHandler(error);
   }
 }
+
+export const updatePermohonanKTPStatusAction = async (
+  id: string,
+  statusPermohonan: "DIAJUKAN" | "DISETUJUI" | "DITOLAK"
+) => {
+  try {
+    const currentSession = await findCurrentSessionService();
+    if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    await updateStatusPermohonanKTPService(id, { statusPermohonan });
+    revalidatePath(PATHS.KTP_REQUEST);
+    return { status: status.OK, message: MESSAGE.KTP_REQUEST.FOLLOW_UP_OK };
+  } catch (error) {
+    return errorHandler(error);
+  }
+};

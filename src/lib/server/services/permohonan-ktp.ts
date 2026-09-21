@@ -66,3 +66,6 @@ export const followUpPermohonanKTPService = async (id: string, data: Omit<TFollo
   return prisma.permohonanKTP.update({ where: { permohonanKtpId: id }, data });
 };
 
+export const updateStatusPermohonanKTPService = async (id: string, data: { statusPermohonan: "DIAJUKAN" | "DISETUJUI" | "DITOLAK" }) => {
+  return prisma.permohonanKTP.update({ where: { permohonanKtpId: id }, data });
+};
