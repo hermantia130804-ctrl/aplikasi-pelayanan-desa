@@ -6,6 +6,7 @@ import { deleteSessionTokenCookie } from "../utils/session";
 import { MESSAGE } from "@/constants/message";
 
 export const errorHandler = async (error: unknown) => {
+    console.error("ERROR ASLI:", error);
     const message = MESSAGE.GLOBAL;
     if (error instanceof Error) {
         if (error instanceof ApiError) {
