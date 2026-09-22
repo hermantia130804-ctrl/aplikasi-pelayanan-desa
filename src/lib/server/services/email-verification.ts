@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPasswordHash } from "../utils/password";
 import { generateSecureRandomString } from "../utils/random";
+import { sendVerificationEmail } from "../utils/email";
 import status from "http-status";
 import { ApiError } from "next/dist/server/api-utils";
 import moment from "moment";
@@ -13,6 +14,17 @@ export const createEmailVerificationService = async (userId: string) => {
     const emailVerificationId = `${id}.${secret}`;
     const expiresAt = new Date(Date.now() + 3600000);
     const data = await prisma.emailVerification.create({ data: { emailVerificationId, userId, secretHash, expiresAt } });
+
+    // KIRIM EMAIL VERIFIKASI
+    try {
+        const user = await prisma.user.findUnique({ where: { userId } });
+        if (!user) throw new Error("User tidak ditemukan");
+        const verificationUrl = `${process.env.APP_URL}/verifikasi/${emailVerificationId}`;
+        await sendVerificationEmail(user.email, verificationUrl);
+    } catch (error) {
+        console.error("GAGAL KIRIM EMAIL VERIFIKASI:", error);
+    }
+
     return { data };
 }
 
@@ -43,4 +55,3 @@ export const invalidateEmailVerificationService = async (emailVerificationId: st
     await prisma.emailVerification.delete({ where: { emailVerificationId } });
     return { data: true };
 }
-
