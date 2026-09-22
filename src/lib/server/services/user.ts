@@ -94,3 +94,8 @@ export const deleteUserService = async (userId: string) => {
 	const data = await prisma.user.delete({ where: { userId } });
 	return { data };
 }
+
+export const activateUserService = async (userId: string) => {
+    const data = await prisma.user.update({ where: { userId }, data: { status: "ACTIVE" } });
+    return { data };
+}

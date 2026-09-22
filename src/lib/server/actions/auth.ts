@@ -9,7 +9,7 @@ import { consumeEmailVerificationService, createEmailVerificationService, valida
 import { errorHandler } from "../services/error";
 import { consumeForgotPasswordService, createForgotPasswordService, validateForgotPasswordService } from "../services/forgot-password";
 import { createSessionService, findCurrentSessionService, invalidateSessionService } from "../services/session";
-import { createUserService, findUserByEmailService, updateUserAsVerifiedService, updateUserPasswordService } from "../services/user";
+import { activateUserService, createUserService, findUserByEmailService, updateUserAsVerifiedService, updateUserPasswordService } from "../services/user";
 import { verifyPasswordHash } from "../utils/password";
 import { setSessionTokenCookie } from "../utils/session";
 
@@ -65,7 +65,7 @@ export const forgotPasswordAction = async (payload: TForgotPasswordSchema) => {
         const { data } = await findUserByEmailService(parsed.email);
         if (!data) throw new ApiError(status.BAD_REQUEST, message.EMAIL_NOT_FOUND);
         await createForgotPasswordService(data.userId);
-        //EMAIL 
+        //EMAIL
         return { status: status.OK, message: message.FORGOT_OK };
     } catch (error) {
         return errorHandler(error);
@@ -92,7 +92,7 @@ export const emailVerificationAction = async (payload: TEmailVerificationSchema)
         const { data } = await findUserByEmailService(parsed.email);
         if (!data) throw new ApiError(status.BAD_REQUEST, message.EMAIL_NOT_FOUND);
         await createEmailVerificationService(data.userId);
-        //EMAIL 
+        //EMAIL
         return { status: status.OK, message: message.EMAIL_VERIFICATION_OK };
     } catch (error) {
         return errorHandler(error);
@@ -104,11 +104,10 @@ export const validateEmailVerificationAction = async (id: string) => {
         const message = MESSAGE.AUTH;
         const { data } = await validateEmailVerificationService(id);
         await updateUserAsVerifiedService(data.userId);
+        await activateUserService(data.userId);
         await consumeEmailVerificationService(data.emailVerificationId);
         return { status: status.OK, message: message.EMAIL_VERIFICATION_OK };
     } catch (error) {
         return errorHandler(error);
     }
 };
-
-
