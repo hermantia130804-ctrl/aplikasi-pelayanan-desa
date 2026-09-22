@@ -33,7 +33,7 @@ export default function LoginPage() {
       </div>
       <div className="bg-muted relative hidden lg:block">
         <Image
-          src="https://ui.shadcn.com/placeholder.svg"
+          src="/login-desk.jpg"
           alt="Image"
           fill
           className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
