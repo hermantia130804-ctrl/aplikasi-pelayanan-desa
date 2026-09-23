@@ -8,7 +8,6 @@ import moment from "moment";
 import Link from "next/link";
 import { EyeIcon, PencilIcon } from "lucide-react";
 import { PermohonanKTPColumnHeader } from "./permohonan-ktp-column-header";
-import { KKUpdateStatus } from "./permohonan-kk-update-status";
 import { PermohonanKKDeleteButton } from "./permohonan-kk-delete-button";
 
 export const permohonanKKColumns: ColumnDef<PermohonanKK>[] = [
@@ -73,6 +72,7 @@ export const permohonanKKColumns: ColumnDef<PermohonanKK>[] = [
   },
   {
     id: "actions",
+  header: () => PermohonanKTPColumnHeader({ accessorKey: "actions", title: "Aksi" }),
     cell: ({ row }) => (
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="icon" asChild>
@@ -85,7 +85,6 @@ export const permohonanKKColumns: ColumnDef<PermohonanKK>[] = [
             <PencilIcon />
           </Link>
         </Button>
-        <KKUpdateStatus id={row.original.permohonanKKId} status={row.original.statusPermohonan} />
         <PermohonanKKDeleteButton permohonanKKId={row.original.permohonanKKId} />
       </div>
     ),

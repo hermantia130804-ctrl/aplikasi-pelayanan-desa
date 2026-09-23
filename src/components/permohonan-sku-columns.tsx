@@ -125,6 +125,7 @@ export const permohonanSKUColumns: ColumnDef<PermohonanSKUWithUser>[] = [
   },
   {
     id: "actions",
+    header: () => PermohonanSKUColumnHeader({ accessorKey: "actions", title: "Aksi" }),
     header: "Aksi",
     cell: ({ row }) => {
       const permohonan = row.original;

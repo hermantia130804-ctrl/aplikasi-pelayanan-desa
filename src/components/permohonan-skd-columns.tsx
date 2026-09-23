@@ -111,6 +111,7 @@ export const permohonanSKDColumns: ColumnDef<PermohonanSKDWithUser>[] = [
   },
   {
     id: "actions",
+    header: () => PermohonanSKDColumnHeader({ accessorKey: "actions", title: "Aksi" }),
     header: "Aksi",
     cell: ({ row }) => {
       const permohonan = row.original;

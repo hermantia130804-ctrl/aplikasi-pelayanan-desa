@@ -76,6 +76,7 @@ export const permohonanKTPColumns: ColumnDef<PermohonanKTP>[] = [
   },
   {
     id: "actions",
+    header: () => PermohonanKTPColumnHeader({ accessorKey: "actions", title: "Aksi" }),
     cell: ({ row }) => (
       <div>
         <Button variant="ghost" size="icon" asChild>

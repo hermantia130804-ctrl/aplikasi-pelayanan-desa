@@ -74,6 +74,7 @@ export const permohonanSKLColumns: ColumnDef<PermohonanSKL>[] = [
   },
   {
     id: "actions",
+    header: () => PermohonanSKLColumnHeader({ accessorKey: "actions", title: "Aksi" }),
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild>

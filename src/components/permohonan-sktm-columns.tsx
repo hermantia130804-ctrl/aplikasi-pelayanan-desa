@@ -84,6 +84,7 @@ export const permohonanSKTMColumns: ColumnDef<PermohonanSKTM>[] = [
   // Actions
   {
     id: "actions",
+    header: () => PermohonanSKTMColumnHeader({ accessorKey: "actions", title: "Aksi" }),
     header: "Aksi",
     cell: ({ row }) => {
       const permohonanSKTM = row.original;
