@@ -4,7 +4,7 @@ import { Document, Page, StyleSheet, Text, View, Image } from '@react-pdf/render
 import { LOGO_KAB_BOGOR_BASE64 } from '../assets/logo-kab-bogor.base64';
 
 // ===== DATA RESMI DESA (edit di sini bila ada perubahan) =====
-const NAMA_KEPALA_DESA = "Cucum Ratna Suminar";
+const NAMA_KEPALA_DESA = "Hj. CUCUM RATNA SUMINAR";
 const ALAMAT_KANTOR = "Jl. K.H Abdul Hamid, Desa Sukamaju, Kec. Cibungbulang, Kab. Bogor 16630";
 // =============================================================
 
