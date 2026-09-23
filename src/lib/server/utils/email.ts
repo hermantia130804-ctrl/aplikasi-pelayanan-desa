@@ -8,7 +8,19 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+export const sendEmail = async (to: string, subject: string, html: string) => {
+    console.log("[EMAIL] Mencoba kirim ke:", to, "| subjek:", subject);
+    await transporter.sendMail({
+        from: `"Aplikasi Desa Sukamaju" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html,
+    });
+    console.log("[EMAIL] Berhasil terkirim ke:", to);
+};
+
 export const sendVerificationEmail = async (to: string, verificationUrl: string) => {
+    console.log("[EMAIL] Mencoba kirim verifikasi ke:", to);
     const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
             <h2>Verifikasi Email Anda</h2>
@@ -26,13 +38,5 @@ export const sendVerificationEmail = async (to: string, verificationUrl: string)
         subject: "Verifikasi Email - Desa Sukamaju",
         html,
     });
-};
-
-export const sendEmail = async (to: string, subject: string, html: string) => {
-    await transporter.sendMail({
-        from: `"Aplikasi Desa Sukamaju" <${process.env.EMAIL_USER}>`,
-        to,
-        subject,
-        html,
-    });
+    console.log("[EMAIL] Verifikasi terkirim ke:", to);
 };
