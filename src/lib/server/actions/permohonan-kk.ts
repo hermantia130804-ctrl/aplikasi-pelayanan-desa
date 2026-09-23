@@ -1,5 +1,7 @@
 "use server";
 
+import { deletePermohonanWithFiles } from "../services/permohonan-delete";
+
 import { MESSAGE } from "@/constants/message";
 import { status } from "http-status";
 import { revalidatePath } from "next/cache";
@@ -61,7 +63,7 @@ export const deletePermohonanKKAction = async (id: string) => {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat menghapus permohonan");
-    await deletePermohonanKKService(id);
+    await deletePermohonanWithFiles("KK", id);
     revalidatePath("/permohonan-kk");
     return { status: status.OK, message: "Permohonan KK berhasil dihapus" };
   } catch (error) {

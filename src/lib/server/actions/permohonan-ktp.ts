@@ -1,5 +1,7 @@
 "use server";
 
+import { deletePermohonanWithFiles } from "../services/permohonan-delete";
+
 import { MESSAGE } from "@/constants/message";
 import { PATHS } from "@/constants/paths";
 import { followUpPermohonanKTPSchema, TCreatePermohonanKTPSchema, TUpdatePermohonanKTPSchema } from "@/lib/validators/permohonan-ktp";
@@ -56,7 +58,7 @@ export const deletePermohonanKTPAction = async (id: string) => {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
-    await deletePermohonanKTPService(id);
+    await deletePermohonanWithFiles("KTP", id);
     revalidatePath(PATHS.KTP_REQUEST);
     return { status: status.OK, message: message.DELETE_OK };
   } catch (error) {

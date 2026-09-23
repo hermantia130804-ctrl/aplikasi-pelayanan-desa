@@ -1,5 +1,7 @@
 "use server";
 
+import { deletePermohonanWithFiles } from "../services/permohonan-delete";
+
 import { MESSAGE } from "@/constants/message";
 import { PATHS } from "@/constants/paths";
 import { createPermohonanSKDSchema, followUpPermohonanSKDSchema, updatePermohonanSKDSchema } from "@/lib/validators/permohonan-skd";
@@ -61,7 +63,7 @@ export async function deletePermohonanSKDAction(permohonanSKDId: string) {
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.GLOBAL.UNAUTHORIZED);
     if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
 
-    await deletePermohonanSKDService(permohonanSKDId);
+    await deletePermohonanWithFiles("SKD", permohonanSKDId);
     revalidatePath(PATHS.SKD_REQUEST);
     return { success: true, message: MESSAGE.PERMOHONAN_SKD.DELETE_OK };
   } catch (error) {

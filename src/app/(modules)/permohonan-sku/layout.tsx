@@ -1,16 +1,6 @@
-import { Metadata } from "next";
+import { requireAdminPage } from "@/lib/server/guards";
 
-export const metadata: Metadata = {
-  title: "Permohonan SKU",
-  description: "Manajemen permohonan Surat Keterangan Usaha",
-};
-
-interface PermohonanSKULayoutProps {
-  children: React.ReactNode;
-}
-
-export default function PermohonanSKULayout({
-  children,
-}: PermohonanSKULayoutProps) {
+export default async function AdminGuardLayout({ children }: { children: React.ReactNode }) {
+  await requireAdminPage();
   return <>{children}</>;
 }

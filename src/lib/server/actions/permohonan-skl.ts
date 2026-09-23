@@ -1,5 +1,7 @@
 "use server";
 
+import { deletePermohonanWithFiles } from "../services/permohonan-delete";
+
 import { MESSAGE } from "@/constants/message";
 import { PATHS } from "@/constants/paths";
 import { TCreatePermohonanSKLSchema, TUpdatePermohonanSKLSchema, updatePermohonanSKLStatusSchema } from "@/lib/validators/permohonan-skl";
@@ -94,7 +96,7 @@ export const deletePermohonanSKLAction = async (id: string) => {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
-    await deletePermohonanSKLService(id);
+    await deletePermohonanWithFiles("SKL", id);
     revalidatePath(PATHS.SKL_REQUEST || "/permohonan-skl");
     return { status: status.OK, message: message.DELETE_OK || "Permohonan SKL berhasil dihapus" };
   } catch (error) {
