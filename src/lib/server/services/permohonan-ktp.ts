@@ -76,3 +76,10 @@ export const findManyPermohonanKTPByUserService = async (userId: string) => {
     orderBy: { createdAt: "desc" },
   });
 };
+
+export const findManyPermohonanKTPByUserService = async (userId: string) => {
+  return prisma.permohonanKTP.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+};
