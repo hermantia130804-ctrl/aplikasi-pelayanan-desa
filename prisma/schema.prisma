@@ -122,6 +122,7 @@ model User {
   permohonanSKU      PermohonanSKU[]
   permohonanSKD      PermohonanSKD[]
   permohonanPindah   PermohonanPindah[]
+  permohonanKK      PermohonanKK[]
 
   @@map("users")
 }
@@ -396,4 +397,38 @@ model PermohonanPindahAnggota {
   permohonanPindah PermohonanPindah @relation(fields: [permohonanPindahId], references: [permohonanPindahId], onDelete: Cascade)
 
   @@map("permohonan_pindah_anggota")
+}
+
+enum StatusPermohonanKK {
+  DIAJUKAN
+  DISETUJUI
+  DITOLAK
+}
+
+model PermohonanKK {
+  permohonanKKId      String             @id @default(cuid()) @map("permohonan_kk_id")
+  userId              String             @map("user_id")
+  nomorPermohonan     String?            @unique @map("nomor_permohonan")
+  statusPermohonan    StatusPermohonanKK @default(DIAJUKAN) @map("status_permohonan")
+  nama                String
+  nik                 String
+  noKKLama            String?            @map("no_kk_lama")
+  alasanPermohonan    String             @map("alasan_permohonan")
+  alamat              String
+  rt                  String             @map("rt") @db.VarChar(3)
+  rw                  String             @map("rw") @db.VarChar(3)
+  desa                String
+  kecamatan           String
+  kabupaten           String
+  provinsi            String
+  kodePos             String             @map("kode_pos") @db.VarChar(5)
+  dokumenAkta         String?            @map("dokumen_akta")
+  dokumenKTP          String?            @map("dokumen_ktp")
+  dokumenPengantar    String?            @map("dokumen_pengantar")
+  catatan             String?
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+  user                User               @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("permohonan_kk")
 }
