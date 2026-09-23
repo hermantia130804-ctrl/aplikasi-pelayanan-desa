@@ -1,13 +1,17 @@
 import { PermohonanKTPDetail } from "@/components/permohonan-ktp-detail";
 import { findPermohonanKTPData } from "@/lib/server/data/permohonan-ktp";
+import { requireAdminPage } from "@/lib/server/guards";
+import { redirect } from "next/navigation";
 
 interface DetailPermohonanKTPPageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function DetailPermohonanKTPPage({ params }: DetailPermohonanKTPPageProps) {
+  const session = await requireAdminPage();
   const { data } = await findPermohonanKTPData(params);
-  console.log(data);
+  if (data.userId !== session.user.userId && session.user.role !== "ADMIN") redirect("/permohonan-saya");
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">

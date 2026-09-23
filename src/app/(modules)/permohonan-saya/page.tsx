@@ -48,8 +48,8 @@ export default async function PermohonanSayaPage() {
     const { ktp, skl, sktm, skk, sku, skd, pindah, kk } = await findPermohonanSaya(session.user.userId);
 
     const items: Item[] = [
-        ...ktp.map((k) => ({ jenis: "KTP", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-ktp/${k.permohonanKtpId}` })),
-        ...kk.map((k) => ({ jenis: "KK", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
+        ...ktp.map((k) => ({ jenis: "KTP", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-ktp-mandiri/${k.permohonanKtpId}` })),
+        ...kk.map((k) => ({ jenis: "KK", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-kk-mandiri/${k.permohonanKKId}` })),
         ...skl.map((k) => ({ jenis: "SKL", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
         ...sktm.map((k) => ({ jenis: "SKTM", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
         ...skk.map((k) => ({ jenis: "SKK", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),

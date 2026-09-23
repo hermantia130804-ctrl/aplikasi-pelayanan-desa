@@ -22,6 +22,7 @@ export const createPermohonanSKLAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
     const data = await createPermohonanSKLService(currentSession.user.userId, payload);
     revalidatePath(PATHS.SKL_REQUEST || "/permohonan-skl");
     return { status: status.OK, message: message.CREATE_OK || "Permohonan SKL berhasil dibuat", data };
@@ -43,6 +44,7 @@ export const updatePermohonanSKLAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
     const data = await updatePermohonanSKLService(id, payload);
     revalidatePath(PATHS.SKL_REQUEST || "/permohonan-skl");
     return { status: status.OK, message: message.UPDATE_OK || "Permohonan SKL berhasil diperbarui", data };
@@ -64,6 +66,7 @@ export const updatePermohonanSKLStatusAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
     
     const validatedData = updatePermohonanSKLStatusSchema.parse(values);
     const data = await updatePermohonanSKLStatusService(
@@ -90,6 +93,7 @@ export const deletePermohonanSKLAction = async (id: string) => {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
     await deletePermohonanSKLService(id);
     revalidatePath(PATHS.SKL_REQUEST || "/permohonan-skl");
     return { status: status.OK, message: message.DELETE_OK || "Permohonan SKL berhasil dihapus" };

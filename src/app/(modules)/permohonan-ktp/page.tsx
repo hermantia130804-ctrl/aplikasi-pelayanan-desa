@@ -1,4 +1,5 @@
 import { PermohonanKTPDataTable } from "@/components/permohonan-ktp-data-table";
+import { requireAdminPage } from "@/lib/server/guards";
 import { PermohonanKTPFilterTable } from "@/components/permohonan-ktp-filter-table";
 import { Button } from "@/components/ui/button";
 import { PATHS } from "@/constants/paths";
@@ -10,6 +11,7 @@ interface PermohonanKTPPageProps {
 }
 
 export default async function PermohonanKTPPage({ searchParams }: PermohonanKTPPageProps) {
+  await requireAdminPage();
   const { data, pagination } = await findManyPermohonanKTPData(searchParams);
   
   return (

@@ -22,6 +22,7 @@ export const createPermohonanSKTMAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
     const data = await createPermohonanSKTMService(currentSession.user.userId, payload);
     revalidatePath(PATHS.SKTM_REQUEST);
     return { status: status.OK, message: message.CREATE_OK, data };
@@ -42,6 +43,7 @@ export const updatePermohonanSKTMAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
     
     const { permohonanSKTMId, ...updateData } = payload;
     const data = await updatePermohonanSKTMService(permohonanSKTMId, updateData);
@@ -64,6 +66,7 @@ export const deletePermohonanSKTMAction = async (permohonanSKTMId: string) => {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
     
     await deletePermohonanSKTMService(permohonanSKTMId);
     revalidatePath(PATHS.SKTM_REQUEST);
@@ -85,6 +88,7 @@ export const updateStatusPermohonanSKTMAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
     
     const { permohonanSKTMId, statusPermohonan, nomorPermohonan, catatan } = payload;
     const data = await updateStatusPermohonanSKTMService(permohonanSKTMId, statusPermohonan, nomorPermohonan, catatan);

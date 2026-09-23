@@ -20,7 +20,7 @@ export const createPermohonanKKMandiriAction = async (payload: unknown) => {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     const nomorPermohonan = await generateNomorPermohonan("KK");
-    const data = await createPermohonanKKService(currentSession.user.userId, { ...payload, nomorPermohonan });
+    const data = await createPermohonanKKService(currentSession.user.userId, { ...(payload as object), nomorPermohonan });
     revalidatePath("/permohonan-kk");
 
     try {
@@ -30,7 +30,7 @@ export const createPermohonanKKMandiriAction = async (payload: unknown) => {
         await sendEmail(adminEmail, "Permohonan KK Baru Masuk",
           `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #eee;border-radius:8px;">
              <h2>📬 Permohonan KK Baru</h2>
-             <ul><li><b>Nama:</b> ${p.nama ?? "-"}</li><li><b>NIK:</b> ${p.nik ?? "-"}</li><li><b>Alasan:</b> ${p.alasanPermohonan ?? "-"}</li></ul>
+             <ul><li><b>No. Permohonan:</b> ${nomorPermohonan}</li><li><b>Nama:</b> ${p.nama ?? "-"}</li><li><b>NIK:</b> ${p.nik ?? "-"}</li><li><b>Alasan:</b> ${p.alasanPermohonan ?? "-"}</li></ul>
              <p>Silakan proses melalui menu <b>Kelola Permohonan KK</b>.</p></div>`);
       }
     } catch (mailError) {
@@ -47,6 +47,7 @@ export const updateStatusPermohonanKKAction = async (id: string, newStatus: "DIA
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat mengubah status permohonan");
     await updateStatusPermohonanKKService(id, { statusPermohonan: newStatus, catatan });
     revalidatePath("/permohonan-kk");
     return { status: status.OK, message: "Status permohonan KK berhasil diperbarui" };
@@ -59,6 +60,7 @@ export const deletePermohonanKKAction = async (id: string) => {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat menghapus permohonan");
     await deletePermohonanKKService(id);
     revalidatePath("/permohonan-kk");
     return { status: status.OK, message: "Permohonan KK berhasil dihapus" };

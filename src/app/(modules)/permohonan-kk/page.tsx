@@ -2,6 +2,7 @@ import { PermohonanKKDataTable } from "@/components/permohonan-kk-data-table";
 import { PermohonanKKFilterTable } from "@/components/permohonan-kk-filter-table";
 import { Button } from "@/components/ui/button";
 import { findManyPermohonanKKData } from "@/lib/server/data/permohonan-kk";
+import { requireAdminPage } from "@/lib/server/guards";
 import Link from "next/link";
 
 interface PermohonanKKPageProps {
@@ -11,6 +12,7 @@ interface PermohonanKKPageProps {
 export const dynamic = "force-dynamic";
 
 export default async function PermohonanKKPage({ searchParams }: PermohonanKKPageProps) {
+  await requireAdminPage();
   const { data, pagination } = await findManyPermohonanKKData(searchParams);
 
   return (
