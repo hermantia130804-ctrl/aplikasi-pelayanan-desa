@@ -1,6 +1,7 @@
 "use client"
 import { PermohonanKK } from '@/generated/prisma';
-import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { Document, Page, StyleSheet, Text, View, Image } from '@react-pdf/renderer';
+import logoKabBogor from '../../assets/logo-kab-bogor.png';
 
 const styles = StyleSheet.create({
   page: {
@@ -16,16 +17,13 @@ const styles = StyleSheet.create({
   logoBox: {
     width: 70,
     height: 70,
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoText: {
-    fontSize: 8,
-    textAlign: 'center',
-    color: '#666',
+  logoImg: {
+    width: 64,
+    height: 64,
+    objectFit: 'contain',
   },
   kopCenter: {
     flex: 1,
@@ -33,7 +31,7 @@ const styles = StyleSheet.create({
   },
   kop1: { fontSize: 13, fontFamily: 'Times-Bold' },
   kop2: { fontSize: 12, fontFamily: 'Times-Bold' },
-  kop3: { fontSize: 11, fontFamily: 'Times-Bold' },
+  kop3: { fontSize: 14, fontFamily: 'Times-Bold' },
   kopAlamat: { fontSize: 9, marginTop: 2 },
   garisTebal: {
     borderBottomWidth: 3,
@@ -73,16 +71,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     lineHeight: 1.5,
   },
-  isiBox: {
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: '#000',
-    padding: 10,
-    marginBottom: 12,
-  },
   paragrafIsi: {
     fontSize: 11,
     textAlign: 'justify',
+    marginBottom: 10,
     lineHeight: 1.5,
   },
   paragrafPenutup: {
@@ -122,7 +114,7 @@ export function PermohonanKKPdfTemplate({ data, namaKepalaDesa }: { data: Permoh
         {/* KOP SURAT */}
         <View style={styles.kopRow}>
           <View style={styles.logoBox}>
-            <Text style={styles.logoText}>LOGO</Text>
+            <Image style={styles.logoImg} src={logoKabBogor} />
           </View>
           <View style={styles.kopCenter}>
             <Text style={styles.kop1}>PEMERINTAH KABUPATEN BOGOR</Text>
@@ -160,18 +152,12 @@ export function PermohonanKKPdfTemplate({ data, namaKepalaDesa }: { data: Permoh
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>3.</Text>
-          <Text style={styles.col1}>Tempat/Tgl Lahir</Text>
-          <Text style={styles.titik}>:</Text>
-          <Text style={styles.value}>Sukamaju</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>4.</Text>
           <Text style={styles.col1}>Pekerjaan</Text>
           <Text style={styles.titik}>:</Text>
           <Text style={styles.value}>-</Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>5.</Text>
+          <Text style={styles.label}>4.</Text>
           <Text style={styles.col1}>Alamat</Text>
           <Text style={styles.titik}>:</Text>
           <Text style={styles.value}>{data.alamat} RT {data.rt}/RW {data.rw}, Desa {data.desa}</Text>

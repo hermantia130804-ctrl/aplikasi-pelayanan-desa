@@ -1,0 +1,6 @@
+{
+  "presets": ["next/babel"],
+  "plugins": [
+    "@react-pdf/babel-plugin-render-to-string"
+  ]
+}
