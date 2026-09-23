@@ -1,9 +1,7 @@
 "use server";
 
-import { deletePermohonanWithFiles } from "../services/permohonan-delete";
-
 import { MESSAGE } from "@/constants/message";
-import { status } from "http-status";
+import status from "http-status";
 import { revalidatePath } from "next/cache";
 import { ApiError } from "next/dist/server/api-utils";
 import { errorHandler } from "../services/error";
@@ -11,8 +9,12 @@ import {
   createPermohonanKKService,
   deletePermohonanKKService,
   findPermohonanKKByIdService,
+  updatePermohonanKKService,
   updateStatusPermohonanKKService,
+  followUpPermohonanKKService,
 } from "../services/permohonan-kk";
+import { findCurrentSessionService } from "../services/session";
+import { sendEmail } from "../utils/email";
 import { generateNomorPermohonan } from "../services/nomor-permohonan";
 import { prisma } from "@/lib/prisma";
 
@@ -62,7 +64,7 @@ export const deletePermohonanKKAction = async (id: string) => {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat menghapus permohonan");
-    await deletePermohonanWithFiles("KK", id);
+    await deletePermohonanKKService(id);
     revalidatePath("/permohonan-kk");
     return { status: status.OK, message: "Permohonan KK berhasil dihapus" };
   } catch (error) {
@@ -87,25 +89,6 @@ export const updatePermohonanKKAction = async (id: string, payload: unknown) => 
     const data = await updatePermohonanKKService(id, payload as Record<string, unknown>);
     revalidatePath("/permohonan-kk");
     return { status: status.OK, message: "Permohonan KK berhasil diperbarui", data };
-  } catch (error) {
-    return errorHandler(error);
-  }
-};
-
-export const followUpPermohonanKKAction = async (payload: {
-  permohonanKKId: string;
-  statusPermohonan: "DIAJUKAN" | "DISETUJUI" | "DITOLAK";
-  nomorPermohonan?: string;
-  catatan?: string;
-}) => {
-  try {
-    const currentSession = await findCurrentSessionService();
-    if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan tindak lanjut");
-    const { permohonanKKId, ...data } = payload;
-    await followUpPermohonanKKService(permohonanKKId, data);
-    revalidatePath("/permohonan-kk");
-    return { status: status.OK, message: "Tindak lanjut permohonan KK berhasil disimpan" };
   } catch (error) {
     return errorHandler(error);
   }
@@ -148,4 +131,3 @@ export const followUpPermohonanKKActionV2 = async (payload: {
     return errorHandler(error);
   }
 };
-
