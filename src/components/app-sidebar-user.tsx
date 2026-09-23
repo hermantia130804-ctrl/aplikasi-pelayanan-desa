@@ -54,7 +54,7 @@ export const AppSidebarUser = ({
       const result = await signOutAction();
       if (result.status === 200) {
         toast.success(result.message);
-        router.push(PATHS.SIGN_IN);
+        router.push("/");
       } else {
         toast.error(result.message);
       }
