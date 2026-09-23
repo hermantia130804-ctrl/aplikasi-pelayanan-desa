@@ -31,6 +31,12 @@ export const MENU = {
             roles: [Role.ADMIN]
         },
         {
+            name: "Kelola Permohonan KK",
+            url: "/permohonan-kk",
+            icon: IconChartBar,
+            roles: [Role.ADMIN]
+        },
+        {
             name: "Kelola Permohonan SKL",
             url: PATHS.SKL_REQUEST,
             icon: IconChartBar,
@@ -71,6 +77,12 @@ export const MENU = {
         {
             name: "Ajukan KTP",
             url: "/permohonan-ktp-mandiri/tambah",
+            icon: IconChartBar,
+            roles: [Role.ADMIN, Role.USER]
+        },
+        {
+            name: "Ajukan KK",
+            url: "/permohonan-kk-mandiri/tambah",
             icon: IconChartBar,
             roles: [Role.ADMIN, Role.USER]
         },
