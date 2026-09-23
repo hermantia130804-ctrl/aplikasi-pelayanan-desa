@@ -1,7 +1,7 @@
 "use client"
 import { PermohonanKK } from '@/generated/prisma';
 import { Document, Page, StyleSheet, Text, View, Image } from '@react-pdf/renderer';
-import logoKabBogor from '../../assets/logo-kab-bogor.png';
+import logoKabBogor from '../assets/logo-kab-bogor.png';
 
 const styles = StyleSheet.create({
   page: {
