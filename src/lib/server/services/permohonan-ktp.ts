@@ -70,12 +70,6 @@ export const updateStatusPermohonanKTPService = async (id: string, data: { statu
   return prisma.permohonanKTP.update({ where: { permohonanKtpId: id }, data });
 };
 
-export const findManyPermohonanKTPByUserService = async (userId: string) => {
-  return prisma.permohonanKTP.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
-};
 
 export const findManyPermohonanKTPByUserService = async (userId: string) => {
   return prisma.permohonanKTP.findMany({
