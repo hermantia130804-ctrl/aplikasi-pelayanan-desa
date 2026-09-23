@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PATHS } from "@/constants/paths";
-import { createPermohonanKTPAction } from "@/lib/server/actions/permohonan-ktp";
+import { createPermohonanKTPMandiriAction } from "@/lib/server/actions/permohonan-ktp-mandiri";
 import { createPermohonanKTPSchema, TCreatePermohonanKTPSchema } from "@/lib/validators/permohonan-ktp";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -67,7 +67,7 @@ export const PermohonanKTPMandiriForm = () => {
     const onSubmit = async (values: TCreatePermohonanKTPSchema) => {
         try {
             setLoading(true);
-            const response = await createPermohonanKTPAction(values);
+            const response = await createPermohonanKTPMandiriAction(values);
             if (response.status === 200) {
                 toast.success(response.message);
                 router.push(PATHS.PERSON_KTP_REQUEST);

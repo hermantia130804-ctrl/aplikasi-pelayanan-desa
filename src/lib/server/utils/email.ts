@@ -27,3 +27,12 @@ export const sendVerificationEmail = async (to: string, verificationUrl: string)
         html,
     });
 };
+
+export const sendEmail = async (to: string, subject: string, html: string) => {
+    await transporter.sendMail({
+        from: `"Aplikasi Desa Sukamaju" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html,
+    });
+};
