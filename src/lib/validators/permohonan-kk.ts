@@ -24,7 +24,7 @@ export const createPermohonanKKSchema = z.object({
 });
 
 export type TCreatePermohonanKKSchema = z.infer<typeof createPermohonanKKSchema>;
-export type TUpdatePermohonanKKSchema = z.infer<typeof createPermohonanKKSchema>.partial();
+export type TUpdatePermohonanKKSchema = Partial<TCreatePermohonanKKSchema>;
 
 export const updateStatusPermohonanKKSchema = z.object({
     permohonanKKId: z.string().min(1),
