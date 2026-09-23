@@ -46,6 +46,7 @@ export default async function PermohonanSayaPage() {
         ...sku.map((k) => ({ jenis: "SKU", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
         ...skd.map((k) => ({ jenis: "SKD", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
         ...pindah.map((k) => ({ jenis: "Surat Pindah", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
+        ...kk.map((k) => ({ jenis: "KK", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return (
