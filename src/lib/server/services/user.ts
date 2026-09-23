@@ -99,3 +99,8 @@ export const activateUserService = async (userId: string) => {
     const data = await prisma.user.update({ where: { userId }, data: { status: "ACTIVE" } });
     return { data };
 }
+
+export const findUserByIdService = async (userId: string) => {
+    const data = await prisma.user.findUnique({ where: { userId } });
+    return { data };
+}
