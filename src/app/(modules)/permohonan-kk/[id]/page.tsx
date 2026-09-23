@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { KKUpdateStatus } from "@/components/permohonan-kk-update-status";
+import { PermohonanKKFollowUpModal } from "@/components/permohonan-kk-follow-up-modal";
 import { findPermohonanKKData } from "@/lib/server/data/permohonan-kk";
 import { requireAdminPage } from "@/lib/server/guards";
 import { ArrowLeftIcon } from "lucide-react";
@@ -22,9 +22,9 @@ export default async function DetailKKAdminPage({ params }: { params: Promise<{ 
     const { data } = await findPermohonanKKData(params);
 
     const statusMap: Record<string, { label: string; className: string }> = {
-        DIAJUKAN: { label: "Menunggu Proses", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
-        DISETUJUI: { label: "Disetujui", className: "bg-green-100 text-green-800 hover:bg-green-100" },
-        DITOLAK: { label: "Ditolak", className: "bg-red-100 text-red-800 hover:bg-red-100" },
+        DIAJUKAN: { label: "DIAJUKAN", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
+        DISETUJUI: { label: "DISETUJUI", className: "bg-green-100 text-green-800 hover:bg-green-100" },
+        DITOLAK: { label: "DITOLAK", className: "bg-red-100 text-red-800 hover:bg-red-100" },
     };
     const status = statusMap[data.statusPermohonan] ?? statusMap.DIAJUKAN;
 
@@ -35,19 +35,22 @@ export default async function DetailKKAdminPage({ params }: { params: Promise<{ 
                     <Button asChild variant="outline" className="w-fit">
                         <a href="/permohonan-kk"><ArrowLeftIcon className="w-4 h-4" /> Kembali</a>
                     </Button>
-                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold">Detail Permohonan KK</h1>
-                            <p className="text-sm text-muted-foreground">
-                                {data.nomorPermohonan ?? "Nomor belum tersedia"} • Diajukan {moment(data.createdAt).format("DD MMMM YYYY HH:mm")}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                                Pengaju: {data.user.name} ({data.user.email})
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Badge variant="outline" className={status.className}>{status.label}</Badge>
-                            <KKUpdateStatus id={data.permohonanKKId} status={data.statusPermohonan} />
+
+                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div className="flex flex-col gap-1">
+                                <h1 className="text-xl font-bold">Detail Permohonan KK</h1>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className={status.className}>{status.label}</Badge>
+                                    <Badge variant="default">{data.alasanPermohonan}</Badge>
+                                </div>
+                            </div>
+                            <PermohonanKKFollowUpModal
+                                permohonanKKId={data.permohonanKKId}
+                                statusPermohonan={data.statusPermohonan}
+                                catatan={data.catatan ?? ""}
+                                nomorPermohonan={data.nomorPermohonan ?? ""}
+                            />
                         </div>
                     </div>
 
@@ -81,13 +84,6 @@ export default async function DetailKKAdminPage({ params }: { params: Promise<{ 
                             {data.dokumenPengantar && <a href={data.dokumenPengantar} target="_blank" rel="noopener noreferrer" className="text-primary underline">Lihat Pengantar</a>}
                         </div>
                     </div>
-
-                    {data.catatan && (
-                        <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
-                            <h2 className="mb-2 font-semibold">📝 Catatan</h2>
-                            <p className="text-sm text-muted-foreground">{data.catatan}</p>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

@@ -56,3 +56,7 @@ export const deletePermohonanKKService = async (id: string) => {
 export const updatePermohonanKKService = async (id: string, data: Partial<TCreatePermohonanKKSchema>) => {
   return prisma.permohonanKK.update({ where: { permohonanKKId: id }, data });
 };
+
+export const followUpPermohonanKKService = async (id: string, data: { statusPermohonan?: "DIAJUKAN" | "DISETUJUI" | "DITOLAK"; nomorPermohonan?: string; catatan?: string }) => {
+  return prisma.permohonanKK.update({ where: { permohonanKKId: id }, data });
+};

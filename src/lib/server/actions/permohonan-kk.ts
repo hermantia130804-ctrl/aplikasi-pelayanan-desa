@@ -92,3 +92,22 @@ export const updatePermohonanKKAction = async (id: string, payload: unknown) => 
     return errorHandler(error);
   }
 };
+
+export const followUpPermohonanKKAction = async (payload: {
+  permohonanKKId: string;
+  statusPermohonan: "DIAJUKAN" | "DISETUJUI" | "DITOLAK";
+  nomorPermohonan?: string;
+  catatan?: string;
+}) => {
+  try {
+    const currentSession = await findCurrentSessionService();
+    if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan tindak lanjut");
+    const { permohonanKKId, ...data } = payload;
+    await followUpPermohonanKKService(permohonanKKId, data);
+    revalidatePath("/permohonan-kk");
+    return { status: status.OK, message: "Tindak lanjut permohonan KK berhasil disimpan" };
+  } catch (error) {
+    return errorHandler(error);
+  }
+};
