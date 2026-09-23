@@ -83,7 +83,7 @@ export function PermohonanSKDCreateForm() {
       
       if (result.success) {
         toast.success(result.message);
-        router.push(PATHS.SKD_REQUEST);
+        router.push("/permohonan-saya");
       }
     } catch (error) {
       toast.error("Gagal membuat permohonan SKD");

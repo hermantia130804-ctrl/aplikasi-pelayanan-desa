@@ -64,7 +64,7 @@ export function PermohonanSKKCreateForm() {
       const response = await createPermohonanSKKAction(values);
       if (response.status === 200) {
         toast.success(response.message);
-        router.push(PATHS.SKK_REQUEST);
+        router.push("/permohonan-saya");
       } else {
         toast.error(response.message);
       }
@@ -266,7 +266,7 @@ export function PermohonanSKKCreateForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push(PATHS.SKK_REQUEST)}
+            onClick={() => router.push("/permohonan-saya")}
             disabled={loading}
           >
             Batal

@@ -70,7 +70,7 @@ export const PermohonanKTPMandiriForm = () => {
             const response = await createPermohonanKTPMandiriAction(values);
             if (response.status === 200) {
                 toast.success(response.message);
-                router.push(PATHS.PERSON_KTP_REQUEST);
+                router.push("/permohonan-saya");
             } else {
                 toast.error(response.message);
             }

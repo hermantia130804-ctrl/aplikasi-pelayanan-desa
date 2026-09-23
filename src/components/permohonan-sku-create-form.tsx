@@ -72,7 +72,7 @@ export function PermohonanSKUCreateForm() {
 
       if (result.status === 200) {
         toast.success(result.message);
-        router.push(PATHS.SKU_REQUEST);
+        router.push("/permohonan-saya");
       } else {
         toast.error(result.message);
       }

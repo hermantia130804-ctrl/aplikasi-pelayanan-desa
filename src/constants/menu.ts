@@ -63,14 +63,44 @@ export const MENU = {
     ],
     USER: [
         {
-            name: "Kelola Permohonan KTP",
-            url: PATHS.PERSON_KTP_REQUEST,
+            name: "Permohonan Saya",
+            url: "/permohonan-saya",
             icon: IconListDetails,
             roles: [Role.ADMIN, Role.USER]
         },
         {
-            name: "Kelola Permohonan KK",
-            url: PATHS.PERSON_KK_REQUEST,
+            name: "Ajukan KTP",
+            url: "/permohonan-ktp-mandiri/tambah",
+            icon: IconChartBar,
+            roles: [Role.ADMIN, Role.USER]
+        },
+        {
+            name: "Ajukan SKL",
+            url: "/permohonan-skl-mandiri/tambah",
+            icon: IconChartBar,
+            roles: [Role.ADMIN, Role.USER]
+        },
+        {
+            name: "Ajukan SKTM",
+            url: "/permohonan-sktm-mandiri/tambah",
+            icon: IconChartBar,
+            roles: [Role.ADMIN, Role.USER]
+        },
+        {
+            name: "Ajukan SKK",
+            url: "/permohonan-skk-mandiri/tambah",
+            icon: IconChartBar,
+            roles: [Role.ADMIN, Role.USER]
+        },
+        {
+            name: "Ajukan SKU",
+            url: "/permohonan-sku-mandiri/tambah",
+            icon: IconChartBar,
+            roles: [Role.ADMIN, Role.USER]
+        },
+        {
+            name: "Ajukan SKD",
+            url: "/permohonan-skd-mandiri/tambah",
             icon: IconChartBar,
             roles: [Role.ADMIN, Role.USER]
         },

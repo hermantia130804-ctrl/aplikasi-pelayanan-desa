@@ -77,7 +77,7 @@ export const PermohonanSKLCreateForm = () => {
             const response = await createPermohonanSKLAction(values);
             if (response.status === 200) {
                 toast.success(response.message);
-                router.push(PATHS.SKL_REQUEST);
+                router.push("/permohonan-saya");
             } else {
                 toast.error(response.message);
             }

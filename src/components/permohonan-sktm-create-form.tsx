@@ -62,7 +62,7 @@ export const PermohonanSKTMCreateForm = () => {
             const response = await createPermohonanSKTMAction(data);
             if (response.status === 200) {
                 toast.success(response.message);
-                router.push(PATHS.SKTM_REQUEST);
+                router.push("/permohonan-saya");
             } else {
                 toast.error(response.message);
             }
