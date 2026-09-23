@@ -1,6 +1,6 @@
 export const PATHS = {
-  HOME: "/",
-  HOME_PUBLIC: "/beranda",
+  HOME: "/dashboard",
+  HOME_PUBLIC: "/beranda-masyarakat",
   SIGN_IN: "/masuk",
   SIGN_UP: "/daftar",
   EMAIL_VERIFICATION: "/verifikasi",

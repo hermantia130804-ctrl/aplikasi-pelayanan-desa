@@ -1,5 +1,5 @@
 import { Role } from "@/generated/prisma";
-import { IconChartBar, IconDashboard, IconInfoCircle, IconListDetails, IconPhoneCall, IconSettings2, IconUsers } from "@tabler/icons-react";
+import { IconChartBar, IconDashboard, IconListDetails, IconSettings2, IconUsers } from "@tabler/icons-react";
 import { PATHS } from "./paths";
 
 export const MENU = {
@@ -11,9 +11,9 @@ export const MENU = {
             roles: [Role.ADMIN, Role.USER]
         },
         {
-            name: "Beranda Masyarakat",
-            url: PATHS.HOME_PUBLIC,
-            icon: IconDashboard,
+            name: "Permohonan Saya",
+            url: "/permohonan-saya",
+            icon: IconListDetails,
             roles: [Role.ADMIN, Role.USER]
         },
     ],
@@ -69,12 +69,6 @@ export const MENU = {
     ],
     USER: [
         {
-            name: "Permohonan Saya",
-            url: "/permohonan-saya",
-            icon: IconListDetails,
-            roles: [Role.ADMIN, Role.USER]
-        },
-        {
             name: "Ajukan KTP",
             url: "/permohonan-ktp-mandiri/tambah",
             icon: IconChartBar,
@@ -124,17 +118,5 @@ export const MENU = {
             icon: IconSettings2,
             roles: [Role.ADMIN, Role.USER]
         },
-        {
-            name: "Tentang",
-            url: PATHS.ABOUT,
-            icon: IconInfoCircle,
-            roles: [Role.ADMIN, Role.USER]
-        },
-        {
-            name: "Hubungi Kami",
-            url: PATHS.CONTACT,
-            icon: IconPhoneCall,
-            roles: [Role.ADMIN, Role.USER]
-        }
     ]
 }
