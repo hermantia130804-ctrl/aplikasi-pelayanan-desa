@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { followUpPermohonanKKAction } from "@/lib/server/actions/permohonan-kk";
+import { followUpPermohonanKKActionV2 as followUpPermohonanKKAction } from "@/lib/server/actions/permohonan-kk";
 import { ClipboardCheck, Loader2, Save, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

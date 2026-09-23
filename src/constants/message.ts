@@ -10,7 +10,7 @@ export const MESSAGE = {
     },
     AUTH: {
         SIGN_IN_OK: "Anda berhasil masuk.",
-        SIGN_IN_INCORRECT: "Email atau password salah.",
+        SIGN_IN_INCORRECT: "Username atau password tidak sesuai",
         SIGN_IN_NOT_VERIFIED: "Email belum terverifikasi.",
         SIGN_IN_NOT_ACTIVE: "Akun tidak aktif, hubungi admin.",
         SIGN_UP_OK: "Anda berhasil mendaftar, cek email untuk verifikasi.",

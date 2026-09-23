@@ -16,6 +16,8 @@ import {
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
 import { generateNomorPermohonan } from "../services/nomor-permohonan";
+import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 
 export const createPermohonanKKMandiriAction = async (payload: unknown) => {
   try {
@@ -105,6 +107,82 @@ export const followUpPermohonanKKAction = async (payload: {
     if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan tindak lanjut");
     const { permohonanKKId, ...data } = payload;
     await followUpPermohonanKKService(permohonanKKId, data);
+    revalidatePath("/permohonan-kk");
+    return { status: status.OK, message: "Tindak lanjut permohonan KK berhasil disimpan" };
+  } catch (error) {
+    return errorHandler(error);
+  }
+};
+
+export const followUpPermohonanKKActionV2 = async (payload: {
+  permohonanKKId: string;
+  statusPermohonan: string;
+  nomorPermohonan?: string;
+  catatan?: string;
+}) => {
+  try {
+    const currentSession = await findCurrentSessionService();
+    if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan tindak lanjut");
+
+    const validStatus = ["DIAJUKAN", "DISETUJUI", "DITOLAK"] as const;
+    if (!validStatus.includes(payload.statusPermohonan as any)) {
+      throw new ApiError(status.BAD_REQUEST, "Status permohonan tidak valid");
+    }
+
+    const dataUpdate: Record<string, unknown> = {
+      statusPermohonan: payload.statusPermohonan,
+      updatedAt: new Date(),
+    };
+    if (payload.nomorPermohonan && payload.nomorPermohonan.trim() !== "") {
+      dataUpdate.nomorPermohonan = payload.nomorPermohonan.trim();
+    }
+    if (payload.catatan !== undefined) {
+      dataUpdate.catatan = payload.catatan;
+    }
+
+    await prisma.permohonanKK.update({
+      where: { permohonanKKId: payload.permohonanKKId },
+      data: dataUpdate,
+    });
+    revalidatePath("/permohonan-kk");
+    return { status: status.OK, message: "Tindak lanjut permohonan KK berhasil disimpan" };
+  } catch (error) {
+    return errorHandler(error);
+  }
+};
+
+export const followUpPermohonanKKActionV2 = async (payload: {
+  permohonanKKId: string;
+  statusPermohonan: string;
+  nomorPermohonan?: string;
+  catatan?: string;
+}) => {
+  try {
+    const currentSession = await findCurrentSessionService();
+    if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan tindak lanjut");
+
+    const validStatus = ["DIAJUKAN", "DISETUJUI", "DITOLAK"] as const;
+    if (!validStatus.includes(payload.statusPermohonan as any)) {
+      throw new ApiError(status.BAD_REQUEST, "Status permohonan tidak valid");
+    }
+
+    const dataUpdate: Record<string, unknown> = {
+      statusPermohonan: payload.statusPermohonan,
+      updatedAt: new Date(),
+    };
+    if (payload.nomorPermohonan && payload.nomorPermohonan.trim() !== "") {
+      dataUpdate.nomorPermohonan = payload.nomorPermohonan.trim();
+    }
+    if (payload.catatan !== undefined) {
+      dataUpdate.catatan = payload.catatan;
+    }
+
+    await prisma.permohonanKK.update({
+      where: { permohonanKKId: payload.permohonanKKId },
+      data: dataUpdate,
+    });
     revalidatePath("/permohonan-kk");
     return { status: status.OK, message: "Tindak lanjut permohonan KK berhasil disimpan" };
   } catch (error) {

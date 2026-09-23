@@ -13,14 +13,13 @@ export const errorHandler = async (error: unknown) => {
             if (error.statusCode === status.UNAUTHORIZED) {
                 await deleteSessionTokenCookie();
             }
-            throw error;
+            return { status: error.statusCode, message: error.message };
         };
-        if (error instanceof ZodError) throw new ApiError(status.BAD_REQUEST, error.message);
+        if (error instanceof ZodError) return { status: status.BAD_REQUEST, message: error.issues[0]?.message ?? "Data tidak valid" };
         if (error instanceof PrismaClientKnownRequestError) {
-            if (error.code === "P2002") throw new ApiError(status.BAD_REQUEST, message.BAD_REQUEST);
-            if (error.code === "P2025") throw new ApiError(status.NOT_FOUND, message.NOT_FOUND);
-            else throw new ApiError(status.INTERNAL_SERVER_ERROR, message.INTERNAL_SERVER_ERROR);
+            if (error.code === "P2002") return { status: status.BAD_REQUEST, message: "Data sudah terdaftar" };
+            if (error.code === "P2025") return { status: status.NOT_FOUND, message: "Data tidak ditemukan" };
         }
     }
-    throw new ApiError(status.INTERNAL_SERVER_ERROR, message.INTERNAL_SERVER_ERROR);
+    return { status: status.INTERNAL_SERVER_ERROR, message: message.INTERNAL_SERVER_ERROR };
 }
