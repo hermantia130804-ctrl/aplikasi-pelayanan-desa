@@ -1,6 +1,10 @@
 import { VALIDATION_MESSAGE } from "@/constants/validation-message";
 import { z } from "zod";
-import { statusPermohonanEnum } from "./base";
+import { findManySchema, statusPermohonanEnum } from "./base";
+
+export const alasanPermohonanKKEnum = z.enum(["BARU", "PERUBAHAN_DATA", "PENGGANTIAN", "PEMISAHAN_KK"]);
+export const searchFieldKKEnum = z.enum(["nama", "nik", "alamat", "nomorPermohonan"]);
+export const orderFieldKKEnum = z.enum(["nomorPermohonan", "nama", "nik", "alamat", "createdAt", "updatedAt"]);
 
 export const createPermohonanKKSchema = z.object({
     nomorPermohonan: z.string().optional(),
@@ -25,6 +29,15 @@ export const createPermohonanKKSchema = z.object({
 
 export type TCreatePermohonanKKSchema = z.infer<typeof createPermohonanKKSchema>;
 export type TUpdatePermohonanKKSchema = Partial<TCreatePermohonanKKSchema>;
+
+export const findManyPermohonanKKSchema = findManySchema.extend({
+    status: statusPermohonanEnum.optional(),
+    alasan: alasanPermohonanKKEnum.optional(),
+    searchBy: searchFieldKKEnum.optional().default("nama"),
+    orderBy: orderFieldKKEnum.optional().default("createdAt"),
+});
+
+export type TFindManyPermohonanKKSchema = z.infer<typeof findManyPermohonanKKSchema>;
 
 export const updateStatusPermohonanKKSchema = z.object({
     permohonanKKId: z.string().min(1),

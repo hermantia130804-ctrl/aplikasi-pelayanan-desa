@@ -1,11 +1,36 @@
+import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
+import { TCreatePermohonanKKSchema, TFindManyPermohonanKKSchema } from "@/lib/validators/permohonan-kk";
 
-export const countPermohonanKKService = async () => {
-  return prisma.permohonanKK.count();
+export const countPermohonanKKService = async (where?: Prisma.PermohonanKKWhereInput) => {
+  return prisma.permohonanKK.count({ where });
 };
 
-export const findManyPermohonanKKService = async () => {
-  return prisma.permohonanKK.findMany({ orderBy: { createdAt: "desc" }, include: { user: true } });
+export const findManyPermohonanKKService = async (params: TFindManyPermohonanKKSchema) => {
+  const skip = (params.page - 1) * params.limit;
+  const take = params.limit;
+  const orderBy = { [params.orderBy]: params.orderDirection.toLowerCase() };
+  const where: Prisma.PermohonanKKWhereInput = {
+    AND: [
+      { alasanPermohonan: params.alasan },
+      { statusPermohonan: params.status },
+      { createdAt: { gte: params.dateFrom, lte: params.dateTo } },
+      { [params.searchBy]: { contains: params.searchValue, mode: "insensitive" } },
+    ],
+  };
+
+  const [data, total] = await Promise.all([
+    prisma.permohonanKK.findMany({ take, skip, where, orderBy, include: { user: true } }),
+    countPermohonanKKService(where),
+  ]);
+
+  const pagination = {
+    totalItems: total,
+    currentPage: params.page,
+    totalPages: Math.ceil(total / params.limit),
+  };
+
+  return { data, pagination };
 };
 
 export const findPermohonanKKByIdService = async (id: string) => {
