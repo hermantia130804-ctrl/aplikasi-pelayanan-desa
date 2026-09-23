@@ -1,8 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ModeToggle } from "@/components/mode-toggle";
+import { findCurrentSessionService } from "@/lib/server/services/session";
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+    const session = await findCurrentSessionService();
+
     const menu = [
         { label: "Beranda", url: "/" },
         { label: "Beranda Masyarakat", url: "/beranda-masyarakat" },
@@ -44,16 +47,24 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
                     <div className="flex items-center gap-2">
                         <ModeToggle />
-                        <Link
-                            href="/masuk"
-                            className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-md transition-all hover:-translate-y-0.5"
-                        >
-                            Masuk / Daftar
-                        </Link>
+                        {session?.user ? (
+                            <Link
+                                href="/dashboard"
+                                className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-md transition-all hover:-translate-y-0.5"
+                            >
+                                Buka Aplikasi
+                            </Link>
+                        ) : (
+                            <Link
+                                href="/masuk"
+                                className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-md transition-all hover:-translate-y-0.5"
+                            >
+                                Masuk / Daftar
+                            </Link>
+                        )}
                     </div>
                 </div>
 
-                {/* Menu mobile */}
                 <nav className="flex items-center gap-1 overflow-x-auto border-t px-4 py-2 lg:hidden">
                     {menu.map((m) => (
                         <Link

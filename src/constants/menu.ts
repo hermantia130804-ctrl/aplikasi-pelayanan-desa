@@ -6,7 +6,7 @@ export const MENU = {
     MAIN: [
         {
             name: "Beranda",
-            url: PATHS.HOME,
+            url: "/dashboard",
             icon: IconDashboard,
             roles: [Role.ADMIN, Role.USER]
         },

@@ -42,7 +42,7 @@ export const SignInForm = ({
       if (response.status === 200) {
         form.reset();
         toast.success(response.message);
-        router.push(PATHS.HOME);
+        router.push("/dashboard");
       }
       else toast.error(response.message);
     } catch (error) {
