@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { PermohonanKKFollowUpModal } from "@/components/permohonan-kk-follow-up-modal";
+import { PermohonanKKPDFDownloadButton } from "@/components/permohonan-kk-pdf-download-button";
 import { findPermohonanKKData } from "@/lib/server/data/permohonan-kk";
 import { requireAdminPage } from "@/lib/server/guards";
 import { ArrowLeftIcon } from "lucide-react";
@@ -32,9 +32,9 @@ export default async function DetailKKAdminPage({ params }: { params: Promise<{ 
         <div className="flex flex-1 flex-col">
             <div className="@container/main flex flex-1 flex-col gap-2">
                 <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
-                    <Button asChild variant="outline" className="w-fit">
-                        <a href="/permohonan-kk"><ArrowLeftIcon className="w-4 h-4" /> Kembali</a>
-                    </Button>
+                    <a href="/permohonan-kk" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground w-fit">
+                        <ArrowLeftIcon className="w-4 h-4" /> Kembali
+                    </a>
 
                     <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -43,14 +43,25 @@ export default async function DetailKKAdminPage({ params }: { params: Promise<{ 
                                 <div className="flex items-center gap-2">
                                     <Badge variant="outline" className={status.className}>{status.label}</Badge>
                                     <Badge variant="default">{data.alasanPermohonan}</Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                        {data.nomorPermohonan ?? "Nomor belum tersedia"} • {moment(data.createdAt).format("DD MMM YYYY")}
+                                    </span>
                                 </div>
                             </div>
-                            <PermohonanKKFollowUpModal
-                                permohonanKKId={data.permohonanKKId}
-                                statusPermohonan={data.statusPermohonan}
-                                catatan={data.catatan ?? ""}
-                                nomorPermohonan={data.nomorPermohonan ?? ""}
-                            />
+                            <div className="flex flex-wrap items-center gap-2">
+                                {data.statusPermohonan === "DISETUJUI" && (
+                                    <PermohonanKKPDFDownloadButton
+                                        data={data}
+                                        fileName={`Surat-KK-${data.nomorPermohonan ?? data.permohonanKKId}.pdf`}
+                                    />
+                                )}
+                                <PermohonanKKFollowUpModal
+                                    permohonanKKId={data.permohonanKKId}
+                                    statusPermohonan={data.statusPermohonan}
+                                    catatan={data.catatan ?? ""}
+                                    nomorPermohonan={data.nomorPermohonan ?? ""}
+                                />
+                            </div>
                         </div>
                     </div>
 

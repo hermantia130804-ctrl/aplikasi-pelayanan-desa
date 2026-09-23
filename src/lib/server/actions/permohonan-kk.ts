@@ -125,9 +125,54 @@ export const followUpPermohonanKKActionV2 = async (payload: {
       where: { permohonanKKId: payload.permohonanKKId },
       data: dataUpdate,
     });
+
+    // Kirim email update status ke warga
+    try {
+      await kirimEmailStatusWargaKK(payload.permohonanKKId);
+    } catch (e) {
+      console.error("GAGAL EMAIL STATUS WARGA:", e);
+    }
+
+    // Kirim email update status ke warga
+    try {
+      await kirimEmailStatusWargaKK(payload.permohonanKKId);
+    } catch (e) {
+      console.error("GAGAL EMAIL STATUS WARGA:", e);
+    }
     revalidatePath("/permohonan-kk");
     return { status: status.OK, message: "Tindak lanjut permohonan KK berhasil disimpan" };
   } catch (error) {
     return errorHandler(error);
+  }
+};
+
+export const kirimEmailStatusWargaKK = async (permohonanKKId: string) => {
+  try {
+    const data = await findPermohonanKKByIdService(permohonanKKId);
+    if (!data?.user?.email) return;
+
+    const statusMap: Record<string, string> = {
+      DIAJUKAN: "Menunggu Proses",
+      DISETUJUI: "✅ DISETUJUI",
+      DITOLAK: "❌ DITOLAK",
+    };
+    const statusText = statusMap[data.statusPermohonan] ?? data.statusPermohonan;
+
+    await sendEmail(
+      data.user.email,
+      `Update Status Permohonan KK - ${data.nomorPermohonan ?? ""}`,
+      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #eee;border-radius:8px;">
+         <h2>📬 Update Status Permohonan KK</h2>
+         <p>Kepada <b>${data.user.name}</b>,</p>
+         <p>Permohonan KK Anda dengan nomor <b>${data.nomorPermohonan ?? "-"}</b> telah diperbarui menjadi:</p>
+         <p style="font-size:18px;"><b>Status: ${statusText}</b></p>
+         ${data.catatan ? `<p><b>Catatan petugas:</b> ${data.catatan}</p>` : ""}
+         <p>Silakan login ke aplikasi untuk melihat detail, atau hubungi kantor desa untuk informasi lebih lanjut.</p>
+         <p style="color:#888;font-size:12px;">Aplikasi Pelayanan Desa Sukamaju</p>
+       </div>`
+    );
+    console.log(`[EMAIL] Status KK terkirim ke warga: ${data.user.email}`);
+  } catch (e) {
+    console.error("GAGAL KIRIM EMAIL STATUS WARGA KK:", e);
   }
 };
