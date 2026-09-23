@@ -11,5 +11,5 @@ export const findPermohonanSaya = async (userId: string) => {
     prisma.permohonanPindah.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
     prisma.permohonanKK.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
   ]);
-  return { ktp, skl, sktm, skk, sku, skd, pindah };
+  return { ktp, skl, sktm, skk, sku, skd, pindah, kk };
 };
