@@ -1,6 +1,7 @@
 import { PermohonanSKLDetail } from "@/components/permohonan-skl-detail";
 import { findPermohonanSKLData } from "@/lib/server/data/permohonan-skl";
 import { notFound } from "next/navigation";
+import { SuratPDFDownloadButton } from "@/components/surat-pdf-download-button";
 
 interface DetailPermohonanSKLPageProps {
   params: Promise<{ id: string }>;
@@ -8,7 +9,7 @@ interface DetailPermohonanSKLPageProps {
 
 export default async function DetailPermohonanSKLPage({ params }: DetailPermohonanSKLPageProps) {
   const { data } = await findPermohonanSKLData(params);
-  
+
   if (!data) {
     notFound();
   }
@@ -25,6 +26,11 @@ export default async function DetailPermohonanSKLPage({ params }: DetailPermohon
               </p>
             </div>
           </div>
+          {data.statusPermohonan === "DISETUJUI" && (
+            <div className="flex justify-end mb-2">
+              <SuratPDFDownloadButton jenis="SKL" data={data} />
+            </div>
+          )}
           <PermohonanSKLDetail permohonanSKL={data} />
         </div>
       </div>

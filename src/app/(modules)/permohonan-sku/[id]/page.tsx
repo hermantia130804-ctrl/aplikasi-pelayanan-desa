@@ -1,6 +1,7 @@
 import { PermohonanSKUDetail } from "@/components/permohonan-sku-detail";
 import { findPermohonanSKUData } from "@/lib/server/data/permohonan-sku";
 import { Metadata } from "next";
+import { SuratPDFDownloadButton } from "@/components/surat-pdf-download-button";
 
 export const metadata: Metadata = {
     title: "Detail Permohonan SKU",
@@ -11,9 +12,7 @@ interface PermohonanSKUDetailPageProps {
     params: Promise<{ id: string }>;
 }
 
-export default async function PermohonanSKUDetailPage({
-    params,
-}: PermohonanSKUDetailPageProps) {
+export default async function PermohonanSKUDetailPage({ params }: PermohonanSKUDetailPageProps) {
     const { data: permohonan } = await findPermohonanSKUData(params);
 
     return (
@@ -28,7 +27,12 @@ export default async function PermohonanSKUDetailPage({
                             </p>
                         </div>
                     </div>
-                    <PermohonanSKUDetail permohonan={permohonan} />
+                    {permohonan.statusPermohonan === "DISETUJUI" && (
+                        <div className="flex justify-end mb-2">
+                            <SuratPDFDownloadButton jenis="SKU" data={permohonan} />
+                        </div>
+                    )}
+                    <PermohonanSKUDetail permohonanSKU={permohonan} />
                 </div>
             </div>
         </div>

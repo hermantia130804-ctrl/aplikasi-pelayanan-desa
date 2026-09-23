@@ -1,6 +1,7 @@
 import { PermohonanSKTMDetail } from "@/components/permohonan-sktm-detail";
 import { findPermohonanSKTMData } from "@/lib/server/data/permohonan-sktm";
 import { notFound } from "next/navigation";
+import { SuratPDFDownloadButton } from "@/components/surat-pdf-download-button";
 
 interface DetailPermohonanSKTMPageProps {
   params: Promise<{ id: string }>;
@@ -8,7 +9,7 @@ interface DetailPermohonanSKTMPageProps {
 
 export default async function DetailPermohonanSKTMPage({ params }: DetailPermohonanSKTMPageProps) {
   const { data } = await findPermohonanSKTMData(params);
-  
+
   if (!data) {
     notFound();
   }
@@ -25,6 +26,11 @@ export default async function DetailPermohonanSKTMPage({ params }: DetailPermoho
               </p>
             </div>
           </div>
+          {data.statusPermohonan === "DISETUJUI" && (
+            <div className="flex justify-end mb-2">
+              <SuratPDFDownloadButton jenis="SKTM" data={data} />
+            </div>
+          )}
           <PermohonanSKTMDetail permohonanSKTM={data} />
         </div>
       </div>

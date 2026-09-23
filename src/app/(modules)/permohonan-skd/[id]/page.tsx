@@ -1,6 +1,7 @@
 import { PermohonanSKDDetail } from "@/components/permohonan-skd-detail";
 import { findPermohonanSKDData } from "@/lib/server/data/permohonan-skd";
 import { Metadata } from "next";
+import { SuratPDFDownloadButton } from "@/components/surat-pdf-download-button";
 
 export const metadata: Metadata = {
     title: "Detail Permohonan SKD",
@@ -8,14 +9,10 @@ export const metadata: Metadata = {
 };
 
 interface PermohonanSKDDetailPageProps {
-    params: Promise<{
-        id: string;
-    }>;
+    params: Promise<{ id: string }>;
 }
 
-export default async function PermohonanSKDDetailPage({
-    params,
-}: PermohonanSKDDetailPageProps) {
+export default async function PermohonanSKDDetailPage({ params }: PermohonanSKDDetailPageProps) {
     const resolvedParams = await params;
     const { data: permohonan } = await findPermohonanSKDData(resolvedParams);
 
@@ -31,7 +28,12 @@ export default async function PermohonanSKDDetailPage({
                             </p>
                         </div>
                     </div>
-                    <PermohonanSKDDetail permohonan={permohonan} />
+                    {permohonan.statusPermohonan === "DISETUJUI" && (
+                        <div className="flex justify-end mb-2">
+                            <SuratPDFDownloadButton jenis="SKD" data={permohonan} />
+                        </div>
+                    )}
+                    <PermohonanSKDDetail permohonanSKD={permohonan} />
                 </div>
             </div>
         </div>
