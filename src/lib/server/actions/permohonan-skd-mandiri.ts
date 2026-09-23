@@ -9,6 +9,7 @@ import { ApiError } from "next/dist/server/api-utils";
 import { createPermohonanSKDService } from "../services/permohonan-skd";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
+import { generateNomorPermohonan } from "../services/nomor-permohonan";
 
 export async function createPermohonanSKDMandiriAction(formData: FormData) {
   try {
@@ -23,7 +24,8 @@ export async function createPermohonanSKDMandiriAction(formData: FormData) {
     };
 
     const validatedData = createPermohonanSKDSchema.parse(parsedData);
-    const data = await createPermohonanSKDService(currentSession.user.userId, validatedData);
+    const nomorPermohonan = await generateNomorPermohonan("SKD");
+    const data = await createPermohonanSKDService(currentSession.user.userId, { ...validatedData, nomorPermohonan });
     revalidatePath(PATHS.SKD_REQUEST);
 
     try {

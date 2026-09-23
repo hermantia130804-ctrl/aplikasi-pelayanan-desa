@@ -10,13 +10,15 @@ import { errorHandler } from "../services/error";
 import { createPermohonanSKLService } from "../services/permohonan-skl";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
+import { generateNomorPermohonan } from "../services/nomor-permohonan";
 
 export const createPermohonanSKLMandiriAction = async (payload: TCreatePermohonanSKLSchema) => {
   const message = MESSAGE.SKL_REQUEST || MESSAGE.GLOBAL;
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    const data = await createPermohonanSKLService(currentSession.user.userId, payload);
+    const nomorPermohonan = await generateNomorPermohonan("SKL");
+    const data = await createPermohonanSKLService(currentSession.user.userId, { ...payload, nomorPermohonan });
     revalidatePath(PATHS.SKL_REQUEST || "/permohonan-skl");
 
     try {

@@ -10,13 +10,15 @@ import { errorHandler } from "../services/error";
 import { createPermohonanKTPService } from "../services/permohonan-ktp";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
+import { generateNomorPermohonan } from "../services/nomor-permohonan";
 
 export const createPermohonanKTPMandiriAction = async (payload: TCreatePermohonanKTPSchema) => {
   const message = MESSAGE.KTP_REQUEST;
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    const data = await createPermohonanKTPService(currentSession.user.userId, payload);
+    const nomorPermohonan = await generateNomorPermohonan("KTP");
+    const data = await createPermohonanKTPService(currentSession.user.userId, { ...payload, nomorPermohonan });
     revalidatePath(PATHS.KTP_REQUEST);
 
     // Notifikasi email ke admin (kegagalan kirim TIDAK menggagalkan permohonan)

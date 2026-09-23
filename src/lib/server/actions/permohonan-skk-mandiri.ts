@@ -10,13 +10,15 @@ import { errorHandler } from "../services/error";
 import { createPermohonanSKKService } from "../services/permohonan-skk";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
+import { generateNomorPermohonan } from "../services/nomor-permohonan";
 
 export const createPermohonanSKKMandiriAction = async (payload: TCreatePermohonanSKKSchema) => {
   const message = MESSAGE.SKK_REQUEST;
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    const data = await createPermohonanSKKService(currentSession.user.userId, payload);
+    const nomorPermohonan = await generateNomorPermohonan("SKK");
+    const data = await createPermohonanSKKService(currentSession.user.userId, { ...payload, nomorPermohonan });
     revalidatePath(PATHS.SKK_REQUEST);
 
     try {

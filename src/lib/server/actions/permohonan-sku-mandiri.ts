@@ -10,13 +10,15 @@ import { errorHandler } from "../services/error";
 import { createPermohonanSKUService } from "../services/permohonan-sku";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
+import { generateNomorPermohonan } from "../services/nomor-permohonan";
 
 export const createPermohonanSKUMandiriAction = async (payload: TCreatePermohonanSKUSchema) => {
   const message = MESSAGE.PERMOHONAN_SKU;
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    const data = await createPermohonanSKUService(currentSession.user.userId, payload);
+    const nomorPermohonan = await generateNomorPermohonan("SKU");
+    const data = await createPermohonanSKUService(currentSession.user.userId, { ...payload, nomorPermohonan });
     revalidatePath(PATHS.SKU_REQUEST);
 
     try {

@@ -10,13 +10,15 @@ import { errorHandler } from "../services/error";
 import { createPermohonanSKTMService } from "../services/permohonan-sktm";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
+import { generateNomorPermohonan } from "../services/nomor-permohonan";
 
 export const createPermohonanSKTMMandiriAction = async (payload: TCreatePermohonanSKTMSchema) => {
   const message = MESSAGE.SKTM_REQUEST;
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    const data = await createPermohonanSKTMService(currentSession.user.userId, payload);
+    const nomorPermohonan = await generateNomorPermohonan("SKTM");
+    const data = await createPermohonanSKTMService(currentSession.user.userId, { ...payload, nomorPermohonan });
     revalidatePath(PATHS.SKTM_REQUEST);
 
     try {

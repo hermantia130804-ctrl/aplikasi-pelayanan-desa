@@ -13,12 +13,14 @@ import {
 } from "../services/permohonan-kk";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
+import { generateNomorPermohonan } from "../services/nomor-permohonan";
 
 export const createPermohonanKKMandiriAction = async (payload: unknown) => {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    const data = await createPermohonanKKService(currentSession.user.userId, payload);
+    const nomorPermohonan = await generateNomorPermohonan("KK");
+    const data = await createPermohonanKKService(currentSession.user.userId, { ...payload, nomorPermohonan });
     revalidatePath("/permohonan-kk");
 
     try {
