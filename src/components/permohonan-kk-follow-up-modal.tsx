@@ -5,15 +5,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { followUpPermohonanKKActionV2 as followUpPermohonanKKAction } from "@/lib/server/actions/permohonan-kk";
+import { followUpPermohonanKKActionV2 } from "@/lib/server/actions/permohonan-kk";
+import { useRouter } from "next/navigation";
 import { ClipboardCheck, Loader2, Save, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 const statusOptions = [
-  { value: "DIAJUKAN", label: "Diajukan", color: "bg-yellow-100 text-yellow-800" },
-  { value: "DISETUJUI", label: "Disetujui", color: "bg-blue-100 text-blue-800" },
-  { value: "DITOLAK", label: "Ditolak", color: "bg-red-100 text-red-800" },
+  { value: "DIAJUKAN", label: "Diajukan" },
+  { value: "DISETUJUI", label: "Disetujui" },
+  { value: "DITOLAK", label: "Ditolak" },
 ];
 
 type PermohonanKKFollowUpModalProps = {
@@ -29,6 +30,7 @@ export const PermohonanKKFollowUpModal = ({
   catatan,
   nomorPermohonan,
 }: PermohonanKKFollowUpModalProps) => {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(statusPermohonan);
@@ -38,7 +40,7 @@ export const PermohonanKKFollowUpModal = ({
   const onSubmit = async () => {
     try {
       setLoading(true);
-      const res = await followUpPermohonanKKAction({
+      const res = await followUpPermohonanKKActionV2({
         permohonanKKId,
         statusPermohonan: status as "DIAJUKAN" | "DISETUJUI" | "DITOLAK",
         nomorPermohonan: nomor || undefined,
@@ -46,15 +48,15 @@ export const PermohonanKKFollowUpModal = ({
       });
       if (res.status === 200) {
         toast.success(res.message);
+        setOpen(false);
+        router.refresh();
       } else {
-        toast.error(res.message);
+        toast.error(`Gagal: ${res.message}`);
       }
     } catch (e) {
-      if (e instanceof Error) toast.error(e.message);
+      toast.error(e instanceof Error ? e.message : "Terjadi kesalahan");
     } finally {
       setLoading(false);
-      setOpen(false);
-      window.location.reload();
     }
   };
 
@@ -74,7 +76,7 @@ export const PermohonanKKFollowUpModal = ({
             Pilih status terbaru permohonan dan berikan catatan jika diperlukan.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-6 mt-2">
+        <div className="space-y-5 mt-2">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Status Permohonan</label>
             <Select value={status} onValueChange={setStatus}>
@@ -83,29 +85,18 @@ export const PermohonanKKFollowUpModal = ({
               </SelectTrigger>
               <SelectContent>
                 {statusOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Nomor Permohonan</label>
-            <Input
-              placeholder="Masukkan nomor permohonan"
-              value={nomor}
-              onChange={(e) => setNomor(e.target.value)}
-            />
+            <Input value={nomor} onChange={(e) => setNomor(e.target.value)} placeholder="Masukkan nomor permohonan" />
           </div>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Catatan</label>
-            <Textarea
-              placeholder="Tulis catatan untuk pemohon atau internal (opsional)"
-              className="min-h-[90px] text-base"
-              value={isiCatatan}
-              onChange={(e) => setIsiCatatan(e.target.value)}
-            />
+            <Textarea className="min-h-[90px] text-base" value={isiCatatan} onChange={(e) => setIsiCatatan(e.target.value)} placeholder="Tulis catatan untuk pemohon (opsional)" />
           </div>
           <DialogFooter className="flex gap-2 mt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
