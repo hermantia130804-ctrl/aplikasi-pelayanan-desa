@@ -3,6 +3,11 @@ import { PermohonanKK } from '@/generated/prisma';
 import { Document, Page, StyleSheet, Text, View, Image } from '@react-pdf/renderer';
 import { LOGO_KAB_BOGOR_BASE64 } from '../assets/logo-kab-bogor.base64';
 
+// ===== DATA RESMI DESA (edit di sini bila ada perubahan) =====
+const NAMA_KEPALA_DESA = "Cucum Ratna Suminar";
+const ALAMAT_KANTOR = "Jl. K.H Abdul Hamid, Desa Sukamaju, Kec. Cibungbulang, Kab. Bogor 16630";
+// =============================================================
+
 const styles = StyleSheet.create({
   page: {
     padding: 48,
@@ -102,7 +107,7 @@ const styles = StyleSheet.create({
   ttdNip: { fontSize: 10 },
 });
 
-export function PermohonanKKPdfTemplate({ data, namaKepalaDesa }: { data: PermohonanKK; namaKepalaDesa?: string }) {
+export function PermohonanKKPdfTemplate({ data }: { data: PermohonanKK; namaKepalaDesa?: string }) {
   const tanggalSurat = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
   const nomorSurat = data.nomorPermohonan
     ? `${data.nomorPermohonan}/01-SK/KK/IX/2026`
@@ -120,7 +125,7 @@ export function PermohonanKKPdfTemplate({ data, namaKepalaDesa }: { data: Permoh
             <Text style={styles.kop1}>PEMERINTAH KABUPATEN BOGOR</Text>
             <Text style={styles.kop2}>KECAMATAN CIBUNGBULANG</Text>
             <Text style={styles.kop3}>DESA SUKAMAJU</Text>
-            <Text style={styles.kopAlamat}>Alamat: Desa Sukamaju, Kec. Cibungbulang, Kab. Bogor, Jawa Barat</Text>
+            <Text style={styles.kopAlamat}>Alamat: {ALAMAT_KANTOR}</Text>
           </View>
           <View style={styles.logoBox} />
         </View>
@@ -178,9 +183,8 @@ export function PermohonanKKPdfTemplate({ data, namaKepalaDesa }: { data: Permoh
           <View style={styles.ttdKiri} />
           <View style={styles.ttdKanan}>
             <Text style={styles.ttdJabatan}>Sukamaju, {tanggalSurat}</Text>
-            <Text style={styles.ttdJabatan}>Kepala Desa Sukamaju</Text>
-            <Text style={styles.ttdNama}>{namaKepalaDesa ?? '................................'}</Text>
-            <Text style={styles.ttdNip}>{namaKepalaDesa ? 'NIP.' : ''}</Text>
+            <Text style={styles.ttdJabatan}>Kepala Desa Sukamaju,</Text>
+            <Text style={styles.ttdNama}>{NAMA_KEPALA_DESA}</Text>
           </View>
         </View>
       </Page>

@@ -22,8 +22,8 @@ export default function HubungiKamiPage() {
               <h2 className="mt-2 font-semibold">Alamat Kantor Desa</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Kantor Desa Sukamaju<br />
-                Kecamatan Cibungbulang<br />
-                Kabupaten Bogor, Jawa Barat
+                Jl. K.H Abdul Hamid<br />
+                Kec. Cibungbulang, Kab. Bogor 16630
               </p>
             </div>
 
