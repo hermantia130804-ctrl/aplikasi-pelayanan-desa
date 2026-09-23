@@ -16,6 +16,7 @@ import {
     followUpPermohonanSKUService
 } from "../services/permohonan-sku";
 import { findCurrentSessionService } from "../services/session";
+import { kirimEmailStatusWarga } from "../services/permohonan-email-status";
 
 export const createPermohonanSKUAction = async (
   payload: TCreatePermohonanSKUSchema,
@@ -76,6 +77,7 @@ export const followUpPermohonanSKUAction = async (
       validatedData.nomorPermohonan,
       validatedData.catatan
     );
+    try { await kirimEmailStatusWarga("SKU", validatedData.permohonanSKUId); } catch (e) { console.error("GAGAL EMAIL STATUS SKU:", e); }
     revalidatePath(PATHS.SKU_REQUEST);
     return { status: status.OK, message: message.UPDATE_STATUS_OK, data };
   } catch (error) {

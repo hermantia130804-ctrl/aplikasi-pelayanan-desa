@@ -16,6 +16,7 @@ import {
     updatePermohonanSKLStatusService
 } from "../services/permohonan-skl";
 import { findCurrentSessionService } from "../services/session";
+import { kirimEmailStatusWarga } from "../services/permohonan-email-status";
 
 export const createPermohonanSKLAction = async (
   payload: TCreatePermohonanSKLSchema,
@@ -77,6 +78,7 @@ export const updatePermohonanSKLStatusAction = async (
       validatedData.nomorPermohonan,
       validatedData.catatan
     );
+    try { await kirimEmailStatusWarga("SKL", permohonanSKLId); } catch (e) { console.error("GAGAL EMAIL STATUS SKL:", e); }
     
     revalidatePath(PATHS.SKL_REQUEST || "/permohonan-skl");
     return { status: status.OK, message: message.UPDATE_OK || "Status permohonan SKL berhasil diperbarui", data };

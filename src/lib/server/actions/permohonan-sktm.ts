@@ -16,6 +16,7 @@ import {
   updateStatusPermohonanSKTMService
 } from "../services/permohonan-sktm";
 import { findCurrentSessionService } from "../services/session";
+import { kirimEmailStatusWarga } from "../services/permohonan-email-status";
 
 export const createPermohonanSKTMAction = async (
   payload: TCreatePermohonanSKTMSchema,
@@ -94,6 +95,7 @@ export const updateStatusPermohonanSKTMAction = async (
     
     const { permohonanSKTMId, statusPermohonan, nomorPermohonan, catatan } = payload;
     const data = await updateStatusPermohonanSKTMService(permohonanSKTMId, statusPermohonan, nomorPermohonan, catatan);
+    try { await kirimEmailStatusWarga("SKTM", permohonanSKTMId); } catch (e) { console.error("GAGAL EMAIL STATUS SKTM:", e); }
     
     revalidatePath(PATHS.SKTM_REQUEST);
     revalidatePath(`${PATHS.SKTM_REQUEST}/${permohonanSKTMId}`);

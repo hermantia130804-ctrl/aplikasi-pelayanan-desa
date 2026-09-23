@@ -17,6 +17,7 @@ import {
   updateStatusPermohonanKTPService
 } from "../services/permohonan-ktp";
 import { findCurrentSessionService } from "../services/session";
+import { kirimEmailStatusWarga } from "../services/permohonan-email-status";
 
 export const createPermohonanKTPAction = async (
   payload: TCreatePermohonanKTPSchema,
@@ -74,6 +75,7 @@ export const followUpPermohonanKTPAction = async (payload: unknown) => {
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
     await followUpPermohonanKTPService(parsed.data.permohonanKtpId, parsed.data);
+    try { await kirimEmailStatusWarga("KTP", parsed.data.permohonanKtpId); } catch (e) { console.error("GAGAL EMAIL STATUS KTP:", e); }
     revalidatePath(PATHS.KTP_REQUEST);
     return { status: status.OK, message: MESSAGE.KTP_REQUEST.FOLLOW_UP_OK };
   } catch (error) {

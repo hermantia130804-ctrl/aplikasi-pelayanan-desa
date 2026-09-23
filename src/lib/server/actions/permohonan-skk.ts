@@ -16,6 +16,7 @@ import {
   updatePermohonanSKKService
 } from "../services/permohonan-skk";
 import { findCurrentSessionService } from "../services/session";
+import { kirimEmailStatusWarga } from "../services/permohonan-email-status";
 
 export const createPermohonanSKKAction = async (
   payload: TCreatePermohonanSKKSchema,
@@ -59,6 +60,7 @@ export const followUpPermohonanSKKAction = async (values: unknown) => {
 
     const { permohonanSKKId, ...validatedData } = followUpPermohonanSKKSchema.parse(values);
     const data = await followUpPermohonanSKKService(permohonanSKKId, validatedData);
+    try { await kirimEmailStatusWarga("SKK", permohonanSKKId); } catch (e) { console.error("GAGAL EMAIL STATUS SKK:", e); }
     revalidatePath(PATHS.SKK_REQUEST);
     return { status: status.OK, message: message.UPDATE_STATUS_OK, data };
   } catch (error) {

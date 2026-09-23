@@ -10,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import { ApiError } from "next/dist/server/api-utils";
 import { createPermohonanSKDService, deletePermohonanSKDService, followUpPermohonanSKDService, updatePermohonanSKDService } from "../services/permohonan-skd";
 import { findCurrentSessionService } from "../services/session";
+import { kirimEmailStatusWarga } from "../services/permohonan-email-status";
 
 export async function createPermohonanSKDAction(formData: FormData) {
   try {
@@ -87,6 +88,7 @@ export async function followUpPermohonanSKDAction(formData: FormData) {
       validatedData.nomorPermohonan,
       validatedData.catatan
     );
+    try { await kirimEmailStatusWarga("SKD", validatedData.permohonanSKDId); } catch (e) { console.error("GAGAL EMAIL STATUS SKD:", e); }
     revalidatePath(PATHS.SKD_REQUEST);
     return { success: true, message: MESSAGE.PERMOHONAN_SKD.UPDATE_STATUS_OK, data };
   } catch (error) {
