@@ -38,7 +38,7 @@ export const AppSidebar = ({ user, ...props }: AppSidebarProps) => {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <Link href={PATHS.HOME}>
-                <IconInnerShadowTop className="!size-5" />
+                <img src="/logo-kab-bogor.png" alt="Logo Kab. Bogor" className="!size-8 object-contain" />
                 <span className="text-base font-semibold">Desa Sukamaju</span>
               </Link>
             </SidebarMenuButton>
