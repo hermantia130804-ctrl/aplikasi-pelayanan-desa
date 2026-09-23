@@ -1,7 +1,7 @@
 "use client"
 import { PermohonanKK } from '@/generated/prisma';
 import { Document, Page, StyleSheet, Text, View, Image } from '@react-pdf/renderer';
-import logoKabBogor from '../assets/logo-kab-bogor.png';
+import { LOGO_KAB_BOGOR_BASE64 } from '../assets/logo-kab-bogor.base64';
 
 const styles = StyleSheet.create({
   page: {
@@ -21,8 +21,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoImg: {
-    width: 64,
-    height: 64,
+    width: 62,
+    height: 62,
     objectFit: 'contain',
   },
   kopCenter: {
@@ -114,7 +114,7 @@ export function PermohonanKKPdfTemplate({ data, namaKepalaDesa }: { data: Permoh
         {/* KOP SURAT */}
         <View style={styles.kopRow}>
           <View style={styles.logoBox}>
-            <Image style={styles.logoImg} src={logoKabBogor} />
+            <Image style={styles.logoImg} src={LOGO_KAB_BOGOR_BASE64} />
           </View>
           <View style={styles.kopCenter}>
             <Text style={styles.kop1}>PEMERINTAH KABUPATEN BOGOR</Text>
@@ -152,12 +152,6 @@ export function PermohonanKKPdfTemplate({ data, namaKepalaDesa }: { data: Permoh
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>3.</Text>
-          <Text style={styles.col1}>Pekerjaan</Text>
-          <Text style={styles.titik}>:</Text>
-          <Text style={styles.value}>-</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>4.</Text>
           <Text style={styles.col1}>Alamat</Text>
           <Text style={styles.titik}>:</Text>
           <Text style={styles.value}>{data.alamat} RT {data.rt}/RW {data.rw}, Desa {data.desa}</Text>
