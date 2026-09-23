@@ -42,61 +42,44 @@ export default async function PublicHomePage() {
 
     return (
         <div>
-            {/* HERO */}
-            <section className="relative overflow-hidden bg-primary text-primary-foreground">
-                <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6 sm:py-28">
-                    <Image
-                        src="/logo-kab-bogor.png"
-                        alt="Logo Kab. Bogor"
-                        width={76}
-                        height={76}
-                        className="mx-auto size-16 object-contain sm:size-[76px]"
-                    />
-                    <span className="mt-5 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wider">
-                        Kecamatan Cibungbulang · Kabupaten Bogor
+            {/* HERO — GAMBAR KANTOR DESA */}
+            <section className="relative">
+                <Image
+                    src="/login-desk.jpg"
+                    alt="Kantor Desa Sukamaju"
+                    fill
+                    priority
+                    className="object-cover"
+                />
+                <div className="absolute inset-0 bg-black/65" />
+                <div className="relative mx-auto max-w-6xl px-4 py-20 text-center text-white sm:px-6 sm:py-28">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider backdrop-blur">
+                        Kecamatan Cibungbulang · Kabupaten Bogor · Jawa Barat
                     </span>
                     <h1 className="mt-6 text-4xl font-extrabold tracking-tight sm:text-6xl">
-                        Selamat Datang di{" "}
-                        <span className="opacity-80">Desa Sukamaju</span>
+                        Selamat Datang di Desa Sukamaju
                     </h1>
-                    <p className="mx-auto mt-6 max-w-2xl text-base opacity-80 sm:text-lg">
-                        Pintu layanan informasi Pemerintah Desa Sukamaju untuk seluruh warga —
-                        transparansi pembangunan, layanan administrasi desa, informasi berita desa,
-                        hingga potensi ekonomi masyarakat dalam satu tempat.
-                    </p>
-                    <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                        <Link
-                            href="#layanan"
-                            className="w-full rounded-full bg-secondary px-7 py-3.5 text-sm font-bold shadow-lg transition-all hover:-translate-y-0.5 sm:w-auto"
-                        >
-                            Layanan Desa →
-                        </Link>
-                        <Link
-                            href="#tentang"
-                            className="w-full rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-semibold backdrop-blur transition-all hover:bg-white/10 sm:w-auto"
-                        >
-                            Sampaikan Aspirasi
-                        </Link>
-                    </div>
-
-                    <dl className="mx-auto mt-16 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-3">
-                        {statistikResmi.map((s) => (
-                            <div key={s.label} className="flex items-center gap-4 rounded-2xl border p-5 text-left transition-colors hover:bg-muted/50">
-                                <div className="text-left">
-                                    <dd className="text-2xl font-extrabold">{s.value}</dd>
-                                    <dt className="text-sm opacity-70">{s.label}</dt>
-                                </div>
-                            </div>
-                        ))}
-                    </dl>
-                    <p className="mt-8 text-center text-xs opacity-60">
-                        Data resmi portal Pemerintah Kabupaten Bogor · diperbarui September 2026
+                    <p className="mx-auto mt-6 max-w-2xl text-base opacity-85 sm:text-lg">
+                        Portal resmi pelayanan administrasi dan informasi Desa Sukamaju.
+                        Melayani warga dengan cepat, transparan, dan akuntabel.
                     </p>
                 </div>
             </section>
 
+            {/* STATISTIK RESMI */}
+            <section className="border-b bg-muted/40 py-10">
+                <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 px-4 sm:grid-cols-3 sm:px-6">
+                    {statistikResmi.map((s) => (
+                        <div key={s.label} className="rounded-2xl border bg-card p-5 text-center shadow-sm">
+                            <p className="text-2xl font-extrabold">{s.value}</p>
+                            <p className="text-sm text-muted-foreground">{s.label}</p>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
             {/* STATISTIK APLIKASI */}
-            <section className="border-y bg-muted/40 py-10">
+            <section className="py-10">
                 <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-4 sm:grid-cols-3 sm:px-6">
                     <div className="rounded-xl border bg-card p-5 text-center shadow-sm">
                         <p className="text-2xl font-extrabold">{totalPengguna}</p>
@@ -114,7 +97,7 @@ export default async function PublicHomePage() {
             </section>
 
             {/* LAYANAN */}
-            <section id="layanan" className="py-16">
+            <section id="layanan" className="border-t bg-muted/40 py-16">
                 <div className="mx-auto max-w-6xl px-4 sm:px-6">
                     <div className="mx-auto max-w-2xl text-center">
                         <h2 className="text-3xl font-extrabold tracking-tight">Layanan Administrasi Desa</h2>
@@ -144,7 +127,7 @@ export default async function PublicHomePage() {
             </section>
 
             {/* PRESTASI */}
-            <section className="border-t bg-muted/40 py-16">
+            <section className="py-16">
                 <div className="mx-auto max-w-6xl px-4 sm:px-6">
                     <div className="mx-auto max-w-2xl text-center">
                         <h2 className="text-3xl font-extrabold tracking-tight">🏆 Prestasi & Inovasi Desa</h2>
@@ -161,7 +144,7 @@ export default async function PublicHomePage() {
             </section>
 
             {/* PETA */}
-            <section className="py-16">
+            <section className="border-t bg-muted/40 py-16">
                 <div className="mx-auto max-w-6xl px-4 sm:px-6">
                     <div className="mx-auto max-w-2xl text-center">
                         <h2 className="text-3xl font-extrabold tracking-tight">📍 Lokasi & Wilayah Desa</h2>

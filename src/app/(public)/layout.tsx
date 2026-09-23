@@ -15,7 +15,7 @@ export default async function PublicLayout({ children }: { children: React.React
 
     return (
         <div className="flex min-h-screen flex-col bg-background text-foreground">
-            <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
+            <header className="border-b bg-background/95 backdrop-blur">
                 <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
                     <Link href="/" className="flex items-center gap-2.5">
                         <Image
@@ -32,18 +32,6 @@ export default async function PublicLayout({ children }: { children: React.React
                             </span>
                         </span>
                     </Link>
-
-                    <nav className="hidden items-center gap-1 lg:flex">
-                        {menu.map((m) => (
-                            <Link
-                                key={m.url}
-                                href={m.url}
-                                className="rounded-full px-3 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
-                            >
-                                {m.label}
-                            </Link>
-                        ))}
-                    </nav>
 
                     <div className="flex items-center gap-2">
                         <ModeToggle />
@@ -65,16 +53,19 @@ export default async function PublicLayout({ children }: { children: React.React
                     </div>
                 </div>
 
-                <nav className="flex items-center gap-1 overflow-x-auto border-t px-4 py-2 lg:hidden">
-                    {menu.map((m) => (
-                        <Link
-                            key={m.url}
-                            href={m.url}
-                            className="whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
-                        >
-                            {m.label}
-                        </Link>
-                    ))}
+                {/* MENU DI BAWAH LOGO — horizontal */}
+                <nav className="border-t">
+                    <div className="mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-4 py-2 sm:px-6">
+                        {menu.map((m) => (
+                            <Link
+                                key={m.url}
+                                href={m.url}
+                                className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+                            >
+                                {m.label}
+                            </Link>
+                        ))}
+                    </div>
                 </nav>
             </header>
 
