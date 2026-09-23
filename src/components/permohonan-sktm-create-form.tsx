@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PATHS } from "@/constants/paths";
-import { createPermohonanSKTMAction } from "@/lib/server/actions/permohonan-sktm";
+import { createPermohonanSKTMMandiriAction } from "@/lib/server/actions/permohonan-sktm-mandiri";
 import { createPermohonanSKTMSchema, TCreatePermohonanSKTMSchema } from "@/lib/validators/permohonan-sktm";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -59,7 +59,7 @@ export const PermohonanSKTMCreateForm = () => {
     const onSubmit = async (data: TCreatePermohonanSKTMSchema) => {
         try {
             setLoading(true);
-            const response = await createPermohonanSKTMAction(data);
+            const response = await createPermohonanSKTMMandiriAction(data);
             if (response.status === 200) {
                 toast.success(response.message);
                 router.push("/permohonan-saya");

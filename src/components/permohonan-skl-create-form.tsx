@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PATHS } from "@/constants/paths";
-import { createPermohonanSKLAction } from "@/lib/server/actions/permohonan-skl";
+import { createPermohonanSKLMandiriAction } from "@/lib/server/actions/permohonan-skl-mandiri";
 import { createPermohonanSKLSchema, TCreatePermohonanSKLSchema } from "@/lib/validators/permohonan-skl";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -74,7 +74,7 @@ export const PermohonanSKLCreateForm = () => {
     const onSubmit = async (values: TCreatePermohonanSKLSchema) => {
         try {
             setLoading(true);
-            const response = await createPermohonanSKLAction(values);
+            const response = await createPermohonanSKLMandiriAction(values);
             if (response.status === 200) {
                 toast.success(response.message);
                 router.push("/permohonan-saya");

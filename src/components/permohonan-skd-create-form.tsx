@@ -29,7 +29,7 @@ import { PATHS } from "@/constants/paths";
 import { Agama, JenisKelamin, WargaNegara } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
 import { createPermohonanSKDSchema } from "@/lib/validators/permohonan-skd";
-import { createPermohonanSKDAction } from "@/lib/server/actions/permohonan-skd";
+import { createPermohonanSKDMandiriAction } from "@/lib/server/actions/permohonan-skd-mandiri";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -79,7 +79,7 @@ export function PermohonanSKDCreateForm() {
         }
       });
 
-      const result = await createPermohonanSKDAction(formData);
+      const result = await createPermohonanSKDMandiriAction(formData);
       
       if (result.success) {
         toast.success(result.message);

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PATHS } from "@/constants/paths";
-import { createPermohonanSKKAction } from "@/lib/server/actions/permohonan-skk";
+import { createPermohonanSKKMandiriAction } from "@/lib/server/actions/permohonan-skk-mandiri";
 import { cn } from "@/lib/utils";
 import {
   createPermohonanSKKSchema,
@@ -61,7 +61,7 @@ export function PermohonanSKKCreateForm() {
   const onSubmit = async (values: TCreatePermohonanSKKSchema) => {
     try {
       setLoading(true);
-      const response = await createPermohonanSKKAction(values);
+      const response = await createPermohonanSKKMandiriAction(values);
       if (response.status === 200) {
         toast.success(response.message);
         router.push("/permohonan-saya");

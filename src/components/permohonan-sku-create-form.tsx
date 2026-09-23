@@ -26,7 +26,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { FileUploadField } from "@/components/ui/file-upload-field";
 import { PATHS } from "@/constants/paths";
-import { createPermohonanSKUAction } from "@/lib/server/actions/permohonan-sku";
+import { createPermohonanSKUMandiriAction } from "@/lib/server/actions/permohonan-sku-mandiri";
 import { cn } from "@/lib/utils";
 import {
   createPermohonanSKUSchema,
@@ -68,7 +68,7 @@ export function PermohonanSKUCreateForm() {
   const onSubmit = async (values: TCreatePermohonanSKUSchema) => {
     try {
       setIsLoading(true);
-      const result = await createPermohonanSKUAction(values);
+      const result = await createPermohonanSKUMandiriAction(values);
 
       if (result.status === 200) {
         toast.success(result.message);
