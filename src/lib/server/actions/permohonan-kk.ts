@@ -79,3 +79,16 @@ export const findPermohonanKKByIdAction = async (id: string) => {
     return errorHandler(error);
   }
 };
+
+export const updatePermohonanKKAction = async (id: string, payload: unknown) => {
+  try {
+    const currentSession = await findCurrentSessionService();
+    if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
+    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat mengubah permohonan");
+    const data = await updatePermohonanKKService(id, payload as Record<string, unknown>);
+    revalidatePath("/permohonan-kk");
+    return { status: status.OK, message: "Permohonan KK berhasil diperbarui", data };
+  } catch (error) {
+    return errorHandler(error);
+  }
+};

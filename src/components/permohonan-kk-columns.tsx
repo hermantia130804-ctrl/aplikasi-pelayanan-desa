@@ -1,9 +1,12 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PermohonanKK } from "@/generated/prisma";
 import { ColumnDef } from "@tanstack/react-table";
 import moment from "moment";
+import Link from "next/link";
+import { EyeIcon, PencilIcon } from "lucide-react";
 import { PermohonanKTPColumnHeader } from "./permohonan-ktp-column-header";
 import { KKUpdateStatus } from "./permohonan-kk-update-status";
 import { PermohonanKKDeleteButton } from "./permohonan-kk-delete-button";
@@ -72,6 +75,16 @@ export const permohonanKKColumns: ColumnDef<PermohonanKK>[] = [
     id: "actions",
     cell: ({ row }) => (
       <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href={`/permohonan-kk/${row.original.permohonanKKId}`}>
+            <EyeIcon />
+          </Link>
+        </Button>
+        <Button variant="ghost" size="icon" asChild>
+          <Link href={`/permohonan-kk/edit/${row.original.permohonanKKId}`}>
+            <PencilIcon />
+          </Link>
+        </Button>
         <KKUpdateStatus id={row.original.permohonanKKId} status={row.original.statusPermohonan} />
         <PermohonanKKDeleteButton permohonanKKId={row.original.permohonanKKId} />
       </div>
