@@ -7,35 +7,25 @@ const AUTH_PAGES = ["/masuk", "/daftar"];
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. Tandai pengunjung yang sudah melewati gerbang beranda
-  let res = NextResponse.next();
-  if (pathname === "/" && req.cookies.get("visited")?.value !== "1") {
-    res.cookies.set("visited", "1", {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-    });
-  }
-
-  // 2. Halaman masuk/daftar: wajib lewat beranda dulu (anti bypass)
-  if (AUTH_PAGES.includes(pathname) && req.cookies.get("visited")?.value !== "1") {
+  // Halaman masuk/daftar: wajib lewat beranda dulu (anti bypass)
+  const visited = req.cookies.get("visited");
+  if (AUTH_PAGES.includes(pathname) && (!visited || visited.value !== "1")) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // 3. Halaman dalam (bukan publik, bukan auth): wajib ada cookie sesi
+  // Halaman dalam (bukan publik/auth): wajib ada cookie "session" yang berisi
   const isPublic = PUBLIC_PAGES.includes(pathname);
   const isAuthPage = AUTH_PAGES.includes(pathname);
   if (!isPublic && !isAuthPage) {
-    const cookieNames = [...req.cookies.keys()];
-    const hasSession = cookieNames.some((n) => n.toLowerCase().includes("session"));
-    if (!hasSession) {
+    const sessionCookie = req.cookies.get("session");
+    if (!sessionCookie || !sessionCookie.value) {
       return NextResponse.redirect(new URL("/", req.url));
     }
   }
 
-  return res;
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next|api|.*\\..*).*)"],
+  matcher: ["/((?!_next|api|favicon|icon|apple-icon|.*\\..*).*)"],
 };
