@@ -116,7 +116,7 @@ export const SignInForm = ({
             Verifikasi
           </Link>
         </div>
-        <p className="mt-1 animate-pulse text-sm font-bold text-red-600">
+        <p className="mt-1 animate-pulse text-center text-sm font-bold text-red-600">
          Periksa Balasan Email di Inbox/Spam
         </p>
       </form>
