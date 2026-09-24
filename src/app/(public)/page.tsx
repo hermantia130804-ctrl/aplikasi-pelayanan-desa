@@ -81,11 +81,8 @@ export default async function PublicHomePage() {
                         Kecamatan Cibungbulang · Kabupaten Bogor
                     </span>
 
-                    <h1 className="mt-8 max-w-4xl text-4xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
-                        Selamat Datang di{" "}
-                        <span className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 bg-clip-text text-transparent">
-                            Desa Sukamaju
-                        </span>
+                    <h1 className="judul-neon-rainbow mt-8 max-w-4xl text-4xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+                        Selamat Datang di Desa Sukamaju
                     </h1>
 
                     <p className="mx-auto mt-8 max-w-2xl text-base font-medium leading-relaxed text-foreground/85 sm:text-lg">
