@@ -88,13 +88,13 @@ export default async function PublicHomePage() {
                         </span>
                     </h1>
 
-                    <p className="mx-auto mt-8 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+                    <p className="mx-auto mt-8 max-w-2xl text-base font-medium leading-relaxed text-foreground/85 sm:text-lg">
                         Portal resmi pelayanan administrasi dan informasi Desa Sukamaju —
                         melayani warga dengan cepat, transparan, dan akuntabel.
                     </p>
 
 
-                    <div className="mt-10 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="mt-10 inline-flex items-center gap-2 text-xs text-foreground/75">
                         <ShieldCheck className="size-4 text-emerald-500" />
                         Data resmi portal Pemerintah Kabupaten Bogor · diperbarui September 2026
                     </div>
