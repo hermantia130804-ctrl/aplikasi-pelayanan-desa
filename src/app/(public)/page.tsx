@@ -93,21 +93,6 @@ export default async function PublicHomePage() {
                         melayani warga dengan cepat, transparan, dan akuntabel.
                     </p>
 
-                    <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-                        <Link
-                            href="/masuk"
-                            className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 text-sm font-bold shadow-xl shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-primary/30 sm:w-auto"
-                        >
-                            Layanan Desa
-                            <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                        </Link>
-                        <Link
-                            href="/hubungi-kami"
-                            className="inline-flex w-full items-center justify-center rounded-full border border-border bg-background/50 px-8 py-4 text-sm font-semibold backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-foreground/30 hover:bg-muted sm:w-auto"
-                        >
-                            Sampaikan Aspirasi
-                        </Link>
-                    </div>
 
                     <div className="mt-10 inline-flex items-center gap-2 text-xs text-muted-foreground">
                         <ShieldCheck className="size-4 text-emerald-500" />
