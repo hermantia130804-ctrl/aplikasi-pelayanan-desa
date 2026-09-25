@@ -10,7 +10,11 @@ interface DetailPermohonanKTPPageProps {
 export default async function DetailPermohonanKTPPage({ params }: DetailPermohonanKTPPageProps) {
   const session = await requireAdminPage();
   const { data } = await findPermohonanKTPData(params);
-  if (data.userId !== session.user.userId && session.user.role !== "ADMIN") redirect("/permohonan-saya");
+
+  // Warga hanya boleh melihat permohonan miliknya sendiri; admin & petugas boleh semua
+  if (session.user.role === "USER" && data.userId !== session.user.userId) {
+    redirect("/permohonan-saya");
+  }
 
   return (
     <div className="flex flex-1 flex-col">
