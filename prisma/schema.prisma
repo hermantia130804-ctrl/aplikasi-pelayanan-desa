@@ -108,6 +108,7 @@ model User {
   role       Role      @default(USER)
   address    String?
   phone      String?
+  jabatan    String?   @map("jabatan")
   status     Status    @default(INACTIVE)
   verifiedAt DateTime? @map("verified_at")
   createdAt  DateTime  @default(now()) @map("created_at")

@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signUpAction } from "@/lib/server/actions/auth";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { TSignUpSchema, signUpSchema } from "@/lib/validators/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -27,6 +30,7 @@ export const SignUpForm = ({
   ...props
 }: React.ComponentProps<"div">) => {
   const router = useRouter();
+  const [daftarSebagai, setDaftarSebagai] = useState<"USER" | "PETUGAS">("USER");
   const form = useForm<TSignUpSchema>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -36,12 +40,17 @@ export const SignUpForm = ({
       phone: "",
       name: "",
       nik: "",
+      jabatan: "",
     },
   });
 
   const onSubmit = form.handleSubmit(async (data) => {
     try {
-      const response = await signUpAction(data);
+      const response = await signUpAction({
+        ...data,
+        daftarSebagai,
+        jabatan: daftarSebagai === "PETUGAS" ? form.getValues("jabatan") : undefined,
+      });
       if (response.status === 200) {
         form.reset();
         toast.success(response.message);
@@ -59,6 +68,24 @@ export const SignUpForm = ({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Form {...form}>
         <form onSubmit={onSubmit}>
+                        <div className="flex flex-col gap-2">
+                <FormLabel>Daftar Sebagai</FormLabel>
+                <RadioGroup
+                  defaultValue="USER"
+                  value={daftarSebagai}
+                  onValueChange={(v) => setDaftarSebagai(v as "USER" | "PETUGAS")}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="USER" id="role-user" />
+                    <Label htmlFor="role-user">Masyarakat</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="PETUGAS" id="role-petugas" />
+                    <Label htmlFor="role-petugas">Petugas</Label>
+                  </div>
+                </RadioGroup>
+              </div>
           <div className="flex flex-col gap-6">
             <div className="flex flex-col items-center gap-2">
               <Link
@@ -105,6 +132,21 @@ export const SignUpForm = ({
                   </FormItem>
                 )}
               />
+                            {daftarSebagai === "PETUGAS" && (
+                <FormField
+                  control={form.control}
+                  name="jabatan"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Jabatan</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Contoh: Petugas Pelayanan Desa" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="email"
@@ -152,7 +194,7 @@ export const SignUpForm = ({
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nomor Telepon</FormLabel>
+                    <FormLabel>{daftarSebagai === "PETUGAS" ? "No. WhatsApp" : "No. Telepon"}</FormLabel>
                     <FormControl>
                       <Input placeholder="08XX-XXXX-XXXX" {...field} />
                     </FormControl>
