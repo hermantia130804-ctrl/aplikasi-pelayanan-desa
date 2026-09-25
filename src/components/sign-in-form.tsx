@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { PasswordInput } from "@/components/password-input";
 import {
   Form,
   FormControl,
@@ -94,7 +95,7 @@ export const SignInForm = ({
                   </Link>
                 </div>
                 <FormControl>
-                  <Input type="password" placeholder="kata sandi" {...field} />
+                  <PasswordInput placeholder="kata sandi" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

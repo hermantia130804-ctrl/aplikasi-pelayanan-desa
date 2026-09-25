@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { PasswordInput } from "@/components/password-input";
 import {
   Form,
   FormControl,
@@ -124,10 +125,9 @@ export const SignUpForm = ({
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Kata Sandi"
-                        {...field}
+                      <PasswordInput
+                       placeholder="Kata Sandi"
+                       {...field}
                       />
                     </FormControl>
                     <FormMessage />
