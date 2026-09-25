@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { getRoleLabel } from "@/lib/role-label";
 import { UbahPasswordForm } from "@/components/ubah-password-form";
 import { findCurrentSessionService } from "@/lib/server/services/session";
 import { findUserByIdService } from "@/lib/server/services/user";
@@ -44,7 +45,7 @@ export default async function PengaturanPage() {
               </div>
               <div className="flex justify-between border-b pb-2">
                 <span className="text-muted-foreground">Role</span>
-                <Badge variant="outline">{user.data.role}</Badge>
+                <Badge variant="outline">{getRoleLabel(user.data.role)}</Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status Akun</span>
