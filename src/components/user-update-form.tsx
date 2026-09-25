@@ -6,7 +6,7 @@ import { updateUserAction } from "@/lib/server/actions/user";
 import { cn } from "@/lib/utils";
 import { TUpdateUserSchema, updateUserSchema } from "@/lib/validators/user";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UserCog2Icon, UserIcon } from "lucide-react";
+import { Crown, UserCog2Icon, UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -112,7 +112,8 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="ADMIN"><UserCog2Icon className="mr-2" /> Petugas</SelectItem>
+                                                        <SelectItem value="ADMIN"><Crown className="mr-2" /> Admin Full Control</SelectItem>
+                                                        <SelectItem value="PETUGAS"><UserCog2Icon className="mr-2" /> Petugas</SelectItem>
                                                         <SelectItem value="USER"><UserIcon className="mr-2" /> Masyarakat</SelectItem>
                                                     </SelectContent>
                                                 </Select>

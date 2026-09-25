@@ -102,7 +102,8 @@ export const UserFilterTable = () => {
         </SelectTrigger>
         <SelectContent>
           <SelectItem disabled value="-">Peran</SelectItem>
-          <SelectItem value="ADMIN">Petugas</SelectItem>
+          <SelectItem value="ADMIN">Admin Full Control</SelectItem>
+          <SelectItem value="PETUGAS">Petugas</SelectItem>
           <SelectItem value="USER">Masyarakat</SelectItem>
         </SelectContent>
       </Select>

@@ -2,7 +2,7 @@
 import { MESSAGE } from "@/constants/message";
 import { Role } from "@/generated/prisma";
 import { updateUserRoleAction } from "@/lib/server/actions/user";
-import { UserCog2Icon, UserIcon } from "lucide-react";
+import { Crown, UserCog2Icon, UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
@@ -33,7 +33,8 @@ export const UserUpdateRole = ({ role, userId }: UserUpdateRoleProps) => {
                 <SelectValue placeholder="Pilih Peran" />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="ADMIN"><UserCog2Icon className="mr-2" /> Petugas</SelectItem>
+                <SelectItem value="ADMIN"><Crown className="mr-2" /> Admin Full Control</SelectItem>
+                <SelectItem value="PETUGAS"><UserCog2Icon className="mr-2" /> Petugas</SelectItem>
                 <SelectItem value="USER"><UserIcon className="mr-2" /> Masyarakat</SelectItem>
             </SelectContent>
         </Select>
