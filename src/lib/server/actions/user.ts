@@ -50,14 +50,13 @@ export const updateUserAction = async (userId: string, payload: TUpdateUserSchem
 
     const { password, ...restPayload } = payload;
 
-    // Kalau admin mengisi password baru → validasi kekuatan + hash
+    // Kalau admin mengisi password baru → validasi kekuatan (service yang hash 1x)
     if (password && password.trim() !== "") {
       const isKuat = await verifyPasswordStrength(password);
       if (!isKuat) {
         throw new ApiError(status.BAD_REQUEST, "Password minimal 8 karakter dan tidak termasuk password yang bocor secara umum");
       }
-      const passwordHash = await hashPassword(password);
-      await updateUserPasswordService(userId, passwordHash);
+      await updateUserPasswordService(userId, password);
     }
 
     const data = await updateUserService(userId, restPayload);
