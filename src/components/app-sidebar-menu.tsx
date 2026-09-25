@@ -14,9 +14,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
+type TitleOrFn = string | ((role: Role) => string);
+
 type AppSidebarMenuProps = {
   user: Omit<User, "password">;
-  title: string;
+  title: TitleOrFn;
   items: {
     name: string;
     url: string;
@@ -36,9 +38,12 @@ export const AppSidebarMenu = ({ title, items, user }: AppSidebarMenuProps) => {
     return items.filter((item) => item.roles.includes(user.role));
   };
 
+  // Judul bisa berupa string statis atau fungsi role
+  const groupTitle = typeof title === "function" ? title(user.role) : title;
+
   return (
     <SidebarGroup className={cn("group-data-[collapsible=icon]:hidden", { "hidden": filterItems().length === 0 })}>
-      <SidebarGroupLabel>{title}</SidebarGroupLabel>
+      <SidebarGroupLabel>{groupTitle}</SidebarGroupLabel>
       <SidebarMenu>
         {filterItems().map((item) => (
           <SidebarMenuItem key={item.url}>
