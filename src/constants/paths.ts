@@ -11,7 +11,7 @@ export const PATHS = {
   PERSON_KK_REQUEST: "/permohonan-kk-mandiri",
   USER: "/pengguna",
   USER_CREATE: "/pengguna/tambah",
-  USER_UPDATE: "/pengguna/ubah",
+  USER_UPDATE: "/pengguna/edit",
   ABOUT: "/tentang",
   SETTING: "/pengaturan",
   CONTACT: "/hubungi-kami",

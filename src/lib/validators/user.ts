@@ -7,6 +7,7 @@ import { findManySchema } from "./base";
 
 export const findManyUserSchema = findManySchema.extend({
   role: z.enum(["ADMIN", "PETUGAS", "USER"]).optional(),
+  password: z.string().min(8, MESSAGE.INVALID_PASSWORD).max(255).optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
   searchBy: z.enum(["nik", "name", "address", "phone", "email"]).optional().default("name"),
   orderby: z.enum(["nik", "name", "address", "phone", "email", "createdAt", "updatedAt"]).optional().default("createdAt"),
@@ -34,6 +35,7 @@ export const updateUserSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   role: z.enum(["ADMIN", "PETUGAS", "USER"]).optional(),
+  password: z.string().min(8, MESSAGE.INVALID_PASSWORD).max(255).optional(),
 });
 
 export const updateUserPasswordSchema = z.object({
