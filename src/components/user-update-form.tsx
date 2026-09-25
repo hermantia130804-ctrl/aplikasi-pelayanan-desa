@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Card, CardContent } from "./ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { Input } from "./ui/input";
+import { PasswordInput } from "@/components/password-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
@@ -30,6 +31,7 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
             phone: initialData.phone ?? "",
             name: initialData.name,
             nik: initialData.nik,
+            password: "",
             role: initialData.role,
         },
     });
@@ -121,6 +123,22 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
                                             </FormItem>
                                         )}
                                     />
+                                                                    <FormField
+                                    control={form.control}
+                                    name="password"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Password Baru (Opsional)</FormLabel>
+                                            <FormControl>
+                                                <PasswordInput
+                                                    placeholder="Kosongkan jika tidak ingin mengubah"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                     <FormField
                                         control={form.control}
                                         name="phone"
