@@ -31,7 +31,7 @@ export default async function MasukPage({ searchParams }: MasukPageProps) {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-sm">
-            <AuthTabs initialTab={initialTab} />
+            <AuthTabs key={initialTab} initialTab={initialTab} />
           </div>
         </div>
       </div>
