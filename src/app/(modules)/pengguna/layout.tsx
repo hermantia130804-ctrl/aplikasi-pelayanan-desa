@@ -1,6 +1,6 @@
-import { requireAdminPage } from "@/lib/server/guards";
+import { requireFullAdminPage } from "@/lib/server/guards";
 
-export default async function AdminGuardLayout({ children }: { children: React.ReactNode }) {
-  await requireAdminPage();
+export default async function FullAdminGuardLayout({ children }: { children: React.ReactNode }) {
+  await requireFullAdminPage();
   return <>{children}</>;
 }

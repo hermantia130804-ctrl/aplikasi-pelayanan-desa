@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { UbahPasswordForm } from "@/components/ubah-password-form";
 import { findCurrentSessionService } from "@/lib/server/services/session";
 import { findUserByIdService } from "@/lib/server/services/user";
 import { Metadata } from "next";
@@ -60,6 +61,10 @@ export default async function PengaturanPage() {
               Untuk mengganti password, gunakan menu <b>"Lupa Password"</b> pada halaman login
               setelah keluar dari akun. Fitur ubah password langsung sedang dikembangkan.
             </p>
+          </div>
+
+          <div className="mt-4">
+            <UbahPasswordForm />
           </div>
         </div>
       </div>

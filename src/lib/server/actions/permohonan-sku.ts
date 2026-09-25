@@ -25,7 +25,7 @@ export const createPermohonanSKUAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
     const data = await createPermohonanSKUService(currentSession.user.userId, payload);
     revalidatePath(PATHS.SKU_REQUEST);
     return { status: status.OK, message: message.CREATE_OK, data };
@@ -47,7 +47,7 @@ export const updatePermohonanSKUAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
     const data = await updatePermohonanSKUService(id, payload);
     revalidatePath(PATHS.SKU_REQUEST);
     return { status: status.OK, message: message.UPDATE_OK, data };
@@ -68,7 +68,7 @@ export const followUpPermohonanSKUAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
     
     const validatedData = followUpPermohonanSKUSchema.parse(values);
     const data = await followUpPermohonanSKUService(
@@ -95,7 +95,7 @@ export const deletePermohonanSKUAction = async (id: string) => {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
     const data = await deletePermohonanWithFiles("SKU", id);
     revalidatePath(PATHS.SKU_REQUEST);
     return { status: status.OK, message: message.DELETE_OK, data };

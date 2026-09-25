@@ -25,7 +25,7 @@ export const createPermohonanSKKAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
     const data = await createPermohonanSKKService(currentSession.user.userId, payload);
     revalidatePath(PATHS.SKK_REQUEST);
     return { status: status.OK, message: message.CREATE_OK, data };
@@ -42,7 +42,7 @@ export const updatePermohonanSKKAction = async (
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
     const data = await updatePermohonanSKKService(id, payload);
     revalidatePath(PATHS.SKK_REQUEST);
     return { status: status.OK, message: message.UPDATE_OK, data };
@@ -56,7 +56,7 @@ export const followUpPermohonanSKKAction = async (values: unknown) => {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
 
     const { permohonanSKKId, ...validatedData } = followUpPermohonanSKKSchema.parse(values);
     const data = await followUpPermohonanSKKService(permohonanSKKId, validatedData);
@@ -73,7 +73,7 @@ export const deletePermohonanSKKAction = async (id: string) => {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
     const data = await deletePermohonanWithFiles("SKK", id);
     revalidatePath(PATHS.SKK_REQUEST);
     return { status: status.OK, message: message.DELETE_OK, data };

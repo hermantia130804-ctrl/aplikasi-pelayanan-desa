@@ -16,7 +16,7 @@ export async function createPermohonanSKDAction(formData: FormData) {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.GLOBAL.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
 
     const rawData = Object.fromEntries(formData.entries());
     const parsedData = {
@@ -39,7 +39,7 @@ export async function updatePermohonanSKDAction(permohonanSKDId: string, formDat
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.GLOBAL.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
 
     const rawData = Object.fromEntries(formData.entries());
     const parsedData = {
@@ -62,7 +62,7 @@ export async function deletePermohonanSKDAction(permohonanSKDId: string) {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.GLOBAL.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
 
     await deletePermohonanWithFiles("SKD", permohonanSKDId);
     revalidatePath(PATHS.SKD_REQUEST);
@@ -77,7 +77,7 @@ export async function followUpPermohonanSKDAction(formData: FormData) {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.GLOBAL.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan aksi ini");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan aksi ini");
 
     const rawData = Object.fromEntries(formData.entries());
     const validatedData = followUpPermohonanSKDSchema.parse(rawData);

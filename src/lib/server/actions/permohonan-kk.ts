@@ -50,7 +50,7 @@ export const updateStatusPermohonanKKAction = async (id: string, newStatus: "DIA
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat mengubah status permohonan");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat mengubah status permohonan");
     await updateStatusPermohonanKKService(id, { statusPermohonan: newStatus, catatan });
     revalidatePath("/permohonan-kk");
     return { status: status.OK, message: "Status permohonan KK berhasil diperbarui" };
@@ -103,7 +103,7 @@ export const followUpPermohonanKKActionV2 = async (payload: {
   try {
     const currentSession = await findCurrentSessionService();
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
-    if (currentSession.user.role !== "ADMIN") throw new ApiError(status.FORBIDDEN, "Hanya admin yang dapat melakukan tindak lanjut");
+    if (currentSession.user.role !== "ADMIN" && currentSession.user.role !== "PETUGAS") throw new ApiError(status.FORBIDDEN, "Hanya admin dan petugas yang dapat melakukan tindak lanjut");
 
     const validStatus = ["DIAJUKAN", "DISETUJUI", "DITOLAK"] as const;
     if (!validStatus.includes(payload.statusPermohonan as any)) {

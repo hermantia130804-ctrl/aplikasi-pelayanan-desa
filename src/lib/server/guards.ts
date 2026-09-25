@@ -7,6 +7,15 @@ export const requireAdminPage = async () => {
   const session = await findCurrentSessionService();
   if (!session?.user) redirect(PATHS.SIGN_IN);
   const user = await prisma.user.findUnique({ where: { userId: session.user.userId } });
-  if (!user || user.role !== "ADMIN") redirect("/permohonan-saya");
+  if (!user || (user.role !== "ADMIN" && user.role !== "PETUGAS")) redirect("/dashboard");
+  return session;
+};
+
+// Khusus aksi berbahaya (hapus/kelola pengguna): tetap admin penuh
+export const requireFullAdminPage = async () => {
+  const session = await findCurrentSessionService();
+  if (!session?.user) redirect(PATHS.SIGN_IN);
+  const user = await prisma.user.findUnique({ where: { userId: session.user.userId } });
+  if (!user || user.role !== "ADMIN") redirect("/dashboard");
   return session;
 };
