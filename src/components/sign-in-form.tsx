@@ -107,7 +107,7 @@ export const SignInForm = ({
         </div>
         <div className="text-center text-sm">
           Belum Punya Akun?{" "}
-          <Link href={PATHS.SIGN_UP} className="underline underline-offset-4">
+          <Link href="/masuk?tab=daftar" className="underline underline-offset-4">
             Daftar
           </Link>
         </div>

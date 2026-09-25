@@ -6,9 +6,16 @@ import { findCurrentSessionService } from "@/lib/server/services/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function MasukPage() {
+interface MasukPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function MasukPage({ searchParams }: MasukPageProps) {
   const session = await findCurrentSessionService();
   if (session?.user) redirect("/dashboard");
+
+  const { tab } = await searchParams;
+  const initialTab = tab === "daftar" ? "daftar" : "masuk";
 
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
@@ -24,7 +31,7 @@ export default async function MasukPage() {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-sm">
-            <AuthTabs />
+            <AuthTabs initialTab={initialTab} />
           </div>
         </div>
       </div>

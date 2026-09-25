@@ -2,7 +2,7 @@ export const PATHS = {
   HOME: "/dashboard",
   HOME_PUBLIC: "/beranda-masyarakat",
   SIGN_IN: "/masuk",
-  SIGN_UP: "/daftar",
+  SIGN_UP: "/masuk?tab=daftar",
   EMAIL_VERIFICATION: "/verifikasi",
   FORGOT_PASSWORD: "/lupa-password",
   RESET_PASSWORD: "/lupa-password",
