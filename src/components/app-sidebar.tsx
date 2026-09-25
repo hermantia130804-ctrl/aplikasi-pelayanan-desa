@@ -47,7 +47,7 @@ export const AppSidebar = ({ user, ...props }: AppSidebarProps) => {
       </SidebarHeader>
       <SidebarContent>
         <AppSidebarMenu title="Dashboard" items={MENU.MAIN} user={user} />
-        <AppSidebarMenu title="Admin" items={MENU.ADMIN} user={user} />
+        <AppSidebarMenu title="Kelola" items={MENU.ADMIN} user={user} />
         <AppSidebarMenu title="Masyarakat" items={MENU.USER} user={user} />
         <AppSidebarFooter items={MENU.FOOTER} className="mt-auto" />
       </SidebarContent>
