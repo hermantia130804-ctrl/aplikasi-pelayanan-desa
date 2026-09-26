@@ -33,7 +33,8 @@ const requireFullAdmin = async () => {
   return currentSession;
 };
 
-export const createUserServiceAction = async (payload: TCreateUserSchema) => {
+// ===== DIGUNAKAN OLEH HALAMAN TAMBAH PENGGUNA =====
+export const createUserAction = async (payload: TCreateUserSchema) => {
   try {
     await requireFullAdmin();
     const data = await createUserService(payload);
@@ -50,13 +51,13 @@ export const updateUserAction = async (userId: string, payload: TUpdateUserSchem
 
     const { password, ...restPayload } = payload;
 
-    // Kalau admin mengisi password baru → validasi kekuatan (service yang hash 1x)
     if (password && password.trim() !== "") {
       const isKuat = await verifyPasswordStrength(password);
       if (!isKuat) {
         throw new ApiError(status.BAD_REQUEST, "Password minimal 8 karakter dan tidak termasuk password yang bocor secara umum");
       }
-      await updateUserPasswordService(userId, password);
+      const passwordHash = await hashPassword(password);
+      await updateUserPasswordService(userId, passwordHash);
     }
 
     const data = await updateUserService(userId, restPayload);
@@ -96,6 +97,29 @@ export const deleteUserAction = async (userId: string) => {
     await deleteUserService(userId);
     revalidatePath(PATHS.USER);
     return { status: status.OK, message: MESSAGE.USER.DELETE_OK };
+  } catch (error) {
+    return errorHandler(error);
+  }
+};
+
+// ===== DIPAKAI KOMPONEN user-update-role & user-update-status =====
+export const updateUserRoleAction = async (userId: string, role: Role) => {
+  try {
+    await requireFullAdmin();
+    const data = await updateUserService(userId, { role });
+    revalidatePath(PATHS.USER);
+    return { status: status.OK, message: "Role pengguna berhasil diperbarui", data };
+  } catch (error) {
+    return errorHandler(error);
+  }
+};
+
+export const updateUserStatusAction = async (userId: string, newStatus: "ACTIVE" | "INACTIVE") => {
+  try {
+    await requireFullAdmin();
+    const data = await updateUserService(userId, { status: newStatus });
+    revalidatePath(PATHS.USER);
+    return { status: status.OK, message: "Status pengguna berhasil diperbarui", data };
   } catch (error) {
     return errorHandler(error);
   }
