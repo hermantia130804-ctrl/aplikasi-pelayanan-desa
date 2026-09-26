@@ -33,13 +33,37 @@ const formatTanggal = (d: Date | string) =>
   });
 
 export default async function BerandaMasyarakatPage() {
-    const beritaList = await prisma.beritaKegiatan.findMany({
+  const beritaList = await prisma.beritaKegiatan.findMany({
     orderBy: { tanggalKegiatan: "desc" },
     include: { penulis: true },
   });
 
   return (
     <div>
+      {/* HERO — GAMBAR KANTOR DESA */}
+      <section className="relative">
+        <Image
+          src="/login-desk.jpg"
+          alt="Kantor Desa Sukamaju"
+          fill
+          priority
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-black/65" />
+        <div className="relative mx-auto max-w-6xl px-4 py-20 text-center text-white sm:px-6 sm:py-24">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider backdrop-blur">
+            Kecamatan Cibungbulang · Kabupaten Bogor · Jawa Barat
+          </span>
+          <h1 className="mt-6 text-3xl font-extrabold tracking-tight sm:text-5xl">
+            Informasi &amp; Berita Desa Sukamaju
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-sm opacity-85 sm:text-base">
+            Kabar terbaru, kegiatan, dan pengumuman penting untuk masyarakat
+            Desa Sukamaju.
+          </p>
+        </div>
+      </section>
+
       {/* BERITA KEGIATAN DARI DATABASE */}
       <section className="py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
