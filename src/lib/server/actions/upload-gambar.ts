@@ -25,6 +25,7 @@ export const uploadGambarBeritaAction = async (formData: FormData) => {
     const blob = await put(pathname, file, {
       access: "public",
       contentType: file.type,
+      token: process.env.BLOB_PUBLIC_READ_WRITE_TOKEN,
     });
 
     return { url: blob.url };
