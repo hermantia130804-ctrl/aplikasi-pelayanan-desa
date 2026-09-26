@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { GambarUploadField } from "@/components/gambar-upload-field";
 import { createBeritaAction, updateBeritaAction } from "@/lib/server/actions/berita";
@@ -13,23 +12,23 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ArrowLeftIcon } from "lucide-react";
-import moment from "moment";
 import { z } from "zod";
 
 const schema = z.object({
     judul: z.string().min(5, "Judul minimal 5 karakter"),
     isi: z.string().min(20, "Isi berita minimal 20 karakter"),
-    kategoriMedia: z.enum(["GAMBAR", "YOUTUBE"]),
     gambarUrl: z.string().optional(),
     youtubeId: z.string().optional(),
     tanggalKegiatan: z.string().min(1, "Tanggal kegiatan wajib diisi"),
-});
+}).refine(
+    (d) => !!d.gambarUrl || !!d.youtubeId,
+    { message: "Wajib mengunggah gambar atau menambahkan link video YouTube", path: ["isi"] }
+);
 
 type TBerita = {
     beritaId: string;
     judul: string;
     isi: string;
-    kategoriMedia: string;
     gambarUrl: string | null;
     youtubeId: string | null;
     tanggalKegiatan: Date | string;
@@ -40,7 +39,6 @@ type BeritaFormProps = {
     defaultValues: {
         judul: string;
         isi: string;
-        kategoriMedia: "GAMBAR" | "YOUTUBE";
         gambarUrl: string;
         youtubeId: string;
         tanggalKegiatan: string;
@@ -55,7 +53,6 @@ export function BeritaForm({ beritaId, defaultValues }: BeritaFormProps) {
         defaultValues,
     });
 
-    const kategoriMedia = form.watch("kategoriMedia");
     const isEdit = Boolean(beritaId);
 
     const onSubmit = async (values: z.infer<typeof schema>) => {
@@ -65,9 +62,8 @@ export function BeritaForm({ beritaId, defaultValues }: BeritaFormProps) {
             const payload = {
                 judul: values.judul,
                 isi: values.isi,
-                kategoriMedia: values.kategoriMedia as "GAMBAR" | "YOUTUBE",
-                gambarUrl: values.kategoriMedia === "GAMBAR" ? values.gambarUrl : undefined,
-                youtubeId: values.kategoriMedia === "YOUTUBE" ? values.youtubeId : undefined,
+                gambarUrl: values.gambarUrl || undefined,
+                youtubeId: values.youtubeId || undefined,
                 tanggalKegiatan: tanggal,
             };
 
@@ -103,50 +99,30 @@ export function BeritaForm({ beritaId, defaultValues }: BeritaFormProps) {
                 <FormField control={form.control} name="tanggalKegiatan" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Tanggal Kegiatan</FormLabel>
+                        <FormControl><Input type="date" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+
+                <FormField control={form.control} name="gambarUrl" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Gambar Berita (Foto)</FormLabel>
                         <FormControl>
-                            <Input type="date" {...field} />
+                            <GambarUploadField value={field.value ?? ""} onChange={field.onChange} disabled={loading} />
                         </FormControl>
                         <FormMessage />
                     </FormItem>
                 )} />
 
-                <FormField control={form.control} name="kategoriMedia" render={({ field }) => (
+                <FormField control={form.control} name="youtubeId" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Media</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="Pilih media" /></SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="GAMBAR">Gambar (Foto)</SelectItem>
-                                <SelectItem value="YOUTUBE">Video YouTube</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <FormLabel>Link Video YouTube (Opsional)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Tempel link YouTube, contoh: https://youtu.be/abc123" {...field} />
+                        </FormControl>
                         <FormMessage />
                     </FormItem>
                 )} />
-
-                {kategoriMedia === "GAMBAR" ? (
-                    <FormField control={form.control} name="gambarUrl" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Gambar Berita</FormLabel>
-                            <FormControl>
-                                <GambarUploadField value={field.value ?? ""} onChange={field.onChange} disabled={loading} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-                ) : (
-                    <FormField control={form.control} name="youtubeId" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Link Video YouTube</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Tempel link YouTube, contoh: https://youtu.be/abc123" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-                )}
 
                 <FormField control={form.control} name="isi" render={({ field }) => (
                     <FormItem>
