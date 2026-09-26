@@ -35,7 +35,6 @@ export const createBeritaAction = async (payload: unknown) => {
       judul: parsed.judul,
       slug,
       isi: parsed.isi,
-      kategoriMedia: parsed.kategoriMedia,
       gambarUrl: parsed.gambarUrl ?? null,
       youtubeId: parsed.youtubeId ?? null,
       tanggalKegiatan: parsed.tanggalKegiatan,

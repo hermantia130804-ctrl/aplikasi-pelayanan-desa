@@ -18,7 +18,6 @@ export default function TambahBeritaPage() {
                         defaultValues={{
                             judul: "",
                             isi: "",
-                            kategoriMedia: "GAMBAR",
                             gambarUrl: "",
                             youtubeId: "",
                             tanggalKegiatan: new Date().toISOString().slice(0, 10),

@@ -25,7 +25,6 @@ export default async function EditBeritaPage({ params }: { params: Promise<{ id:
                         defaultValues={{
                             judul: data.judul,
                             isi: data.isi,
-                            kategoriMedia: data.kategoriMedia,
                             gambarUrl: data.gambarUrl ?? "",
                             youtubeId: data.youtubeId ?? "",
                             tanggalKegiatan: new Date(data.tanggalKegiatan).toISOString().slice(0, 10),

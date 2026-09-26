@@ -10,7 +10,7 @@ export const findBeritaByIdService = async (id: string) => {
 
 export const createBeritaService = async (
   penulisId: string,
-  data: { judul: string; slug: string; isi: string; kategoriMedia: "GAMBAR" | "YOUTUBE"; gambarUrl?: string | null; youtubeId?: string | null; tanggalKegiatan: Date }
+  data: { judul: string; slug: string; isi: string; gambarUrl?: string | null; youtubeId?: string | null; tanggalKegiatan: Date }
 ) => {
   return prisma.beritaKegiatan.create({ data: { ...data, penulisId } });
 };

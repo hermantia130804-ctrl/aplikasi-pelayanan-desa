@@ -34,12 +34,12 @@ export default async function KelolaBeritaPage() {
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {beritaList.map((b) => (
                                 <div key={b.beritaId} className="overflow-hidden rounded-xl border bg-card shadow-sm">
-                                    {b.kategoriMedia === "GAMBAR" && b.gambarUrl && (
-                                        <img src={b.gambarUrl} alt={b.judul} className="h-40 w-full object-cover" />
-                                    )}
-                                    {b.kategoriMedia === "YOUTUBE" && b.youtubeId && (
-                                        <img src={`https://img.youtube.com/vi/${b.youtubeId}/hqdefault.jpg`} alt={b.judul} className="h-40 w-full object-cover" />
-                                    )}
+                                    {b.gambarUrl && (
+    <img src={b.gambarUrl} alt={b.judul} className="h-40 w-full object-cover" />
+)}
+{!b.gambarUrl && b.youtubeId && (
+    <img src={`https://img.youtube.com/vi/${b.youtubeId}/hqdefault.jpg`} alt={b.judul} className="h-40 w-full object-cover" />
+)}
                                     <div className="p-4 flex flex-col gap-1">
                                         <p className="text-xs text-muted-foreground">
                                             📅 {moment(b.tanggalKegiatan).format("DD MMMM YYYY")} · ✍️ {b.penulis.name}
