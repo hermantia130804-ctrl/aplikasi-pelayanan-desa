@@ -1,5 +1,6 @@
 import { Role } from "@/generated/prisma";
 import { IconChartBar, IconDashboard, IconListDetails, IconSettings2, IconUsers } from "@tabler/icons-react";
+import { IconNews } from "@tabler/icons-react";
 import { PATHS } from "./paths";
 
 const A = [Role.ADMIN];
@@ -24,6 +25,8 @@ export const MENU = {
         { name: "Kelola Permohonan SKK", url: PATHS.SKK_REQUEST, icon: IconChartBar, roles: AP },
         { name: "Kelola Permohonan SKU", url: PATHS.SKU_REQUEST, icon: IconChartBar, roles: AP },
         { name: "Kelola Permohonan SKD", url: PATHS.SKD_REQUEST, icon: IconChartBar, roles: AP },
+        { name: "Kegiatan Desa", url: "/berita-kegiatan", icon: IconNews, roles: AP },
+
     ],
     USER: [
         { name: "Ajukan KTP", url: "/permohonan-ktp-mandiri/tambah", icon: IconChartBar, roles: U },
