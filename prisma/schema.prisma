@@ -125,6 +125,7 @@ model User {
   permohonanSKD      PermohonanSKD[]
   permohonanPindah   PermohonanPindah[]
   permohonanKK      PermohonanKK[]
+  beritaKegiatan  BeritaKegiatan[]
 
   @@map("users")
 }
@@ -433,4 +434,26 @@ model PermohonanKK {
   user                User               @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@map("permohonan_kk")
+}
+
+enum KategoriMedia {
+  GAMBAR
+  YOUTUBE
+}
+
+model BeritaKegiatan {
+  beritaId         String        @id @default(cuid()) @map("berita_id")
+  judul            String
+  slug             String        @unique
+  isi              String
+  kategoriMedia    KategoriMedia @default(GAMBAR) @map("kategori_media")
+  gambarUrl        String?       @map("gambar_url")
+  youtubeId        String?       @map("youtube_id")
+  tanggalKegiatan  DateTime      @map("tanggal_kegiatan")
+  penulisId        String        @map("penulis_id")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  penulis          User          @relation(fields: [penulisId], references: [userId], onDelete: Cascade)
+
+  @@map("berita_kegiatan")
 }
