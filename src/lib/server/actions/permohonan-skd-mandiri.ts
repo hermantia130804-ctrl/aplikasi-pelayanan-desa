@@ -10,6 +10,7 @@ import { createPermohonanSKDService } from "../services/permohonan-skd";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
 import { generateNomorPermohonan } from "../services/nomor-permohonan";
+import { kirimWaPetugasBaru } from "../services/whatsapp";
 
 export async function createPermohonanSKDMandiriAction(formData: FormData) {
   try {
@@ -26,6 +27,7 @@ export async function createPermohonanSKDMandiriAction(formData: FormData) {
     const validatedData = createPermohonanSKDSchema.parse(parsedData);
     const nomorPermohonan = await generateNomorPermohonan("SKD");
     const data = await createPermohonanSKDService(currentSession.user.userId, { ...validatedData, nomorPermohonan });
+    try { await kirimWaPetugasBaru("SKD", { nama: validatedData.nama, alasan: "Pengajuan SKD", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath(PATHS.SKD_REQUEST);
 
     try {
