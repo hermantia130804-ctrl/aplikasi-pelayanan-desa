@@ -1,15 +1,14 @@
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "../utils/email";
+import { sendEmail } from "./email";
 import { kirimWa } from "./whatsapp";
 
-type DetailNotif = {
-  nomor?: string;
-  nama?: string;
-  alasan?: string;
-  pengaju?: string;
+const STATUS_LABEL: Record<string, string> = {
+  DIAJUKAN: "Menunggu Proses",
+  DISETUJUI: "✅ DISETUJUI",
+  DITOLAK: "❌ DITOLAK",
 };
 
-const pesanWa = (jenis: string, d: DetailNotif) =>
+const pesanWa = (jenis: string, d: { nomor?: string; nama?: string; alasan?: string; pengaju?: string }) =>
   `📢 *PERMOHONAN ${jenis} BARU*\n\n` +
   (d.nomor ? `🧾 No: ${d.nomor}\n` : "") +
   `👤 Nama: ${d.nama ?? "-"}\n` +
@@ -18,7 +17,7 @@ const pesanWa = (jenis: string, d: DetailNotif) =>
   `\nSilakan proses melalui menu Kelola ${jenis} di aplikasi.\n` +
   `_Aplikasi Pelayanan Desa Sukamaju_`;
 
-const htmlEmail = (jenis: string, d: DetailNotif) =>
+const htmlEmail = (jenis: string, d: { nomor?: string; nama?: string; alasan?: string; pengaju?: string }) =>
   `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #eee;border-radius:8px;">
      <h2>📬 Permohonan ${jenis} Baru</h2>
      <ul>
@@ -31,10 +30,10 @@ const htmlEmail = (jenis: string, d: DetailNotif) =>
    </div>`;
 
 /**
- * Kirim EMAIL + WA ke semua PETUGAS & ADMIN (dari database).
- * Kegagalan satu saluran tidak menggagalkan yang lain.
+ * Notifikasi lengkap ke semua PETUGAS & ADMIN (dari database):
+ * EMAIL + WHATSAPP untuk tiap penerima.
  */
-export const notifikasiPetugasBaru = async (jenis: string, detail: DetailNotif) => {
+export const notifikasiPetugasBaru = async (jenis: string, detail: { nomor?: string; nama?: string; alasan?: string; pengaju?: string }) => {
   try {
     const petugas = await prisma.user.findMany({
       where: { role: { in: ["PETUGAS", "ADMIN"] } },
@@ -46,19 +45,22 @@ export const notifikasiPetugasBaru = async (jenis: string, detail: DetailNotif) 
     }
 
     const subject = `📢 Permohonan ${jenis} Baru Masuk`;
+    const waMessage = pesanWa(jenis, detail);
+    const emailHtml = htmlEmail(jenis, detail);
 
     for (const p of petugas) {
       if (p.email) {
         try {
-          await sendEmail(p.email, subject, htmlEmail(jenis, detail));
-          console.log(`[NOTIF] Email ${jenis} terkirim ke ${p.email}`);
+          await sendEmail(p.email, subject, emailHtml);
+          console.log(`[NOTIF] Email ${jenis} → ${p.email} ✅`);
         } catch (e) {
           console.error(`[NOTIF] Gagal email ke ${p.email}:`, e);
         }
       }
       if (p.phone) {
         try {
-          await kirimWa(p.phone, pesanWa(jenis, detail));
+          await kirimWa(p.phone, waMessage);
+          console.log(`[NOTIF] WA ${jenis} → ${p.phone} ✅`);
         } catch (e) {
           console.error(`[NOTIF] Gagal WA ke ${p.phone}:`, e);
         }
