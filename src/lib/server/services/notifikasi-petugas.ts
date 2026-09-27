@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "./email";
+import { sendEmail } from "../utils/email";
 import { kirimWa } from "./whatsapp";
 
 type DetailNotif = {
