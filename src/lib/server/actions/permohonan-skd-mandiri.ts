@@ -1,4 +1,5 @@
 "use server";
+import { kirimWaPetugasBaru } from "../services/whatsapp";
 
 import { MESSAGE } from "@/constants/message";
 import { PATHS } from "@/constants/paths";
@@ -27,6 +28,7 @@ export async function createPermohonanSKDMandiriAction(formData: FormData) {
     const validatedData = createPermohonanSKDSchema.parse(parsedData);
     const nomorPermohonan = await generateNomorPermohonan("SKD");
     const data = await createPermohonanSKDService(currentSession.user.userId, { ...validatedData, nomorPermohonan });
+    try { await kirimWaPetugasBaru("SKD"); } catch (e) { console.error(e); }
     try { await notifikasiPetugasBaru("SKD", { nama: validatedData.nama, alasan: "Pengajuan SKD", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath(PATHS.SKD_REQUEST);
 

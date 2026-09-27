@@ -1,4 +1,5 @@
 "use server";
+import { kirimWaPetugasBaru } from "../services/whatsapp";
 
 import { MESSAGE } from "@/constants/message";
 import { PATHS } from "@/constants/paths";
@@ -20,6 +21,7 @@ export const createPermohonanSKKMandiriAction = async (payload: TCreatePermohona
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     const nomorPermohonan = await generateNomorPermohonan("SKK");
     const data = await createPermohonanSKKService(currentSession.user.userId, { ...payload, nomorPermohonan });
+    try { await kirimWaPetugasBaru("SKK"); } catch (e) { console.error(e); }
     try { await notifikasiPetugasBaru("SKK", { nama: payload.nama, alasan: "Pengajuan SKK", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath(PATHS.SKK_REQUEST);
 

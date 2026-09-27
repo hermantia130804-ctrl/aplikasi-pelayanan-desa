@@ -1,4 +1,5 @@
 "use server";
+import { kirimWaPetugasBaru } from "../services/whatsapp";
 
 import { MESSAGE } from "@/constants/message";
 import { PATHS } from "@/constants/paths";
@@ -20,6 +21,7 @@ export const createPermohonanSKUMandiriAction = async (payload: TCreatePermohona
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     const nomorPermohonan = await generateNomorPermohonan("SKU");
     const data = await createPermohonanSKUService(currentSession.user.userId, { ...payload, nomorPermohonan });
+    try { await kirimWaPetugasBaru("SKU"); } catch (e) { console.error(e); }
     try { await notifikasiPetugasBaru("SKU", { nama: payload.nama, alasan: "Pengajuan SKU", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath(PATHS.SKU_REQUEST);
 

@@ -1,5 +1,6 @@
 "use server";
 
+import { kirimWaPetugasBaru } from "../services/whatsapp";
 import { MESSAGE } from "@/constants/message";
 import { PATHS } from "@/constants/paths";
 import { TCreatePermohonanSKTMSchema } from "@/lib/validators/permohonan-sktm";
@@ -20,6 +21,7 @@ export const createPermohonanSKTMMandiriAction = async (payload: TCreatePermohon
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     const nomorPermohonan = await generateNomorPermohonan("SKTM");
     const data = await createPermohonanSKTMService(currentSession.user.userId, { ...payload, nomorPermohonan });
+    try { await kirimWaPetugasBaru("SKTM", { nama: payload.nama, alasan: "Pengajuan SKTM", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     try { await notifikasiPetugasBaru("SKTM", { nama: payload.nama, alasan: "Pengajuan SKTM", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath(PATHS.SKTM_REQUEST);
 

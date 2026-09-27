@@ -1,4 +1,5 @@
 "use server";
+import { kirimWaPetugasBaru } from "../services/whatsapp";
 
 import { MESSAGE } from "@/constants/message";
 import { PATHS } from "@/constants/paths";
@@ -20,6 +21,7 @@ export const createPermohonanKTPMandiriAction = async (payload: TCreatePermohona
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     const nomorPermohonan = await generateNomorPermohonan("KTP");
     const data = await createPermohonanKTPService(currentSession.user.userId, { ...payload, nomorPermohonan });
+    try { await kirimWaPetugasBaru("KTP"); } catch (e) { console.error(e); }
     try { await notifikasiPetugasBaru("KTP", { nama: payload.name ?? payload.nama, alasan: "Pengajuan KTP", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath(PATHS.KTP_REQUEST);
 

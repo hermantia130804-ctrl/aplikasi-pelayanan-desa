@@ -1,4 +1,5 @@
 "use server";
+import { kirimWaPetugasBaru } from "../services/whatsapp";
 
 import { MESSAGE } from "@/constants/message";
 import status from "http-status";
@@ -25,6 +26,7 @@ export const createPermohonanKKMandiriAction = async (payload: unknown) => {
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     const nomorPermohonan = await generateNomorPermohonan("KK");
     const data = await createPermohonanKKService(currentSession.user.userId, { ...(payload as object), nomorPermohonan });
+    try { await kirimWaPetugasBaru("KK"); } catch (e) { console.error(e); }
     try { const p = payload as { nama?: string; alasanPermohonan?: string }; await notifikasiPetugasBaru("KK", { nama: p.nama, alasan: p.alasanPermohonan, pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath("/permohonan-kk");
 

@@ -47,12 +47,12 @@ export const kirimWa = async (target: string, pesan: string): Promise<boolean> =
 };
 
 /**
- * Kirim WA ke semua PETUGAS + ADMIN_EMAIL (opsional) + pesan detail permohonan.
- * jenis: KTP | KK | SKL | SKTM | SKK | SKU | SKD | PINDAH
+ * Kirim WA ke semua PETUGAS & ADMIN saat ada permohonan baru.
+ * detail opsional — jika tidak ada, pesan tetap terkirim (notifikasi umum).
  */
 export const kirimWaPetugasBaru = async (
   jenis: string,
-  detail: { nomor?: string; nama?: string; alasan?: string; pengaju?: string }
+  detail?: { nomor?: string; nama?: string; alasan?: string; pengaju?: string }
 ) => {
   try {
     const token = process.env.FONNTE_TOKEN;
@@ -68,10 +68,10 @@ export const kirimWaPetugasBaru = async (
 
     const pesan =
       `📢 *PERMOHONAN ${jenis} BARU*\n\n` +
-      (detail.nomor ? `🧾 No: ${detail.nomor}\n` : "") +
-      `👤 Nama: ${detail.nama ?? "-"}\n` +
-      (detail.alasan ? `📌 Perihal: ${detail.alasan}\n` : "") +
-      (detail.pengaju ? `🌐 Pengaju: ${detail.pengaju}\n` : "") +
+      (detail?.nomor ? `🧾 No: ${detail.nomor}\n` : "") +
+      (detail?.nama ? `👤 Nama: ${detail.nama}\n` : "") +
+      (detail?.alasan ? `📌 Perihal: ${detail.alasan}\n` : "") +
+      (detail?.pengaju ? `🌐 Pengaju: ${detail.pengaju}\n` : "") +
       `\nSilakan proses melalui menu Kelola ${jenis} di aplikasi.\n` +
       `_Aplikasi Pelayanan Desa Sukamaju_`;
 
