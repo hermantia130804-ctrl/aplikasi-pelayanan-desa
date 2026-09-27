@@ -11,7 +11,7 @@ import { createPermohonanSKLService } from "../services/permohonan-skl";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
 import { generateNomorPermohonan } from "../services/nomor-permohonan";
-import { kirimWaPetugasBaru } from "../services/whatsapp";
+import { notifikasiPetugasBaru } from "../services/notifikasi-petugas";
 
 export const createPermohonanSKLMandiriAction = async (payload: TCreatePermohonanSKLSchema) => {
   const message = MESSAGE.SKL_REQUEST || MESSAGE.GLOBAL;
@@ -20,7 +20,7 @@ export const createPermohonanSKLMandiriAction = async (payload: TCreatePermohona
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     const nomorPermohonan = await generateNomorPermohonan("SKL");
     const data = await createPermohonanSKLService(currentSession.user.userId, { ...payload, nomorPermohonan });
-    try { await kirimWaPetugasBaru("SKL", { nama: payload.nama, alasan: "Pengajuan SKL", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
+    try { await notifikasiPetugasBaru("SKL", { nama: payload.nama, alasan: "Pengajuan SKL", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath(PATHS.SKL_REQUEST || "/permohonan-skl");
 
     try {

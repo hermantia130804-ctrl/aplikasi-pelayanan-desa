@@ -11,7 +11,7 @@ import { createPermohonanSKTMService } from "../services/permohonan-sktm";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
 import { generateNomorPermohonan } from "../services/nomor-permohonan";
-import { kirimWaPetugasBaru } from "../services/whatsapp";
+import { notifikasiPetugasBaru } from "../services/notifikasi-petugas";
 
 export const createPermohonanSKTMMandiriAction = async (payload: TCreatePermohonanSKTMSchema) => {
   const message = MESSAGE.SKTM_REQUEST;
@@ -20,7 +20,7 @@ export const createPermohonanSKTMMandiriAction = async (payload: TCreatePermohon
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     const nomorPermohonan = await generateNomorPermohonan("SKTM");
     const data = await createPermohonanSKTMService(currentSession.user.userId, { ...payload, nomorPermohonan });
-    try { await kirimWaPetugasBaru("SKTM", { nama: payload.nama, alasan: "Pengajuan SKTM", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
+    try { await notifikasiPetugasBaru("SKTM", { nama: payload.nama, alasan: "Pengajuan SKTM", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath(PATHS.SKTM_REQUEST);
 
     try {

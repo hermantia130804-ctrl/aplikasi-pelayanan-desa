@@ -9,7 +9,7 @@ export async function GET() {
   if (!session?.user) return NextResponse.json({ error: "Belum login" }, { status: 401 });
 
   const target = process.env.ADMIN_WA ?? "";
-  if (!target) return NextResponse.json({ error: "ADMIN_WA belum diisi di Vercel (format 62xxx)" }, { status: 400 });
+  if (!target) return NextResponse.json({ error: "ADMIN_WA belum diisi (format 62xxx)" }, { status: 400 });
 
   const ok = await kirimWa(target, "🔔 Tes WA dari aplikasi desa — jalur Fonnte OK!");
   return NextResponse.json({

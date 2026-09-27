@@ -11,7 +11,7 @@ import { createPermohonanSKUService } from "../services/permohonan-sku";
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
 import { generateNomorPermohonan } from "../services/nomor-permohonan";
-import { kirimWaPetugasBaru } from "../services/whatsapp";
+import { notifikasiPetugasBaru } from "../services/notifikasi-petugas";
 
 export const createPermohonanSKUMandiriAction = async (payload: TCreatePermohonanSKUSchema) => {
   const message = MESSAGE.PERMOHONAN_SKU;
@@ -20,7 +20,7 @@ export const createPermohonanSKUMandiriAction = async (payload: TCreatePermohona
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     const nomorPermohonan = await generateNomorPermohonan("SKU");
     const data = await createPermohonanSKUService(currentSession.user.userId, { ...payload, nomorPermohonan });
-    try { await kirimWaPetugasBaru("SKU", { nama: payload.nama, alasan: "Pengajuan SKU", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
+    try { await notifikasiPetugasBaru("SKU", { nama: payload.nama, alasan: "Pengajuan SKU", pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath(PATHS.SKU_REQUEST);
 
     try {

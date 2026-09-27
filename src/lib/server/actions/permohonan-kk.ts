@@ -16,7 +16,7 @@ import {
 import { findCurrentSessionService } from "../services/session";
 import { sendEmail } from "../utils/email";
 import { generateNomorPermohonan } from "../services/nomor-permohonan";
-import { kirimWaPetugasBaru } from "../services/whatsapp";
+import { notifikasiPetugasBaru } from "../services/notifikasi-petugas";
 import { prisma } from "@/lib/prisma";
 
 export const createPermohonanKKMandiriAction = async (payload: unknown) => {
@@ -25,7 +25,7 @@ export const createPermohonanKKMandiriAction = async (payload: unknown) => {
     if (!currentSession?.user) throw new ApiError(status.UNAUTHORIZED, MESSAGE.AUTH.UNAUTHORIZED);
     const nomorPermohonan = await generateNomorPermohonan("KK");
     const data = await createPermohonanKKService(currentSession.user.userId, { ...(payload as object), nomorPermohonan });
-    try { const p = payload as { nama?: string; alasanPermohonan?: string }; await kirimWaPetugasBaru("KK", { nama: p.nama, alasan: p.alasanPermohonan, pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
+    try { const p = payload as { nama?: string; alasanPermohonan?: string }; await notifikasiPetugasBaru("KK", { nama: p.nama, alasan: p.alasanPermohonan, pengaju: "via aplikasi" }); } catch (e) { console.error(e); }
     revalidatePath("/permohonan-kk");
 
     try {
