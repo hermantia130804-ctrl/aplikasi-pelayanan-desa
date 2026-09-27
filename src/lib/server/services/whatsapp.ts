@@ -18,7 +18,7 @@ export const kirimWa = async (target: string, pesan: string): Promise<boolean> =
   }
 
   const token = process.env.FONNTE_TOKEN;
-  const domain = process.env.FONNTE_DOMAIN || "md.fonnte.com";
+  const domain = process.env.FONNTE_DOMAIN || "api.fonnte.com";
   if (!token) {
     console.error("[WA] FONNTE_TOKEN tidak ada di env");
     return false;
@@ -56,7 +56,7 @@ export const kirimWaPetugasBaru = async (
 ) => {
   try {
     const token = process.env.FONNTE_TOKEN;
-    const domain = process.env.FONNTE_DOMAIN || "md.fonnte.com";
+    const domain = process.env.FONNTE_DOMAIN || "api.fonnte.com";
     if (!token) {
       console.error("[WA] FONNTE_TOKEN tidak ada — skip notifikasi WA petugas");
       return;
