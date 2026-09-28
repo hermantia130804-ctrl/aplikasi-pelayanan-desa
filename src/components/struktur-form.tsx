@@ -16,6 +16,7 @@ const schema = z.object({
     jabatan: z.string().min(3, "Jabatan minimal 3 karakter"),
     fotoUrl: z.string().optional(),
     urutan: z.coerce.number().int().min(1),
+    tingkat: z.coerce.number().int().min(1).default(1),
 });
 
 type TStruktur = z.infer<typeof schema>;
@@ -100,6 +101,15 @@ export function StrukturForm({
                         <FormLabel>Urutan Tampil (angka)</FormLabel>
                         <FormControl><Input type="number" min={1} {...field} /></FormControl>
                         <FormMessage />
+                    </FormItem>
+                )} />
+
+                <FormField control={form.control} name="tingkat" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Tingkat Hierarki (angka)</FormLabel>
+                        <FormControl><Input type="number" min={1} {...field} /></FormControl>
+                        <FormMessage />
+                        <p className="text-xs text-muted-foreground">1 = paling atas (Kepala Desa), 2 = baris kedua, dst.</p>
                     </FormItem>
                 )} />
                 <div>

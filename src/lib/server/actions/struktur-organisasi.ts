@@ -21,6 +21,7 @@ const strukturSchema = z.object({
   jabatan: z.string().min(3, "Jabatan minimal 3 karakter"),
   fotoUrl: z.string().optional(),
   urutan: z.coerce.number().int().min(1).default(1),
+  tingkat: z.coerce.number().int().min(1).default(1),
 });
 
 export const findManyStrukturAction = async () => {

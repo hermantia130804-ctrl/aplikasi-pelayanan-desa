@@ -20,6 +20,7 @@ export default function TambahStrukturPage() {
                             jabatan: "",
                             fotoUrl: "",
                             urutan: 1,
+                            tingkat: 1,
                         }}
                     />
                 </div>

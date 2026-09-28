@@ -464,6 +464,7 @@ model StrukturOrganisasi {
   jabatan    String
   fotoUrl    String? @map("foto_url")
   urutan     Int     @default(1)
+  tingkat    Int     @default(1)
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 

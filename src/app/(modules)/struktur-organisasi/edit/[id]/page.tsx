@@ -27,6 +27,7 @@ export default async function EditStrukturPage({ params }: { params: Promise<{ i
                             jabatan: data.jabatan,
                             fotoUrl: data.fotoUrl ?? "",
                             urutan: data.urutan,
+                            tingkat: data.tingkat,
                         }}
                     />
                 </div>

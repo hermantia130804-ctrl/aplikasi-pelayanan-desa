@@ -8,11 +8,11 @@ export const findStrukturByIdService = async (id: string) => {
   return prisma.strukturOrganisasi.findUnique({ where: { strukturId: id } });
 };
 
-export const createStrukturService = async (data: { nama: string; jabatan: string; fotoUrl?: string | null; urutan: number }) => {
+export const createStrukturService = async (data: { nama: string; jabatan: string; fotoUrl?: string | null; urutan: number; tingkat: number }) => {
   return prisma.strukturOrganisasi.create({ data });
 };
 
-export const updateStrukturService = async (id: string, data: { nama?: string; jabatan?: string; fotoUrl?: string | null; urutan?: number }) => {
+export const updateStrukturService = async (id: string, data: { nama?: string; jabatan?: string; fotoUrl?: string | null; urutan?: number; tingkat?: number }) => {
   return prisma.strukturOrganisasi.update({ where: { strukturId: id }, data });
 };
 
