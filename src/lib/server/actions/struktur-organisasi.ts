@@ -6,7 +6,7 @@ import { del } from "@vercel/blob";
 import { ApiError } from "next/dist/server/api-utils";
 import { MESSAGE } from "@/constants/message";
 import { errorHandler } from "../services/error";
-import { requireFullAdmin } from "../guards";
+import { requireFullAdminPage } from "../guards";
 import {
   findManyStrukturService,
   findStrukturByIdService,
@@ -25,7 +25,7 @@ const strukturSchema = z.object({
 
 export const findManyStrukturAction = async () => {
   try {
-    await requireFullAdmin();
+    await requireFullAdminPage();
     const data = await findManyStrukturService();
     return { status: status.OK, data };
   } catch (error) {
@@ -35,7 +35,7 @@ export const findManyStrukturAction = async () => {
 
 export const createStrukturAction = async (payload: unknown) => {
   try {
-    await requireFullAdmin();
+    await requireFullAdminPage();
     const parsed = strukturSchema.parse(payload);
     const data = await createStrukturService(parsed);
     revalidatePath("/struktur-organisasi");
@@ -48,7 +48,7 @@ export const createStrukturAction = async (payload: unknown) => {
 
 export const updateStrukturAction = async (id: string, payload: unknown) => {
   try {
-    await requireFullAdmin();
+    await requireFullAdminPage();
     const parsed = strukturSchema.parse(payload);
     const data = await updateStrukturService(id, parsed);
     revalidatePath("/struktur-organisasi");
@@ -61,7 +61,7 @@ export const updateStrukturAction = async (id: string, payload: unknown) => {
 
 export const deleteStrukturAction = async (id: string) => {
   try {
-    await requireFullAdmin();
+    await requireFullAdminPage();
 
     const existing = await findStrukturByIdService(id);
     if (existing?.fotoUrl) {

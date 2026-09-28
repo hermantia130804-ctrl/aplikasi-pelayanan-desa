@@ -175,6 +175,8 @@ export default async function PublicHomePage() {
                 </div>
             </section>
 
+            <StrukturSection />
+
             {/* ============ STATISTIK APLIKASI ============ */}
             <section className="relative overflow-hidden bg-primary py-20 text-primary-foreground">
                 <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_50%_120%,rgba(255,255,255,0.12),transparent)]" />
@@ -325,4 +327,61 @@ export default async function PublicHomePage() {
             </section>
         </div>
     );
+}
+
+async function StrukturSection() {
+    try {
+        const struktur = await prisma.strukturOrganisasi.findMany({
+            orderBy: { urutan: "asc" },
+        });
+
+        return (
+            <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+                <div className="mx-auto max-w-2xl text-center">
+                    <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
+                        Pemerintahan Desa
+                    </span>
+                    <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+                        Struktur Organisasi
+                    </h2>
+                    <p className="mt-3 text-muted-foreground">
+                        Perangkat desa yang siap melayani masyarakat Sukamaju.
+                    </p>
+                </div>
+
+                {struktur.length === 0 ? (
+                    <p className="mt-10 rounded-2xl border border-dashed p-10 text-center text-muted-foreground">
+                        Data struktur organisasi belum diisi.
+                    </p>
+                ) : (
+                    <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
+                        {struktur.map((p) => (
+                            <div
+                                key={p.strukturId}
+                                className="flex flex-col items-center rounded-2xl border bg-card p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                            >
+                                {p.fotoUrl ? (
+                                    <img
+                                        src={p.fotoUrl}
+                                        alt={p.nama}
+                                        loading="lazy"
+                                        className="size-24 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex size-24 items-center justify-center rounded-full bg-primary/10 text-2xl font-black text-primary">
+                                        {p.nama.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                                <h3 className="mt-4 font-bold">{p.nama}</h3>
+                                <p className="mt-1 text-sm text-muted-foreground">{p.jabatan}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
+        );
+    } catch (error) {
+        console.error("ERROR ASLI:", error);
+        return null;
+    }
 }
