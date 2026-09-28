@@ -335,13 +335,12 @@ async function StrukturSection() {
             orderBy: [{ tingkat: "asc" }, { urutan: "asc" }],
         });
 
-        const tingkatMap = new Map<number, typeof struktur>();
+        const tingkatGroups: Record<number, typeof struktur> = {};
         for (const p of struktur) {
-            const arr = tingkatMap.get(p.tingkat) || [];
-            arr.push(p);
-            tingkatMap.set(p.tingkat, arr);
+            if (!tingkatGroups[p.tingkat]) tingkatGroups[p.tingkat] = [];
+            tingkatGroups[p.tingkat].push(p);
         }
-        const tingkatKeys = Array.from(tingkatMap.keys()).sort((a, b) => a - b);
+        const tingkatKeys = Object.keys(tingkatGroups).map(Number).sort((a, b) => a - b);
 
         return (
             <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
@@ -367,7 +366,7 @@ async function StrukturSection() {
                             <div key={tk}>
                                 {idx > 0 && <div aria-hidden="true" className="mx-auto h-8 w-px bg-border" />}
                                 <div className="flex flex-wrap items-start justify-center gap-4 sm:gap-6">
-                                    {(tingkatMap.get(tk) || []).map((p) => (
+                                    {(tingkatGroups[tk] || []).map((p) => (
                                         <div
                                             key={p.strukturId}
                                             className={
