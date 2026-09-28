@@ -11,6 +11,8 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { ScrollToTop } from "@/components/scroll-to-top";
+import { IdleGuard } from "@/components/idle-guard";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
     const session = await findCurrentSessionService();
@@ -24,6 +26,8 @@ export default async function PublicLayout({ children }: { children: React.React
 
     return (
         <div className="flex min-h-screen flex-col bg-background text-foreground">
+            <ScrollToTop />
+            {session?.user ? <IdleGuard /> : null}
             <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
                     {/* Logo */}
