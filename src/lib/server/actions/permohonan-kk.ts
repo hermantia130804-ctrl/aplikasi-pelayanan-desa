@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { MESSAGE } from "@/constants/message";
 import status from "http-status";
 import { revalidatePath } from "next/cache";
@@ -11,6 +12,7 @@ import {
   findPermohonanKKByIdService,
   updateStatusPermohonanKKService,
   updatePermohonanKKService,
+  followUpPermohonanKKService,
 } from "../services/permohonan-kk";
 import { findCurrentSessionService } from "../services/session";
 import { generateNomorPermohonan } from "../services/nomor-permohonan";
@@ -93,6 +95,27 @@ export const findPermohonanKKByIdAction = async (id: string) => {
   try {
     const data = await findPermohonanKKByIdService(id);
     return { status: status.OK, data };
+  } catch (error) {
+    return errorHandler(error);
+  }
+};
+
+const followUpPermohonanKKSchema = z.object({
+  permohonanKKId: z.string().min(1),
+  statusPermohonan: z.enum(["DIAJUKAN", "DISETUJUI", "DITOLAK"]),
+  nomorPermohonan: z.string().optional(),
+  catatan: z.string().optional(),
+});
+
+export const followUpPermohonanKKActionV2 = async (payload: unknown) => {
+  try {
+    await requireStaff();
+    const parsed = followUpPermohonanKKSchema.parse(payload);
+    const { permohonanKKId, ...data } = parsed;
+    await followUpPermohonanKKService(permohonanKKId, data);
+    revalidatePath("/permohonan-kk");
+    revalidatePath("/permohonan-kk/" + permohonanKKId);
+    return { status: status.OK, message: "Tindak lanjut permohonan KK berhasil disimpan" };
   } catch (error) {
     return errorHandler(error);
   }
