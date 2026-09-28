@@ -332,8 +332,16 @@ export default async function PublicHomePage() {
 async function StrukturSection() {
     try {
         const struktur = await prisma.strukturOrganisasi.findMany({
-            orderBy: { urutan: "asc" },
+            orderBy: [{ tingkat: "asc" }, { urutan: "asc" }],
         });
+
+        const tingkatMap = new Map<number, typeof struktur>();
+        for (const p of struktur) {
+            const arr = tingkatMap.get(p.tingkat) || [];
+            arr.push(p);
+            tingkatMap.set(p.tingkat, arr);
+        }
+        const tingkatKeys = Array.from(tingkatMap.keys()).sort((a, b) => a - b);
 
         return (
             <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
@@ -354,26 +362,41 @@ async function StrukturSection() {
                         Data struktur organisasi belum diisi.
                     </p>
                 ) : (
-                    <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-                        {struktur.map((p) => (
-                            <div
-                                key={p.strukturId}
-                                className="flex flex-col items-center rounded-2xl border bg-card p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                            >
-                                {p.fotoUrl ? (
-                                    <img
-                                        src={p.fotoUrl}
-                                        alt={p.nama}
-                                        loading="lazy"
-                                        className="size-24 rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="flex size-24 items-center justify-center rounded-full bg-primary/10 text-2xl font-black text-primary">
-                                        {p.nama.charAt(0).toUpperCase()}
-                                    </div>
-                                )}
-                                <h3 className="mt-4 font-bold">{p.nama}</h3>
-                                <p className="mt-1 text-sm text-muted-foreground">{p.jabatan}</p>
+                    <div className="mt-12">
+                        {tingkatKeys.map((tk, idx) => (
+                            <div key={tk}>
+                                {idx > 0 && <div aria-hidden="true" className="mx-auto h-8 w-px bg-border" />}
+                                <div className="flex flex-wrap items-start justify-center gap-4 sm:gap-6">
+                                    {(tingkatMap.get(tk) || []).map((p) => (
+                                        <div
+                                            key={p.strukturId}
+                                            className={
+                                                "flex w-44 flex-col items-center rounded-2xl border bg-card p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" +
+                                                (tk === 1 ? " ring-2 ring-primary/40" : "")
+                                            }
+                                        >
+                                            {p.fotoUrl ? (
+                                                <img
+                                                    src={p.fotoUrl}
+                                                    alt={p.nama}
+                                                    loading="lazy"
+                                                    className={"rounded-full object-cover " + (tk === 1 ? "size-24" : "size-20")}
+                                                />
+                                            ) : (
+                                                <div
+                                                    className={
+                                                        "flex items-center justify-center rounded-full bg-primary/10 font-black text-primary " +
+                                                        (tk === 1 ? "size-24 text-2xl" : "size-20 text-xl")
+                                                    }
+                                                >
+                                                    {p.nama.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                            <h3 className="mt-3 text-sm font-bold leading-snug">{p.nama}</h3>
+                                            <p className="mt-1 text-xs text-muted-foreground">{p.jabatan}</p>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ))}
                     </div>
