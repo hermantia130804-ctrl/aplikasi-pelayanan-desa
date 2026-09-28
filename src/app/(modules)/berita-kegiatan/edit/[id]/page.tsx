@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EditBeritaPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const { data } = await findBeritaByIdService(id);
+    const data = await findBeritaByIdService(id);
     if (!data) notFound();
 
     return (
