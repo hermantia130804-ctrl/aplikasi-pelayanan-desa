@@ -457,3 +457,15 @@ model BeritaKegiatan {
 
   @@map("berita_kegiatan")
 }
+
+model StrukturOrganisasi {
+  strukturId String  @id @default(cuid()) @map("struktur_id")
+  nama       String
+  jabatan    String
+  fotoUrl    String? @map("foto_url")
+  urutan     Int     @default(1)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("struktur_organisasi")
+}
