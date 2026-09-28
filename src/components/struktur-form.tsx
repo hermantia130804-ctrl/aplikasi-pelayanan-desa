@@ -45,7 +45,7 @@ export function StrukturForm({
         try {
             setLoading(true);
             const payload = { ...values };
-            const fileInput = document.getElementById("foto-file") as HTMLInputElement | null;
+            const fileInput = document.getElementById("foto-pick") as HTMLInputElement | null;
             const file = fileInput?.files?.[0];
             if (file) {
                 const url = await uploadFoto(file);
