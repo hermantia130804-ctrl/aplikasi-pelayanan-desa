@@ -37,7 +37,10 @@ export const signUpAction = async (payload: TCreateUserSchema) => {
         const message = MESSAGE.AUTH;
         const { data } = await findUserByEmailService(payload.email);
         if (data) throw new ApiError(status.BAD_REQUEST, message.SIGN_UP_ALREADY_EXISTS);
-        const user = await createUserService(payload);
+        // Keamanan: pendaftaran publik hanya USER/PETUGAS (tanpa jabatan - diisi admin kemudian); ADMIN tidak boleh lewat pendaftaran publik
+        const { jabatan: _jabatan, ...safePayload } = payload;
+        const roleAman = safePayload.role === "PETUGAS" ? "PETUGAS" : "USER";
+        const user = await createUserService({ ...safePayload, role: roleAman } as TCreateUserSchema);
         await createEmailVerificationService(user.data.userId);
         return { status: status.OK, message: message.SIGN_UP_OK };
     } catch (error) {

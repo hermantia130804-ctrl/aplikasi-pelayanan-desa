@@ -40,7 +40,6 @@ export const SignUpForm = ({
       phone: "",
       name: "",
       nik: "",
-      jabatan: "",
     },
   });
 
@@ -49,7 +48,6 @@ export const SignUpForm = ({
       const response = await signUpAction({
         ...data,
         daftarSebagai,
-        jabatan: daftarSebagai === "PETUGAS" ? form.getValues("jabatan") : undefined,
       });
       if (response.status === 200) {
         form.reset();
@@ -133,20 +131,7 @@ export const SignUpForm = ({
                 )}
               />
                             {daftarSebagai === "PETUGAS" && (
-                <FormField
-                  control={form.control}
-                  name="jabatan"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Jabatan</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Contoh: Petugas Pelayanan Desa" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                              )}
               <FormField
                 control={form.control}
                 name="email"
