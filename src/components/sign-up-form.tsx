@@ -130,9 +130,7 @@ export const SignUpForm = ({
                   </FormItem>
                 )}
               />
-                            {daftarSebagai === "PETUGAS" && (
-                              )}
-              <FormField
+                                          <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
