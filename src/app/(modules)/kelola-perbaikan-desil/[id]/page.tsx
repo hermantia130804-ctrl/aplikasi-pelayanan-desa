@@ -1,4 +1,5 @@
 import { PerbaikanDesilTindakLanjut } from "@/components/perbaikan-desil-tindak-lanjut";
+import { PerbaikanDesilDeleteButton } from "@/components/perbaikan-desil-delete-button";
 import { findPerbaikanDesilByIdAction } from "@/lib/server/actions/perbaikan-desil";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,9 @@ export default async function KelolaPerbaikanDesilDetailPage({ params }: { param
                     <div className="flex items-center justify-between">
                         <h1 className="text-2xl font-bold">{d.nomorPermohonan}</h1>
                         <Badge>{d.statusPermohonan}</Badge>
+                    </div>
+                    <div className="flex justify-end">
+                        <PerbaikanDesilDeleteButton perbaikanDesilId={d.perbaikanDesilId} />
                     </div>
                     <p className="text-muted-foreground -mt-2 text-sm">
                         Pemohon: {d.user?.name ?? "-"} ({d.user?.email ?? "-"}) · Diajukan {moment(d.createdAt).format("DD MMMM YYYY HH:mm")}

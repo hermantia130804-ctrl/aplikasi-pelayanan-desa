@@ -2,6 +2,7 @@
 
 import status from "http-status";
 import { revalidatePath } from "next/cache";
+import { del } from "@vercel/blob";
 import { ApiError } from "next/dist/server/api-utils";
 import { z } from "zod";
 import { MESSAGE } from "@/constants/message";
@@ -206,6 +207,29 @@ export const updateStatusPerbaikanDesilAction = async (id: string, payload: unkn
     }
 
     return { status: status.OK, message: "Status pengajuan berhasil diperbarui", data };
+  } catch (error) {
+    return errorHandler(error);
+  }
+};
+
+// ===== Petugas/Admin: hapus pengajuan (DB + foto Blob ikut terhapus) =====
+export const deletePerbaikanDesilAction = async (id: string) => {
+  try {
+    await requireStaff();
+
+    const existing = await prisma.perbaikanDesil.findUnique({ where: { perbaikanDesilId: id } });
+    if (!existing) throw new ApiError(status.NOT_FOUND, "Pengajuan tidak ditemukan.");
+
+    const urls = (existing.fotoUrls as unknown as string[]) ?? [];
+    for (const url of urls) {
+      try { await del(url); } catch (e) { console.error("GAGAL HAPUS FOTO DESIL:", e); }
+    }
+
+    await prisma.perbaikanDesil.delete({ where: { perbaikanDesilId: id } });
+
+    revalidatePath("/kelola-perbaikan-desil");
+    revalidatePath("/perbaikan-desil");
+    return { status: status.OK, message: "Pengajuan perbaikan desil berhasil dihapus" };
   } catch (error) {
     return errorHandler(error);
   }
