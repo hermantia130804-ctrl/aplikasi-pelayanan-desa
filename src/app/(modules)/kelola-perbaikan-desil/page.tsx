@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { findManyPerbaikanDesilAction } from "@/lib/server/actions/perbaikan-desil";
+import { PerbaikanDesilDeleteModal } from "@/components/perbaikan-desil-delete-modal";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import moment from "moment";
@@ -44,9 +45,12 @@ export default async function KelolaPerbaikanDesilPage() {
                                             {d.namaKk} · NIK {d.nikKk} · Pengaju: {d.user?.name ?? "-"} · {moment(d.createdAt).format("DD MMM YYYY")}
                                         </p>
                                     </div>
-                                    <Badge variant={badgeVarian[d.statusPermohonan] ?? "outline"}>
-                                        {d.statusPermohonan}
-                                    </Badge>
+    <div className="flex items-center gap-2">
+                                        <Badge variant={badgeVarian[d.statusPermohonan] ?? "outline"}>
+                                            {d.statusPermohonan}
+                                        </Badge>
+                                        <PerbaikanDesilDeleteModal perbaikanDesilId={d.perbaikanDesilId} />
+                                    </div>
                                 </Link>
                             ))}
                         </div>
