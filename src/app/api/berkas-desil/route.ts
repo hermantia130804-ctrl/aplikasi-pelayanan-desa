@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
 
     const id = req.nextUrl.searchParams.get("id");
     const i = parseInt(req.nextUrl.searchParams.get("i") ?? "0", 10);
+    const isDownload = req.nextUrl.searchParams.get("download") === "1";
     if (!id || Number.isNaN(i) || i < 0) {
       return NextResponse.json({ error: "Parameter tidak valid" }, { status: 400 });
     }
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
       headers: {
         "Content-Type": upstream.headers.get("content-type") ?? "image/jpeg",
         "Cache-Control": "private, max-age=300",
+        "Content-Disposition": `${isDownload ? "attachment" : "inline"}; filename="foto-desil-${id}-${i + 1}.jpg"`,
       },
     });
   } catch (error) {
