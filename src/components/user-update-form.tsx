@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "./ui/input";
 import { PasswordInput } from "@/components/password-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { JABATAN_PETUGAS } from "@/constants/jabatan";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
 type UserUpdateFormProps = {
@@ -33,6 +34,7 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
             nik: initialData.nik,
             password: "",
             role: initialData.role,
+            jabatan: initialData.jabatan ?? "",
         },
     });
 
@@ -123,6 +125,30 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
                                             </FormItem>
                                         )}
                                     />
+                                {form.watch("role") === "PETUGAS" && (
+                                    <FormField
+                                        control={form.control}
+                                        name="jabatan"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Jabatan Petugas</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Pilih Jabatan" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {JABATAN_PETUGAS.map((j) => (
+                                                            <SelectItem key={j} value={j}>{j}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
                                                                     <FormField
                                     control={form.control}
                                     name="password"

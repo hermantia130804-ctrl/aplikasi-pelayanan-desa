@@ -23,6 +23,7 @@ export const createUserSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   password: z.string().min(8, MESSAGE.INVALID_PASSWORD).max(255),
+  jabatan: z.string().optional(),
 });
 
 
@@ -34,6 +35,7 @@ export const updateUserSchema = z.object({
   name: z.string().optional(),
   address: z.string().optional(),
   phone: z.string().optional(),
+  jabatan: z.string().optional(),
   role: z.enum(["ADMIN", "PETUGAS", "USER"]).optional(),
   password: z.string().min(8, MESSAGE.INVALID_PASSWORD).max(255).optional(),
 });

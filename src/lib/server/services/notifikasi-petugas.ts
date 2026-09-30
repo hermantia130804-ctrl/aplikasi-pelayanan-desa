@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "../utils/email";
 import { kirimWa } from "./whatsapp";
+import { TUGAS_JABATAN } from "@/constants/jabatan";
 
 const STATUS_LABEL: Record<string, string> = {
   DIAJUKAN: "Menunggu Proses",
@@ -35,12 +36,21 @@ const htmlEmail = (jenis: string, d: { nomor?: string; nama?: string; alasan?: s
  */
 export const notifikasiPetugasBaru = async (jenis: string, detail: { nomor?: string; nama?: string; alasan?: string; pengaju?: string }) => {
   try {
+    // Kebijakan: notifikasi hanya ke PETUGAS yang jabatannya bertugas untuk jenis ini.
+    // ADMIN tidak menerima notifikasi. Jabatan tanpa tugas (mis. Kasi Pelayanan, Global)
+    // atau petugas tanpa jabatan -> tidak menerima.
+    const jabatanBertugas = TUGAS_JABATAN[jenis] ?? [];
+    if (!jabatanBertugas.length) {
+      console.log(`[NOTIF] Jenis "${jenis}" tidak memiliki petugas penanggung jawab - tidak ada notifikasi dikirim.`);
+      return;
+    }
+
     const petugas = await prisma.user.findMany({
-      where: { role: { in: ["PETUGAS", "ADMIN"] } },
+      where: { role: "PETUGAS", jabatan: { in: jabatanBertugas } },
     });
 
     if (!petugas.length) {
-      console.error("[NOTIF] Tidak ada petugas/admin di database");
+      console.error(`[NOTIF] Tidak ada petugas dengan jabatan: ${jabatanBertugas.join(", ")}`);
       return;
     }
 
@@ -67,7 +77,7 @@ export const notifikasiPetugasBaru = async (jenis: string, detail: { nomor?: str
       }
     }
 
-    console.log(`[NOTIF] Notifikasi ${jenis} diproses ke ${petugas.length} penerima`);
+    console.log(`[NOTIF] Notifikasi ${jenis} diproses ke ${petugas.length} petugas (jabatan: ${jabatanBertugas.join(", ")})`);
   } catch (e) {
     console.error("[NOTIF] Error notifikasi petugas:", e);
   }

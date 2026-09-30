@@ -21,6 +21,7 @@ import {
 } from "./ui/form";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { JABATAN_PETUGAS } from "@/constants/jabatan";
 import { Textarea } from "./ui/textarea";
 
 export const UserCreateForm = ({
@@ -38,6 +39,7 @@ export const UserCreateForm = ({
             name: "",
             nik: "",
             role: "USER",
+            jabatan: "",
         },
     });
 
@@ -141,6 +143,30 @@ export const UserCreateForm = ({
                                         </FormItem>
                                     )}
                                 />
+                                {form.watch("role") === "PETUGAS" && (
+                                    <FormField
+                                        control={form.control}
+                                        name="jabatan"
+                                        render={({ field }) => (
+                                            <FormItem className="lg:col-span-2">
+                                                <FormLabel>Jabatan Petugas</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Pilih Jabatan" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {JABATAN_PETUGAS.map((j) => (
+                                                            <SelectItem key={j} value={j}>{j}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
                                 <FormField
                                     control={form.control}
                                     name="phone"
