@@ -41,6 +41,9 @@ export const kirimEmailStatusWarga = async (jenis: string, id: string) => {
     case "SKD":
       data = await prisma.permohonanSKD.findUnique({ where: { permohonanSKDId: id }, include: { user: true } });
       break;
+    case "DESIL":
+      data = await prisma.perbaikanDesil.findUnique({ where: { perbaikanDesilId: id }, include: { user: true } });
+      break;
     case "PINDAH":
       data = await prisma.permohonanPindah.findUnique({ where: { permohonanPindahId: id }, include: { user: true } });
       break;

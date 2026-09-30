@@ -1,0 +1,22 @@
+export const PILIHAN_DESIL = {
+  jenisBangunan: ["Rumah Tunggal", "Apartemen", "Rumah Susun", "Rumah Deret", "Lainnya"],
+  statusKepemilikan: ["Milik Sendiri", "Kontrak/Sewa", "Bebas Sewa", "Dinas", "Lainnya"],
+  buktiTanah: ["SHM", "Sertifikat selain SHM (SHGB, SHSRS)", "Surat bukti lainnya (Girik, Letter C, dll)", "Tidak Punya"],
+  jenisLantai: ["Marmer/granit", "Keramik", "Parket/vinil/karpet", "Ubin/tegel/teraso", "Kayu/papan", "Yang lain"],
+  kondisi: ["Baik", "Rusak Ringan", "Rusak Sedang", "Rusak Berat"],
+  jenisDinding: ["Tembok", "Plesteran anyaman bambu/kawat", "Kayu/papan/Gypsum/GRC/Calciboard", "Anyaman bambu", "Batang kayu", "Yang lain"],
+  jenisAtap: ["Beton", "Genteng", "Seng", "Asbes", "Kayu/sirap", "Yang lain"],
+  fasilitasBAB: [
+    "Ada, digunakan oleh anggota keluarga dalam satu rumah",
+    "Ada, digunakan bersama oleh anggota keluarga dari beberapa rumah",
+    "Ada, di MCK komunal",
+    "Ada, di MCK umum/siapapun menggunakan",
+    "Ada, anggota keluarga tidak menggunakan",
+    "Yang lain",
+  ],
+  jenisKloset: ["Leher angsa", "Plengsengan dengan tutup", "Plengsengan tanpa tutup", "Cemplung/cubluk"],
+  buanganTinja: ["Tangki septik (septic tank)", "IPAL", "Lubang tanah", "Kolam/sawah/sungai/danau/laut", "Pantai/tanah lapang/kebun", "Yang lain"],
+  sumberAir: ["Air kemasan bermerk", "Air isi ulang", "Leding", "Sumur bor/pompa", "Sumur terlindung", "Yang lain"],
+  sumberPenerangan: ["Listrik PLN dengan meteran", "Listrik PLN tanpa meteran", "Listrik Non-PLN", "Bukan listrik"],
+  dayaListrik: ["450 watt", "900 watt", "1.300 watt", "2.200 watt", "> 2.200 watt"],
+} as const;

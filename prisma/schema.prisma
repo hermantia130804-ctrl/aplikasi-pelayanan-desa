@@ -128,6 +128,7 @@ model User {
   beritaKegiatan  BeritaKegiatan[]
 
   @@map("users")
+  perbaikanDesil        PerbaikanDesil[]
 }
 
 model Session {
@@ -469,4 +470,26 @@ model StrukturOrganisasi {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@map("struktur_organisasi")
+}
+
+model PerbaikanDesil {
+  perbaikanDesilId String   @id @default(cuid()) @map("perbaikan_desil_id")
+  userId           String   @map("user_id")
+  nomorPermohonan  String   @unique @map("nomor_permohonan")
+  namaKk           String   @map("nama_kk")
+  nikKk            String   @map("nik_kk")
+  noKk             String   @map("no_kk")
+  jumlahAnggota    Int      @map("jumlah_anggota")
+  alamat           String
+  namaJalan        String   @map("nama_jalan")
+  noRumah          String   @map("no_rumah")
+  jawaban          Json     @default("{}") @map("jawaban")
+  fotoUrls         Json     @default("[]") @map("foto_urls")
+  statusPermohonan String   @default("DIAJUKAN") @map("status_permohonan")
+  catatan          String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  user             User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("perbaikan_desil")
 }

@@ -15,6 +15,7 @@ export const MENU = {
     MAIN: [
         { name: "Beranda", url: "/dashboard", icon: IconDashboard, roles: ALL },
         { name: "Permohonan Saya", url: "/permohonan-saya", icon: IconListDetails, roles: U },
+        { name: "Perbaikan Desil Saya", url: "/perbaikan-desil", icon: IconListDetails, roles: ALL },
     ],
     ADMIN: [
         { name: "Kelola Pengguna", url: PATHS.USER, icon: IconUsers, roles: A },
@@ -27,6 +28,7 @@ export const MENU = {
         { name: "Kelola Permohonan SKD", url: PATHS.SKD_REQUEST, icon: IconChartBar, roles: AP },
         { name: "Struktur Organisasi", url: "/struktur-organisasi", icon: IconUsers, roles: A },
         { name: "Kegiatan Desa", url: "/berita-kegiatan", icon: IconNews, roles: AP },
+        { name: "Kelola Perbaikan Desil", url: "/kelola-perbaikan-desil", icon: IconChartBar, roles: AP },
 
     ],
     USER: [
@@ -37,6 +39,7 @@ export const MENU = {
         { name: "Ajukan SKK", url: "/permohonan-skk-mandiri/tambah", icon: IconChartBar, roles: U },
         { name: "Ajukan SKU", url: "/permohonan-sku-mandiri/tambah", icon: IconChartBar, roles: U },
         { name: "Ajukan SKD", url: "/permohonan-skd-mandiri/tambah", icon: IconChartBar, roles: U },
+        { name: "Ajukan Perbaikan Desil", url: "/perbaikan-desil/tambah", icon: IconChartBar, roles: U },
     ],
     FOOTER: [
         { name: "Pengaturan", url: PATHS.SETTING, icon: IconSettings2, roles: ALL },
