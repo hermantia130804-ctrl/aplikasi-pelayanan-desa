@@ -228,7 +228,7 @@ export function PermohonanPindahDetail({ permohonan }: PermohonanPindahDetailPro
                       <span className="text-sm font-medium">Dokumen KK</span>
                     </div>
                     <Button asChild variant="outline" size="sm">
-                      <Link href={permohonan.dokumenKK} target="_blank">
+                      <Link href={`/api/berkas?jenis=pindah&id=${permohonan.permohonanPindahId}&field=dokumenKK`} target="_blank">
                         <ExternalLink className="h-4 w-4" />
                       </Link>
                     </Button>
@@ -243,7 +243,7 @@ export function PermohonanPindahDetail({ permohonan }: PermohonanPindahDetailPro
                       <span className="text-sm font-medium">Dokumen KTP</span>
                     </div>
                     <Button asChild variant="outline" size="sm">
-                      <Link href={permohonan.dokumenKTP} target="_blank">
+                      <Link href={`/api/berkas?jenis=pindah&id=${permohonan.permohonanPindahId}&field=dokumenKTP`} target="_blank">
                         <ExternalLink className="h-4 w-4" />
                       </Link>
                     </Button>
@@ -258,7 +258,7 @@ export function PermohonanPindahDetail({ permohonan }: PermohonanPindahDetailPro
                       <span className="text-sm font-medium">Dokumen Surat Pengantar</span>
                     </div>
                     <Button asChild variant="outline" size="sm">
-                      <Link href={permohonan.dokumenSP} target="_blank">
+                      <Link href={`/api/berkas?jenis=pindah&id=${permohonan.permohonanPindahId}&field=dokumenSP`} target="_blank">
                         <ExternalLink className="h-4 w-4" />
                       </Link>
                     </Button>

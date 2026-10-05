@@ -191,7 +191,7 @@ export function PermohonanSKUDetail({ permohonan }: PermohonanSKUDetailProps) {
               {permohonan.dokumenKK ? (
                 <div className="mt-1">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={permohonan.dokumenKK} target="_blank">
+                    <Link href={`/api/berkas?jenis=sku&id=${permohonan.permohonanSKUId}&field=dokumenKK`} target="_blank">
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Lihat Dokumen
                     </Link>
@@ -208,7 +208,7 @@ export function PermohonanSKUDetail({ permohonan }: PermohonanSKUDetailProps) {
               {permohonan.dokumenKTP ? (
                 <div className="mt-1">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={permohonan.dokumenKTP} target="_blank">
+                    <Link href={`/api/berkas?jenis=sku&id=${permohonan.permohonanSKUId}&field=dokumenKTP`} target="_blank">
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Lihat Dokumen
                     </Link>
@@ -225,7 +225,7 @@ export function PermohonanSKUDetail({ permohonan }: PermohonanSKUDetailProps) {
               {permohonan.dokumenSP ? (
                 <div className="mt-1">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={permohonan.dokumenSP} target="_blank">
+                    <Link href={`/api/berkas?jenis=sku&id=${permohonan.permohonanSKUId}&field=dokumenSP`} target="_blank">
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Lihat Dokumen
                     </Link>
@@ -242,7 +242,7 @@ export function PermohonanSKUDetail({ permohonan }: PermohonanSKUDetailProps) {
               {permohonan.dokumenUsaha ? (
                 <div className="mt-1">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={permohonan.dokumenUsaha} target="_blank">
+                    <Link href={`/api/berkas?jenis=sku&id=${permohonan.permohonanSKUId}&field=dokumenUsaha`} target="_blank">
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Lihat Dokumen
                     </Link>

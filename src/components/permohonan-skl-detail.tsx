@@ -158,9 +158,9 @@ export function PermohonanSKLDetail({ permohonanSKL }: PermohonanSKLDetailProps)
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-3">
-              <DetailFile label="Dokumen KK" url={dokumenKK || ""} />
-              <DetailFile label="Dokumen Pengantar" url={dokumenPengantar || ""} />
-              <DetailFile label="Dokumen Surat Lahir" url={dokumenSuratLahir || ""} />
+              <DetailFile label="Dokumen KK" url={`/api/berkas?jenis=skl&id=${permohonanSKLId}&field=dokumenKK`} />
+              <DetailFile label="Dokumen Pengantar" url={`/api/berkas?jenis=skl&id=${permohonanSKLId}&field=dokumenPengantar`} />
+              <DetailFile label="Dokumen Surat Lahir" url={`/api/berkas?jenis=skl&id=${permohonanSKLId}&field=dokumenSuratLahir`} />
             </div>
           </CardContent>
         </Card>

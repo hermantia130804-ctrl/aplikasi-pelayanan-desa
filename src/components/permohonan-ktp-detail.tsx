@@ -136,8 +136,8 @@ export function PermohonanKTPDetail({ permohonanKTP }: PermohonanKTPDetailProps)
             <h2 className="font-semibold mb-2">IV. Dokumen</h2>
             <Separator className="mb-2" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <DetailFile label="Dokumen KK" url={dokumenKK || ""} />
-              <DetailFile label="Dokumen Pengantar" url={dokumenPengantar || ""} />
+              <DetailFile label="Dokumen KK" url={`/api/berkas?jenis=ktp&id=${permohonanKtpId}&field=dokumenKK`} />
+              <DetailFile label="Dokumen Pengantar" url={`/api/berkas?jenis=ktp&id=${permohonanKtpId}&field=dokumenPengantar`} />
             </div>
           </section>
           {/* Catatan */}

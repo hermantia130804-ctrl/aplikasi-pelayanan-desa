@@ -10,16 +10,13 @@ export const dynamic = "force-dynamic";
  * Akses: ADMIN/PETUGAS (semua jenis) atau pemilik permohonan.
  */
 const KONFIG = {
-  kk: {
-    model: "permohonanKK",
-    idField: "permohonanKKId",
-    kolomDiizinkan: ["dokumenKTP", "dokumenAkta", "dokumenPengantar"],
-  },
-  ktp: {
-    model: "permohonanKTP",
-    idField: "permohonanKtpId",
-    kolomDiizinkan: ["dokumenKK", "dokumenPengantar"],
-  },
+  kk: { model: "permohonanKK", idField: "permohonanKKId", kolomDiizinkan: ["dokumenKTP", "dokumenAkta", "dokumenPengantar"] },
+  ktp: { model: "permohonanKTP", idField: "permohonanKtpId", kolomDiizinkan: ["dokumenKK", "dokumenPengantar"] },
+  skl: { model: "permohonanSKL", idField: "permohonanSKLId", kolomDiizinkan: ["dokumenKK", "dokumenPengantar", "dokumenSuratLahir"] },
+  sktm: { model: "permohonanSKTM", idField: "permohonanSKTMId", kolomDiizinkan: ["dokumenKK", "dokumenKTP", "dokumenPengantar"] },
+  sku: { model: "permohonanSKU", idField: "permohonanSKUId", kolomDiizinkan: ["dokumenKK", "dokumenKTP", "dokumenSP", "dokumenUsaha"] },
+  skd: { model: "permohonanSKD", idField: "permohonanSKDId", kolomDiizinkan: ["dokumenKK", "dokumenKTP", "dokumenSP"] },
+  pindah: { model: "permohonanPindah", idField: "permohonanPindahId", kolomDiizinkan: ["dokumenKK", "dokumenKTP", "dokumenSP"] },
 } as const;
 
 export async function GET(req: NextRequest) {

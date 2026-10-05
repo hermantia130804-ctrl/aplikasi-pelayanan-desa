@@ -162,7 +162,7 @@ export function PermohonanSKDDetail({ permohonan }: PermohonanSKDDetailProps) {
                 <label className="text-sm font-medium text-muted-foreground">Dokumen KK</label>
                 <div className="mt-1">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={permohonan.dokumenKK} target="_blank" rel="noopener noreferrer">
+                    <Link href={`/api/berkas?jenis=skd&id=${permohonan.permohonanSKDId}&field=dokumenKK`} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Lihat Dokumen KK
                     </Link>
@@ -176,7 +176,7 @@ export function PermohonanSKDDetail({ permohonan }: PermohonanSKDDetailProps) {
                 <label className="text-sm font-medium text-muted-foreground">Dokumen KTP</label>
                 <div className="mt-1">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={permohonan.dokumenKTP} target="_blank" rel="noopener noreferrer">
+                    <Link href={`/api/berkas?jenis=skd&id=${permohonan.permohonanSKDId}&field=dokumenKTP`} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Lihat Dokumen KTP
                     </Link>
@@ -190,7 +190,7 @@ export function PermohonanSKDDetail({ permohonan }: PermohonanSKDDetailProps) {
                 <label className="text-sm font-medium text-muted-foreground">Dokumen Surat Pengantar</label>
                 <div className="mt-1">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={permohonan.dokumenSP} target="_blank" rel="noopener noreferrer">
+                    <Link href={`/api/berkas?jenis=skd&id=${permohonan.permohonanSKDId}&field=dokumenSP`} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Lihat Surat Pengantar
                     </Link>
