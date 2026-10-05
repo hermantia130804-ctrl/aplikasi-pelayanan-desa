@@ -10,6 +10,7 @@ import { errorHandler } from "../services/error";
 import { consumeForgotPasswordService, createForgotPasswordService, validateForgotPasswordService } from "../services/forgot-password";
 import { createSessionService, findCurrentSessionService, invalidateSessionService } from "../services/session";
 import { activateUserService, createUserService, findUserByEmailService, updateUserAsVerifiedService, updateUserPasswordService } from "../services/user";
+import { sendEmail } from "../utils/email";
 import { verifyPasswordHash } from "../utils/password";
 import { setSessionTokenCookie } from "../utils/session";
 
@@ -67,8 +68,28 @@ export const forgotPasswordAction = async (payload: TForgotPasswordSchema) => {
         const parsed = forgotPasswordSchema.parse(payload);
         const { data } = await findUserByEmailService(parsed.email);
         if (!data) throw new ApiError(status.BAD_REQUEST, message.EMAIL_NOT_FOUND);
-        await createForgotPasswordService(data.userId);
-        //EMAIL
+        const { data: fp } = await createForgotPasswordService(data.userId);
+
+        // Kirim email berisi tautan reset (sebelumnya hanya komentar //EMAIL - tidak pernah diimplementasikan)
+        try {
+            const resetUrl = `${process.env.APP_URL}/lupa-password/${fp.forgotPasswordId}`;
+            const html = `
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #eee;border-radius:8px;">
+                    <h2>🔐 Reset Password</h2>
+                    <p>Anda (atau seseorang) meminta pengaturan ulang password akun Desa Sukamaju Anda.</p>
+                    <p style="text-align:center;margin:24px 0;">
+                        <a href="${resetUrl}" style="background:#0f766e;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
+                            Atur Password Baru
+                        </a>
+                    </p>
+                    <p style="font-size:12px;color:#888;">Tautan berlaku 1 jam dan hanya bisa digunakan sekali. Abaikan email ini jika Anda tidak meminta reset.</p>
+                </div>`;
+            await sendEmail(data.email, "🔐 Reset Password - Desa Sukamaju", html);
+            console.log(`[LUPA PASSWORD] Email reset terkirim ke ${data.email}`);
+        } catch (e) {
+            console.error("GAGAL EMAIL RESET:", e);
+        }
+
         return { status: status.OK, message: message.FORGOT_OK };
     } catch (error) {
         return errorHandler(error);
