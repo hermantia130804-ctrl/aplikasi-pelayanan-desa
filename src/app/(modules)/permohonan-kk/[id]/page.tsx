@@ -90,9 +90,9 @@ export default async function DetailKKAdminPage({ params }: { params: Promise<{ 
                         <Row label="Scan Akta" value={data.dokumenAkta ? "Terunggah" : "-"} />
                         <Row label="Surat Pengantar" value={data.dokumenPengantar ? "Terunggah" : "-"} />
                         <div className="mt-2 flex gap-4 text-sm">
-                            {data.dokumenKTP && <a href={data.dokumenKTP} target="_blank" rel="noopener noreferrer" className="text-primary underline">Lihat KTP</a>}
-                            {data.dokumenAkta && <a href={data.dokumenAkta} target="_blank" rel="noopener noreferrer" className="text-primary underline">Lihat Akta</a>}
-                            {data.dokumenPengantar && <a href={data.dokumenPengantar} target="_blank" rel="noopener noreferrer" className="text-primary underline">Lihat Pengantar</a>}
+                            {data.dokumenKTP && <a href={`/api/berkas-kk?id=${data.permohonanKKId}&jenis=dokumenKTP`} target="_blank" rel="noopener noreferrer" className="text-primary underline">Lihat KTP</a>}
+                            {data.dokumenAkta && <a href={`/api/berkas-kk?id=${data.permohonanKKId}&jenis=dokumenAkta`} target="_blank" rel="noopener noreferrer" className="text-primary underline">Lihat Akta</a>}
+                            {data.dokumenPengantar && <a href={`/api/berkas-kk?id=${data.permohonanKKId}&jenis=dokumenPengantar`} target="_blank" rel="noopener noreferrer" className="text-primary underline">Lihat Pengantar</a>}
                         </div>
                     </div>
                 </div>

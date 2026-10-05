@@ -86,12 +86,12 @@ export default async function DetailPermohonanSayaKTPPage({ params }: { params: 
                         <Row label="Scan Kartu Keluarga" value={data.dokumenKK ? "Terunggah" : "-"} />
                         <Row label="Surat Pengantar RT/RW" value={data.dokumenPengantar ? "Terunggah" : "-"} />
                         {data.dokumenKK && (
-                            <a href={data.dokumenKK} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-primary underline">
+                            <a href={`/api/berkas?jenis=ktp&id=${data.permohonanKtpId}&field=dokumenKK`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-primary underline">
                                 Lihat Dokumen KK
                             </a>
                         )}
                         {data.dokumenPengantar && (
-                            <a href={data.dokumenPengantar} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">
+                            <a href={`/api/berkas?jenis=ktp&id=${data.permohonanKtpId}&field=dokumenPengantar`} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">
                                 Lihat Surat Pengantar
                             </a>
                         )}

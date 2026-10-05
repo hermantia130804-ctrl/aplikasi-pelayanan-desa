@@ -83,7 +83,7 @@ export default async function DetailPermohonanSayaKKPage({ params }: { params: P
                         <Row label="Scan Akta" value={data.dokumenAkta ? "Terunggah" : "-"} />
                         <Row label="Surat Pengantar RT/RW" value={data.dokumenPengantar ? "Terunggah" : "-"} />
                         {data.dokumenKTP && (
-                            <a href={data.dokumenKTP} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-primary underline">
+                            <a href={`/api/berkas-kk?id=${data.permohonanKKId}&jenis=dokumenKTP`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-primary underline">
                                 Lihat Scan KTP
                             </a>
                         )}
