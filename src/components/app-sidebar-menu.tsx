@@ -13,6 +13,7 @@ import { Role, User } from "@/generated/prisma";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/components/ui/sidebar";
 
 type TitleOrFn = string | ((role: Role) => string);
 
@@ -29,6 +30,7 @@ type AppSidebarMenuProps = {
 
 export const AppSidebarMenu = ({ title, items, user }: AppSidebarMenuProps) => {
   const pathname = usePathname().split("/")[1];
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const checkActiveMenu = (url: string) => {
     return pathname === url.split("/")[1];
@@ -48,7 +50,10 @@ export const AppSidebarMenu = ({ title, items, user }: AppSidebarMenuProps) => {
         {filterItems().map((item) => (
           <SidebarMenuItem key={item.url}>
             <SidebarMenuButton asChild isActive={checkActiveMenu(item.url)}>
-              <Link href={item.url}>
+              <Link
+                href={item.url}
+                onClick={() => { if (isMobile) setOpenMobile(false); }}
+              >
                 <item.icon />
                 <span>{item.name}</span>
               </Link>
