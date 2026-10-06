@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+import { StrukturSlider } from "@/components/struktur-slider";
 import { ArrowRight, ShieldCheck, MapPin, Phone, Users, Map, Landmark } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -362,43 +363,8 @@ async function StrukturSection() {
                     </p>
                 ) : (
                     <div className="mt-12">
-                        {tingkatKeys.map((tk, idx) => (
-                            <div key={tk}>
-                                {idx > 0 && <div aria-hidden="true" className="mx-auto h-8 w-px bg-border" />}
-                                <div className="flex flex-wrap items-start justify-center gap-4 sm:gap-6">
-                                    {(tingkatGroups[tk] || []).map((p) => (
-                                        <div
-                                            key={p.strukturId}
-                                            className={
-                                                "flex w-44 flex-col items-center rounded-2xl border bg-card p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" +
-                                                (tk === 1 ? " ring-2 ring-primary/40" : "")
-                                            }
-                                        >
-                                            {p.fotoUrl ? (
-                                                <img
-                                                    src={p.fotoUrl}
-                                                    alt={p.nama}
-                                                    loading="lazy"
-                                                    className={"rounded-full object-cover " + (tk === 1 ? "size-24" : "size-20")}
-                                                />
-                                            ) : (
-                                                <div
-                                                    className={
-                                                        "flex items-center justify-center rounded-full bg-primary/10 font-black text-primary " +
-                                                        (tk === 1 ? "size-24 text-2xl" : "size-20 text-xl")
-                                                    }
-                                                >
-                                                    {p.nama.charAt(0).toUpperCase()}
-                                                </div>
-                                            )}
-                                            <h3 className="mt-3 text-sm font-bold leading-snug">{p.nama}</h3>
-                                            <p className="mt-1 text-xs text-muted-foreground">{p.jabatan}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <StrukturSlider anggota={struktur.map((a) => ({ strukturId: a.strukturId, nama: a.nama, jabatan: a.jabatan, fotoUrl: a.fotoUrl }))} />
+                </div>
                 )}
             </section>
         );
