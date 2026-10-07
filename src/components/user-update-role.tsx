@@ -34,6 +34,7 @@ export const UserUpdateRole = ({ role, userId }: UserUpdateRoleProps) => {
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="ADMIN"><Crown className="mr-2" /> Admin Full Control</SelectItem>
+                <SelectItem value="RT" disabled>Ketua RT (angkat via Ubah Pengguna)</SelectItem>
                 <SelectItem value="PETUGAS"><UserCog2Icon className="mr-2" /> Petugas</SelectItem>
                 <SelectItem value="USER"><UserIcon className="mr-2" /> Masyarakat</SelectItem>
             </SelectContent>
