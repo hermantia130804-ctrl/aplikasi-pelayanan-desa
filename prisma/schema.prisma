@@ -135,6 +135,8 @@ model User {
   @@map("users")
   perbaikanDesil        PerbaikanDesil[]
   dataWarga            DataWarga[]
+  pendudukSementara      PendudukSementara[]
+  kejadian               Kejadian[]
 }
 
 model Session {
@@ -533,4 +535,54 @@ model DataWarga {
 
   @@index([noRt, noRw])
   @@map("data_warga")
+}
+
+model PendudukSementara {
+  pendudukSementaraId String   @id @default(cuid()) @map("penduduk_sementara_id")
+  userId              String   @map("user_id")
+  noKk                String   @map("no_kk")
+  nik                 String   @unique
+  namaLengkap         String   @map("nama_lengkap")
+  jenisKelamin        String   @map("jenis_kelamin")
+  statusKeluarga      String   @map("status_keluarga")
+  tempatLahir         String   @map("tempat_lahir")
+  tanggalLahir        DateTime @map("tanggal_lahir")
+  agama               String
+  pendidikan          String
+  pekerjaan           String
+  statusPerkawinan    String   @map("status_perkawinan")
+  statusKeterangan    String   @default("KONTRAK") @map("status_keterangan")
+  alamatAsal          String   @default("") @map("alamat_asal")
+  noHp                String?  @map("no_hp")
+  namaPanggilan       String?  @map("nama_panggilan")
+  alamat              String   @default("KP. CEMPLANG")
+  noRt                String   @default("001") @map("no_rt")
+  noRw                String   @default("002") @map("no_rw")
+  bantuan             Json     @default("[]")
+  bpjs                String?
+  tanggalMasuk        DateTime @default(now()) @map("tanggal_masuk")
+  tanggalKeluar       DateTime? @map("tanggal_keluar")
+  keterangan          String?
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  user                User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("penduduk_sementara")
+}
+
+model Kejadian {
+  kejadianId    String   @id @default(cuid()) @map("kejadian_id")
+  userId        String   @map("user_id")
+  jenisKejadian String   @map("jenis_kejadian")
+  noKk          String   @default("") @map("no_kk")
+  namaLengkap   String   @map("nama_lengkap")
+  nik           String?
+  jenisKelamin  String   @default("") @map("jenis_kelamin")
+  tanggal       DateTime
+  keterangan    String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("kejadian")
 }
