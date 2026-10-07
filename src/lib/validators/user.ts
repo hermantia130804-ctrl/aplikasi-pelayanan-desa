@@ -36,7 +36,11 @@ export const updateUserSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   jabatan: z.string().optional(),
-  role: z.enum(["ADMIN", "PETUGAS", "USER"]).optional(),
+  noRt: z.string().optional(),
+  noRw: z.string().optional(),
+  namaKetua: z.string().optional(),
+  alamatRt: z.string().optional(),
+  role: z.enum(["ADMIN", "PETUGAS", "USER", "RT"]).optional(),
   password: z.union([z.literal(""), z.string().min(8, MESSAGE.INVALID_PASSWORD).max(255)]).optional(),
 });
 

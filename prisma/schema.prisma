@@ -18,6 +18,7 @@ enum Role {
   ADMIN
   PETUGAS
   USER
+  RT
 }
 
 enum Status {
@@ -109,6 +110,10 @@ model User {
   address    String?
   phone      String?
   jabatan    String?   @map("jabatan")
+  noRt         String?  @map("no_rt")
+  noRw         String?  @map("no_rw")
+  namaKetua    String?  @map("nama_ketua")
+  alamatRt     String?  @map("alamat_rt")
   status     Status    @default(INACTIVE)
   verifiedAt DateTime? @map("verified_at")
   createdAt  DateTime  @default(now()) @map("created_at")
