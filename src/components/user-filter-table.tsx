@@ -103,6 +103,7 @@ export const UserFilterTable = () => {
         <SelectContent>
           <SelectItem disabled value="-">Peran</SelectItem>
           <SelectItem value="ADMIN">Admin Full Control</SelectItem>
+          <SelectItem value="RT">Ketua RT</SelectItem>
           <SelectItem value="PETUGAS">Petugas</SelectItem>
           <SelectItem value="USER">Masyarakat</SelectItem>
         </SelectContent>

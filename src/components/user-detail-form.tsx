@@ -6,7 +6,7 @@ import { updateUserAction } from "@/lib/server/actions/user";
 import { cn } from "@/lib/utils";
 import { TUpdateUserSchema, updateUserSchema } from "@/lib/validators/user";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Crown, UserCog2Icon, UserIcon } from "lucide-react";
+import { Crown, UserCog2Icon, UserIcon, HomeIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -117,6 +117,7 @@ export const UserDetailForm = ({ data: initialData, className, ...props }: UserD
                                                         <SelectContent>
                                                             <SelectItem value="ADMIN"><Crown className="mr-2" /> Admin Full Control</SelectItem>
                                                             <SelectItem value="PETUGAS"><UserCog2Icon className="mr-2" /> Petugas</SelectItem>
+                                                            <SelectItem value="RT"><HomeIcon className="mr-2" /> Ketua RT</SelectItem>
                                                             <SelectItem value="USER"><UserIcon className="mr-2" /> Masyarakat</SelectItem>
                                                         </SelectContent>
                                                     </Select>
