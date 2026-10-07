@@ -15,7 +15,7 @@ const badgeVarian: Record<string, "default" | "secondary" | "destructive" | "out
 
 export default async function PerbaikanDesilPage() {
     const res = await findManyPerbaikanDesilByUserAction();
-    const daftar = res.status === 200 ? res.data : [];
+    const daftar = "data" in res ? res.data : [];
 
     return (
         <div className="flex flex-1 flex-col">

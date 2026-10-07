@@ -22,7 +22,7 @@ function Baris({ label, value }: { label: string; value?: string | number | null
 export default async function KelolaPerbaikanDesilDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const res = await findPerbaikanDesilByIdAction(id);
-    if (res.status !== 200) notFound();
+    if (!("data" in res)) notFound();
     const d = res.data;
     const j = (d.jawaban ?? {}) as Record<string, unknown>;
     const urls = (d.fotoUrls ?? []) as string[];

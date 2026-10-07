@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function EditKKAdminPage({ params }: { params: Promise<{ id: string }> }) {
     await requireAdminPage();
     const { id } = await params;
-    const { data } = await findPermohonanKKData({ id });
+    const { data } = await findPermohonanKKData(params);
 
     return (
         <div className="flex flex-1 flex-col">

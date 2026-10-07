@@ -33,7 +33,7 @@ export default async function PermohonanSKDDetailPage({ params }: PermohonanSKDD
                             <SuratPDFDownloadButton jenis="SKD" data={permohonan} />
                         </div>
                     )}
-                    <PermohonanSKDDetail permohonanSKD={permohonan} />
+                    <PermohonanSKDDetail permohonan={permohonan} />
                 </div>
             </div>
         </div>

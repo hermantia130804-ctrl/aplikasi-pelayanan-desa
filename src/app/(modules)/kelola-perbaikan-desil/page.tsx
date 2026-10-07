@@ -16,7 +16,7 @@ const badgeVarian: Record<string, "default" | "secondary" | "destructive" | "out
 
 export default async function KelolaPerbaikanDesilPage() {
     const res = await findManyPerbaikanDesilAction();
-    const daftar = res.status === 200 ? res.data : [];
+    const daftar = "data" in res ? res.data : [];
 
     return (
         <div className="flex flex-1 flex-col">

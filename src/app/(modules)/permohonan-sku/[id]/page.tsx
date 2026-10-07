@@ -32,7 +32,7 @@ export default async function PermohonanSKUDetailPage({ params }: PermohonanSKUD
                             <SuratPDFDownloadButton jenis="SKU" data={permohonan} />
                         </div>
                     )}
-                    <PermohonanSKUDetail permohonanSKU={permohonan} />
+                    <PermohonanSKUDetail permohonan={permohonan} />
                 </div>
             </div>
         </div>

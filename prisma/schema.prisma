@@ -134,6 +134,7 @@ model User {
 
   @@map("users")
   perbaikanDesil        PerbaikanDesil[]
+  dataWarga            DataWarga[]
 }
 
 model Session {
@@ -497,4 +498,39 @@ model PerbaikanDesil {
   user             User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@map("perbaikan_desil")
+}
+
+model DataWarga {
+  dataWargaId      String   @id @default(cuid()) @map("data_warga_id")
+  userId           String   @map("user_id")
+  noKk             String   @map("no_kk")
+  nik              String   @unique
+  namaLengkap      String   @map("nama_lengkap")
+  jenisKelamin     String   @map("jenis_kelamin")
+  statusKeluarga   String   @map("status_keluarga")
+  tempatLahir      String   @map("tempat_lahir")
+  tanggalLahir     DateTime @map("tanggal_lahir")
+  agama            String
+  pendidikan       String
+  pekerjaan        String
+  statusPerkawinan String   @map("status_perkawinan")
+  kewarganegaraan  String   @default("WNI") @map("kewarganegaraan")
+  namaAyah         String   @map("nama_ayah")
+  namaIbu          String   @map("nama_ibu")
+  namaPanggilan    String?  @map("nama_panggilan")
+  noHp             String?  @map("no_hp")
+  punyaKtp         String   @default("BELUM") @map("punya_ktp")
+  bantuan          Json     @default("[]")
+  bpjs             String?
+  desil            String?
+  alamat           String   @default("KP. CEMPLANG")
+  noRt             String   @default("001") @map("no_rt")
+  noRw             String   @default("002") @map("no_rw")
+  keterangan       String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  user             User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([noRt, noRw])
+  @@map("data_warga")
 }

@@ -10,9 +10,9 @@ export const dynamic = "force-dynamic";
  * Pemakaian: /api/berkas-kk?id=<permohonanKKId>&jenis=<dokumenKTP|dokumenAkta|dokumenPengantar>
  */
 const KOLOM = {
-  dokumenKTP: "dokumen_ktp",
-  dokumenAkta: "dokumen_akta",
-  dokumenPengantar: "dokumen_pengantar",
+  dokumenKTP: "dokumenKTP",
+  dokumenAkta: "dokumenAkta",
+  dokumenPengantar: "dokumenPengantar",
 } as const;
 
 export async function GET(req: NextRequest) {

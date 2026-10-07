@@ -16,6 +16,7 @@ export const MENU = {
         { name: "Beranda", url: "/dashboard", icon: IconDashboard, roles: ALL },
         { name: "Permohonan Saya", url: "/permohonan-saya", icon: IconListDetails, roles: U },
         { name: "Perbaikan Desil Saya", url: "/perbaikan-desil", icon: IconListDetails, roles: ALL },
+        { name: "Kelola Data Warga", url: "/data-warga", icon: IconUsers, roles: [Role.ADMIN, Role.PETUGAS, Role.RT] },
     ],
     ADMIN: [
         { name: "Kelola Pengguna", url: PATHS.USER, icon: IconUsers, roles: A },
