@@ -66,11 +66,6 @@ export default async function DataWargaPage() {
                     </div>
 
                     <TabsContent value="beranda" className="space-y-4">
-                        <div className="flex justify-end">
-                            {session.user.role === "RT" && (
-                                <Button asChild><Link href="/data-warga/tambah"><PlusCircle className="size-4 mr-1" /> Tambah Warga</Link></Button>
-                            )}
-                        </div>
                         <div className="grid grid-cols-2 gap-3">
                             <Card className="bg-emerald-600 text-white border-0"><CardContent className="p-3">
                                 <p className="text-[10px] opacity-80 font-medium">TOTAL KK</p>
