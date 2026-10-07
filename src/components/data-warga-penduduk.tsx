@@ -35,6 +35,7 @@ import {
 import { Plus, Search, FileUp, FileDown, Pencil, Trash2, ChevronDown, ChevronRight, ChevronUp, Users, X, Filter, SlidersHorizontal, Printer, Camera, Loader2, RotateCw, RotateCcw, FlipHorizontal, FlipVertical, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { pendudukRTAction } from "@/lib/server/actions/penduduk-rt";
+import { scanKKAction } from "@/lib/server/actions/scan-kk";
 import {
   AGAMA, PENDIDIKAN, PEKERJAAN, STATUS_PERKAWINAN, BANTUAN_OPTIONS,
   BPJS_OPTIONS,
@@ -363,185 +364,43 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
     if (!scanPreview) return;
     setScanning(true);
     try {
-      let parsedData: any;
-      let usedMethod = 'AI Gemini (Direct)';
-
       toast.loading('Membaca KK dengan AI...', { id: 'scan-kk-progress' });
 
-      // Resize gambar di client jika terlalu besar (maks 2000px)
-      let imageDataUrl = scanPreview;
-      try {
-        const img = new Image();
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error('Gagal load image'));
-          img.src = scanPreview!;
-        });
-        const MAX = 2000;
-        let w = img.width, h = img.height;
-        if (w > MAX || h > MAX) {
-          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-          else { w = Math.round(w * MAX / h); h = MAX; }
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext('2d')!;
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, w, h);
-          imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-          console.log('[Scan KK] Client resize:', img.width, '->', w);
-        }
-      } catch (e: any) {
-        console.warn('[Scan KK] Client resize skip:', e.message);
-      }
+      const res = await scanKKAction(scanPreview);
+      toast.dismiss('scan-kk-progress');
 
-      // Langsung panggil Puter API dari browser (tanpa lewat server)
-      const PUTER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiZ3VpIiwidmVyc2lvbiI6IjAuMC4wIiwidXVpZCI6ImI0ZTJmYTQ5LTE3YTYtNGNmNi1iZmM2LTJlNjI4ZDRhMTIyMiIsInVzZXJfdWlkIjoiZDZkMzUzODMtMDQ5My00OTExLWFlODYtOWJkNDgzMmEyNzEzIiwiaWF0IjoxNzc3NDA2ODAzfQ.upFccwXCqxpJMgs-NyQFUMiK8BI4_3oI8rKlStEdS_U';
-
-      const SYSTEM_PROMPT = `Kamu adalah AI OCR spesialis untuk membaca Kartu Keluarga (KK) Indonesia.
-Baca gambar KK Indonesia dan kembalikan data JSON EXACTLY sesuai schema.
-Field: noKK, namaKepala, alamat, rt, rw, desa, kecamatan, kabupaten, provinsi, namaAyah, namaIbu, anggota (array dengan field: nik, namaLengkap, jenisKelamin, tempatLahir, tanggalLahir(YYYY-MM-DD), agama, pendidikan, pekerjaan, statusPerkawinan, statusKeluarga, kewarganegaraan).
-KEMBALIKAN HANYA JSON, tanpa markdown.`;
-
-      const aiResponse = await fetch('https://api.puter.com/puterai/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${PUTER_TOKEN}`,
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: 'Baca Kartu Keluarga ini. Baca header (No KK, alamat, RT/RW, desa, kecamatan, kabupaten, provinsi, nama ayah, nama ibu), lalu baca tabel anggota baris per baris. Kembalikan JSON saja.' },
-                { type: 'image_url', image_url: { url: imageDataUrl } },
-              ],
-            },
-          ],
-          temperature: 0.05,
-        }),
-      });
-
-      if (!aiResponse.ok) {
-        const errText = await aiResponse.text();
-        toast.dismiss('scan-kk-progress');
-        toast.error('AI API error: ' + aiResponse.status + ' - ' + errText.substring(0, 200), { duration: 10000 });
-        console.error('[Scan KK] AI API error:', aiResponse.status, errText);
+      if (!res.ok) {
+        toast.error(res.error || 'Gagal memproses', { duration: 10000 });
         return;
       }
 
-      const aiResult = await aiResponse.json();
-      const messageContent = aiResult.choices?.[0]?.message?.content;
+      const parsedData = res.data as Record<string, any>;
 
-      if (!messageContent) {
-        toast.dismiss('scan-kk-progress');
-        toast.error('AI tidak mengembalikan respons', { duration: 8000 });
-        return;
-      }
-
-      console.log('[Scan KK] AI raw response:', messageContent.substring(0, 500));
-
-      // Parse JSON dari response
-      let cleaned = messageContent.trim();
-      if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
-      else if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
-      cleaned = cleaned.trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (jsonMatch) cleaned = jsonMatch[0];
-
-      try {
-        parsedData = JSON.parse(cleaned);
-      } catch (parseErr: any) {
-        toast.dismiss('scan-kk-progress');
-        toast.error('AI response tidak valid: ' + parseErr.message, { duration: 8000 });
-        console.error('[Scan KK] Parse error:', parseErr.message, 'Raw:', messageContent.substring(0, 300));
-        return;
-      }
-
-      if (!parsedData.noKK && (!parsedData.anggota || parsedData.anggota.length === 0)) {
-        toast.dismiss('scan-kk-progress');
-        toast.error('AI tidak berhasil membaca KK. AI response: ' + JSON.stringify(parsedData).substring(0, 300), { duration: 10000 });
-        console.error('[Scan KK] AI baca tapi data kosong:', parsedData);
-        return;
-      }
-
-      console.log('[Scan KK] ✅ Berhasil! noKK:', parsedData.noKK, 'anggota:', parsedData.anggota?.length);
-
-      // Normalisasi tanggal (DD-MM-YYYY → YYYY-MM-DD)
-      const normalizeDate = (raw: any): string => {
+      const normalizeDate = (raw: unknown): string => {
         if (!raw) return '';
-        const s = String(raw).trim();
-        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-        const dm = s.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/);
+        const str = String(raw).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+        const dm = str.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/);
         if (dm) { const dd = +dm[1], mm = +dm[2], yy = +dm[3]; if (dd>=1&&dd<=31&&mm>=1&&mm<=12&&yy>=1900&&yy<=2030) return `${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`; }
         return '';
       };
-
-      // Mapping nilai AI ke nilai standar (jika cocok). Jika tidak cocok, kembalikan as-is.
-      const mapOrKeep = (rawVal: any, mapping: Record<string, string>): string => {
+      const mapOrKeep = (rawVal: unknown, mapping: Record<string, string>): string => {
         if (!rawVal) return '';
         const u = String(rawVal).toUpperCase().trim();
         if (mapping[u]) return mapping[u];
         const n = u.replace(/\s+/g, ' ').trim();
         if (mapping[n]) return mapping[n];
-        for (const [k, v] of Object.entries(mapping)) {
-          if (n.includes(k) || k.includes(n)) return v;
-        }
-        // Tidak cocok — kembalikan nilai asli dari AI
+        for (const [k, v] of Object.entries(mapping)) { if (n.includes(k) || k.includes(n)) return v; }
         return u;
       };
+      const AGAMA_MAP: Record<string, string> = { 'ISLAM': 'ISLAM', 'KRISTEN': 'KRISTEN', 'BUDHA': 'BUDHA', 'HINDU': 'HINDU', 'LAINNYA': 'LAINNYA', 'KONGHUCU': 'LAINNYA', 'KATOLIK': 'KRISTEN', 'PROTESTAN': 'KRISTEN', 'BUDDHA': 'BUDHA' };
+      const PEND_MAP: Record<string, string> = { 'TIDAK/BELUM SEKOLAH': 'TIDAK/BELUM SEKOLAH', 'BELUM TAMAT SD/SEDERAJAT': 'BELUM TAMAT SD/SEDERAJAT', 'TIDAK TAMAT SD/SEDERAJAT': 'TIDAK TAMAT SD/SEDERAJAT', 'SD/SEDERAJAT': 'SD/SEDERAJAT', 'SMP/SEDERAJAT': 'SMP/SEDERAJAT', 'SMA/SEDERAJAT': 'SMA/SEDERAJAT', 'SLTP/SEDERAJAT': 'SMP/SEDERAJAT', 'SLTA/SEDERAJAT': 'SMA/SEDERAJAT', 'PAKET A': 'PAKET A', 'PAKET B': 'PAKET B', 'PAKET C': 'PAKET C', 'SLB': 'SLB', 'D1': 'D1', 'D2': 'D2', 'D3': 'D3', 'S1': 'S1', 'S2': 'S2', 'S3': 'S3', 'SD': 'SD/SEDERAJAT', 'SMP': 'SMP/SEDERAJAT', 'SMA': 'SMA/SEDERAJAT', 'DIPLOMA': 'D3', 'SARJANA': 'S1', 'MAGISTER': 'S2', 'DOKTOR': 'S3' };
+      const PEK_MAP: Record<string, string> = { 'PELAJAR/MAHASISWA': 'PELAJAR/MAHASISWA', 'PELAJAR': 'PELAJAR/MAHASISWA', 'MAHASISWA': 'PELAJAR/MAHASISWA', 'PNS': 'PNS', 'SOPIR': 'SOPIR', 'USTADZ/MUBALIGH': 'USTADZ/MUBALIGH', 'PEDAGANG': 'PEDAGANG', 'BELUM/TIDAK BEKERJA': 'BELUM/TIDAK BEKERJA', 'BURUH HARIAN LEPAS': 'BURUH HARIAN LEPAS', 'MENGURUS RUMAH TANGGA': 'MENGURUS RUMAH TANGGA', 'WIRASWASTA': 'WIRASWASTA', 'PEGAWAI ASN': 'PEGAWAI ASN', 'KARYAWAN SWASTA': 'KARYAWAN SWASTA', 'TNI': 'TNI', 'POLRI': 'POLRI', 'KARYAWAN': 'KARYAWAN SWASTA', 'IRT': 'MENGURUS RUMAH TANGGA', 'PETANI': 'PEDAGANG' };
+      const SK_MAP: Record<string, string> = { 'BELUM MENIKAH': 'BELUM MENIKAH', 'KAWIN': 'KAWIN', 'CERAI HIDUP': 'CERAI HIDUP', 'CERAI MATI': 'CERAI MATI', 'BELUM KAWIN': 'BELUM MENIKAH', 'KAWIN TERCATAT': 'KAWIN', 'KAWIN BELUM TERCATAT': 'KAWIN' };
+      const SKK_MAP: Record<string, string> = { 'KEPALA KELUARGA': 'KEPALA KELUARGA', 'ISTRI': 'ISTRI', 'ANAK': 'ANAK', 'MERTUA': 'MERTUA', 'MENANTU': 'MENANTU', 'CUCU': 'CUCU', 'LAINNYA': 'LAINNYA', 'ORANG TUA': 'LAINNYA' };
 
-      const PEND_MAP: Record<string, string> = {
-        'TIDAK/BELUM SEKOLAH': 'TIDAK/BELUM SEKOLAH', 'BELUM TAMAT SD/SEDERAJAT': 'BELUM TAMAT SD/SEDERAJAT',
-        'TIDAK TAMAT SD/SEDERAJAT': 'TIDAK TAMAT SD/SEDERAJAT', 'SD/SEDERAJAT': 'SD/SEDERAJAT',
-        'SMP/SEDERAJAT': 'SMP/SEDERAJAT', 'SMA/SEDERAJAT': 'SMA/SEDERAJAT',
-        'SLTP/SEDERAJAT': 'SMP/SEDERAJAT', 'SLTA/SEDERAJAT': 'SMA/SEDERAJAT',
-        'PAKET A': 'PAKET A', 'PAKET B': 'PAKET B', 'PAKET C': 'PAKET C', 'SLB': 'SLB',
-        'D1': 'D1', 'D2': 'D2', 'D3': 'D3', 'S1': 'S1', 'S2': 'S2', 'S3': 'S3',
-        'TAMAT SD/SEDERAJAT': 'SD/SEDERAJAT', 'TAMAT SMP/SEDERAJAT': 'SMP/SEDERAJAT',
-        'TAMAT SMA/SEDERAJAT': 'SMA/SEDERAJAT', 'TAMAT SD': 'SD/SEDERAJAT',
-        'TAMAT SMP': 'SMP/SEDERAJAT', 'TAMAT SMA': 'SMA/SEDERAJAT',
-        'SD': 'SD/SEDERAJAT', 'SMP': 'SMP/SEDERAJAT', 'SMA': 'SMA/SEDERAJAT',
-        'DIPLOMA': 'D3', 'SARJANA': 'S1', 'MAGISTER': 'S2', 'PASCA SARJANA': 'S2', 'DOKTOR': 'S3',
-        'TIDAK SEKOLAH': 'TIDAK/BELUM SEKOLAH', 'BELUM SEKOLAH': 'TIDAK/BELUM SEKOLAH',
-      };
-
-      const PEK_MAP: Record<string, string> = {
-        'PELAJAR/MAHASISWA': 'PELAJAR/MAHASISWA', 'PELAJAR': 'PELAJAR/MAHASISWA',
-        'MAHASISWA': 'PELAJAR/MAHASISWA', 'PNS': 'PNS', 'SOPIR': 'SOPIR',
-        'USTADZ/MUBALIGH': 'USTADZ/MUBALIGH', 'PEDAGANG': 'PEDAGANG',
-        'BELUM/TIDAK BEKERJA': 'BELUM/TIDAK BEKERJA', 'BURUH HARIAN LEPAS': 'BURUH HARIAN LEPAS',
-        'MENGURUS RUMAH TANGGA': 'MENGURUS RUMAH TANGGA', 'WIRASWASTA': 'WIRASWASTA',
-        'PEGAWAI ASN': 'PEGAWAI ASN', 'KARYAWAN SWASTA': 'KARYAWAN SWASTA',
-        'TNI': 'TNI', 'POLRI': 'POLRI', 'KARYAWAN': 'KARYAWAN SWASTA',
-        'IRT': 'MENGURUS RUMAH TANGGA', 'PETANI': 'PEDAGANG', 'WIRASWASTI': 'WIRASWASTA',
-      };
-
-      const SK_MAP: Record<string, string> = {
-        'BELUM MENIKAH': 'BELUM MENIKAH', 'KAWIN': 'KAWIN',
-        'CERAI HIDUP': 'CERAI HIDUP', 'CERAI MATI': 'CERAI MATI',
-        'BELUM KAWIN': 'BELUM MENIKAH', 'KAWIN TERCATAT': 'KAWIN',
-        'KAWIN BELUM TERCATAT': 'KAWIN', 'KAWIN TIDAK TERCATAT': 'KAWIN',
-      };
-
-      const AGAMA_MAP: Record<string, string> = {
-        'ISLAM': 'ISLAM', 'KRISTEN': 'KRISTEN', 'BUDHA': 'BUDHA',
-        'HINDU': 'HINDU', 'LAINNYA': 'LAINNYA',
-        'KONGHUCU': 'LAINNYA', 'KATOLIK': 'KRISTEN', 'PROTESTAN': 'KRISTEN', 'BUDDHA': 'BUDHA',
-      };
-
-      const SKK_MAP: Record<string, string> = {
-        'KEPALA KELUARGA': 'KEPALA KELUARGA', 'ISTRI': 'ISTRI', 'ANAK': 'ANAK',
-        'MERTUA': 'MERTUA', 'MENANTU': 'MENANTU', 'CUCU': 'CUCU', 'LAINNYA': 'LAINNYA',
-        'ORANG TUA': 'LAINNYA',
-      };
-
-      // Normalisasi data anggota
       if (parsedData.anggota) {
-        parsedData.anggota = parsedData.anggota.map((a: any) => ({
+        parsedData.anggota = parsedData.anggota.map((a: Record<string, unknown>) => ({
           ...a,
           nik: String(a.nik || '').replace(/\D/g, '').substring(0, 16),
           tanggalLahir: normalizeDate(a.tanggalLahir),
@@ -550,13 +409,10 @@ KEMBALIKAN HANYA JSON, tanpa markdown.`;
           pekerjaan: mapOrKeep(a.pekerjaan, PEK_MAP),
           statusPerkawinan: mapOrKeep(a.statusPerkawinan, SK_MAP),
           statusKeluarga: mapOrKeep(a.statusKeluarga, SKK_MAP),
-          kewarganegaraan: /WNA/i.test(a.kewarganegaraan || '') ? 'WNA' : 'WNI',
+          kewarganegaraan: /WNA/i.test(String(a.kewarganegaraan || '')) ? 'WNA' : 'WNI',
         }));
       }
 
-      toast.dismiss('scan-kk-progress');
-
-      // Buka form KK Baru
       setShowScanDialog(false);
       setScanPreview(null);
       setScanRotation(0);
@@ -568,9 +424,8 @@ KEMBALIKAN HANYA JSON, tanpa markdown.`;
       setShowAddMenu(false);
       setAddMode('KK_BARU');
 
-      // Mapping KK header ke form kepala
-      const kepala = parsedData.anggota?.find((a: any) => a.statusKeluarga === 'KEPALA KELUARGA') || parsedData.anggota?.[0];
-      const otherAnggota = parsedData.anggota?.filter((a: any) => a.statusKeluarga !== 'KEPALA KELUARGA') || [];
+      const kepala = parsedData.anggota?.find((a: Record<string, unknown>) => a.statusKeluarga === 'KEPALA KELUARGA') || parsedData.anggota?.[0];
+      const otherAnggota = parsedData.anggota?.filter((a: Record<string, unknown>) => a.statusKeluarga !== 'KEPALA KELUARGA') || [];
 
       const mappedKepala: typeof defaultFormData = {
         noKK: parsedData.noKK || '',
@@ -588,14 +443,14 @@ KEMBALIKAN HANYA JSON, tanpa markdown.`;
         namaAyah: kepala?.namaAyah || parsedData.namaAyah || '',
         namaIbu: kepala?.namaIbu || parsedData.namaIbu || '',
         namaPanggilan: '', noHP: '',
-        punyaKTP: 'BELUM', // default BELUM, admin yang menentukan
+        punyaKTP: 'BELUM',
         bantuan: [], bpjs: '',
-        alamat: parsedData.alamat || ALAMAT_DEFAULT,        keterangan: '',
+        alamat: parsedData.alamat || ALAMAT_DEFAULT,
+        keterangan: '',
       };
       setFormData(mappedKepala);
 
-      // Mapping anggota
-      const mappedAnggota = otherAnggota.map((a: any) => ({
+      const mappedAnggota = otherAnggota.map((a: Record<string, unknown>) => ({
         noKK: parsedData.noKK || '',
         nik: a.nik || '', namaLengkap: a.namaLengkap || '',
         jenisKelamin: a.jenisKelamin || '',
@@ -607,9 +462,10 @@ KEMBALIKAN HANYA JSON, tanpa markdown.`;
         namaAyah: a.namaAyah || parsedData.namaAyah || '',
         namaIbu: a.namaIbu || parsedData.namaIbu || '',
         namaPanggilan: '', noHP: '',
-        punyaKTP: 'BELUM', // default BELUM, admin yang menentukan
+        punyaKTP: 'BELUM',
         bantuan: [], bpjs: '',
-        alamat: parsedData.alamat || ALAMAT_DEFAULT,        keterangan: '',
+        alamat: parsedData.alamat || ALAMAT_DEFAULT,
+        keterangan: '',
       }));
       setAnggotaList(mappedAnggota);
       setExpandedAnggota(new Set(mappedAnggota.map((_: unknown, i: number) => i)));
@@ -617,11 +473,11 @@ KEMBALIKAN HANYA JSON, tanpa markdown.`;
 
       const namaDisplay = kepala?.namaLengkap || parsedData.namaKepala || 'Kepala Keluarga';
       const totalAnggota = parsedData.anggota?.length || 0;
-      toast.success(`KK berhasil dibaca (${usedMethod}): ${namaDisplay} (${totalAnggota} anggota). Silakan periksa dan lengkapi data.`);
-    } catch (err: any) {
+      toast.success(`KK berhasil dibaca (Gemini): ${namaDisplay} (${totalAnggota} anggota). Silakan periksa dan lengkapi data.`);
+    } catch (err: unknown) {
       toast.dismiss('scan-kk-progress');
       console.error('[Scan KK] Error:', err);
-      toast.error('Gagal memproses gambar KK: ' + (err.message || 'Error tidak diketahui'));
+      toast.error('Gagal memproses gambar KK: ' + (err instanceof Error ? err.message : 'Error tidak diketahui'));
     } finally {
       setScanning(false);
     }
