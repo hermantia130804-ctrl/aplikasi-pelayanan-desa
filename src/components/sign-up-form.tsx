@@ -45,10 +45,9 @@ export const SignUpForm = ({
 
   const onSubmit = form.handleSubmit(async (data) => {
     try {
-      const response = await signUpAction({
-        ...data,
-        daftarSebagai,
-      });
+      const { daftarSebagai: _df, ...safeData } = data as Record<string, unknown> & { role?: string };
+      // Pendaftaran publik hanya boleh USER/PETUGAS - server juga menormalisasi
+      const response = await signUpAction({ ...safeData, role: (daftarSebagai === "PETUGAS" ? "PETUGAS" : "USER") } as Parameters<typeof signUpAction>[0]);
       if (response.status === 200) {
         form.reset();
         toast.success(response.message);

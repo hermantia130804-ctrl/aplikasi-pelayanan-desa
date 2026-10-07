@@ -153,7 +153,7 @@ export function PermohonanSKTMDetail({ permohonanSKTM }: PermohonanSKTMDetailPro
               {dokumenKK ? (
                 <div className="mt-2">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/api/berkas?jenis=sktm&id=${permohonanSKTMId}&field=dokumenKK`} target="_blank">
+                    <Link href={`/api/berkas?jenis=sktm&id=${permohonanSKTM.permohonanSKTMId}&field=dokumenKK`} target="_blank">
                       <ExternalLinkIcon className="h-4 w-4 mr-2" />
                       Lihat Dokumen
                     </Link>
@@ -168,7 +168,7 @@ export function PermohonanSKTMDetail({ permohonanSKTM }: PermohonanSKTMDetailPro
               {dokumenKTP ? (
                 <div className="mt-2">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/api/berkas?jenis=sktm&id=${permohonanSKTMId}&field=dokumenKTP`} target="_blank">
+                    <Link href={`/api/berkas?jenis=sktm&id=${permohonanSKTM.permohonanSKTMId}&field=dokumenKTP`} target="_blank">
                       <ExternalLinkIcon className="h-4 w-4 mr-2" />
                       Lihat Dokumen
                     </Link>
@@ -183,7 +183,7 @@ export function PermohonanSKTMDetail({ permohonanSKTM }: PermohonanSKTMDetailPro
               {dokumenPengantar ? (
                 <div className="mt-2">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/api/berkas?jenis=sktm&id=${permohonanSKTMId}&field=dokumenPengantar`} target="_blank">
+                    <Link href={`/api/berkas?jenis=sktm&id=${permohonanSKTM.permohonanSKTMId}&field=dokumenPengantar`} target="_blank">
                       <ExternalLinkIcon className="h-4 w-4 mr-2" />
                       Lihat Dokumen
                     </Link>

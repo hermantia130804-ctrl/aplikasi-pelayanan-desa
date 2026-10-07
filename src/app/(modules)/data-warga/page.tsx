@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LayoutDashboard, Users, UserRound, CalendarDays, Shield, FileSpreadsheet, FileText } from "lucide-react";
 import { findCurrentSessionService } from "@/lib/server/services/session";
 import { getStatistikDataWarga } from "@/lib/server/actions/statistik-data-warga";
+import PendudukRT from "@/components/data-warga-penduduk";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -167,14 +168,7 @@ export default async function DataWargaPage() {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="penduduk">
-                        <div className="rounded-xl border bg-card p-4">
-                            <p className="text-sm text-muted-foreground mb-3">CRUD Penduduk: halaman daftar/tambah/edit yang sudah tersedia tetap berlaku.</p>
-                            <div className="flex gap-2 flex-wrap">
-                                <Button asChild><Link href="/data-warga/penduduk">Buka Daftar Penduduk</Link></Button>
-                            </div>
-                        </div>
-                    </TabsContent>
+                    <TabsContent value="penduduk"><PendudukRT /></TabsContent>
 
                     <TabsContent value="sementara"><div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">Modul Penduduk Sementara - Segera</div></TabsContent>
                     <TabsContent value="kejadian"><div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">Modul Kejadian - Segera</div></TabsContent>

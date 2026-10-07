@@ -16,7 +16,7 @@ export async function getStatistikDataWarga() {
     where: { ...whereUser, tanggalKeluar: null },
   });
 
-  const kkMap = new Set(allPenduduk.map(p => p.noKK));
+  const kkMap = new Set(allPenduduk.map(p => p.noKk));
   const totalKK = kkMap.size;
   const pendudukL = allPenduduk.filter(p => p.jenisKelamin === "LAKI-LAKI").length;
   const pendudukP = allPenduduk.length - pendudukL;

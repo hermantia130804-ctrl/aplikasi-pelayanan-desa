@@ -45,6 +45,7 @@ export function PermohonanSKLDetail({ permohonanSKL }: PermohonanSKLDetailProps)
     tempatLahirIbu,
     tanggalLahirIbu,
     agamaIbu,
+    permohonanSKLId,
     dokumenKK,
     dokumenPengantar,
     dokumenSuratLahir,
