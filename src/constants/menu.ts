@@ -10,11 +10,12 @@ const AP = [Role.ADMIN, Role.PETUGAS];
 const AU = [Role.ADMIN, Role.USER];
 const PU = [Role.PETUGAS, Role.USER];
 const ALL = [Role.ADMIN, Role.PETUGAS, Role.USER];
+const RU = [Role.RT, Role.USER];
 
 export const MENU = {
     MAIN: [
         { name: "Beranda", url: "/dashboard", icon: IconDashboard, roles: ALL },
-        { name: "Permohonan Saya", url: "/permohonan-saya", icon: IconListDetails, roles: U },
+        { name: "Permohonan Saya", url: "/permohonan-saya", icon: IconListDetails, roles: RU },
         { name: "Perbaikan Desil Saya", url: "/perbaikan-desil", icon: IconListDetails, roles: ALL },
         { name: "Kelola Data Warga", url: "/data-warga", icon: IconUsers, roles: [Role.ADMIN, Role.PETUGAS, Role.RT] },
     ],
@@ -33,14 +34,14 @@ export const MENU = {
 
     ],
     USER: [
-        { name: "Ajukan KTP", url: "/permohonan-ktp-mandiri/tambah", icon: IconChartBar, roles: U },
-        { name: "Ajukan KK", url: "/permohonan-kk-mandiri/tambah", icon: IconChartBar, roles: U },
-        { name: "Ajukan SKL", url: "/permohonan-skl-mandiri/tambah", icon: IconChartBar, roles: U },
-        { name: "Ajukan SKTM", url: "/permohonan-sktm-mandiri/tambah", icon: IconChartBar, roles: U },
-        { name: "Ajukan SKK", url: "/permohonan-skk-mandiri/tambah", icon: IconChartBar, roles: U },
-        { name: "Ajukan SKU", url: "/permohonan-sku-mandiri/tambah", icon: IconChartBar, roles: U },
-        { name: "Ajukan SKD", url: "/permohonan-skd-mandiri/tambah", icon: IconChartBar, roles: U },
-        { name: "Ajukan Perbaikan Desil", url: "/perbaikan-desil/tambah", icon: IconChartBar, roles: U },
+        { name: "Ajukan KTP", url: "/permohonan-ktp-mandiri/tambah", icon: IconChartBar, roles: RU },
+        { name: "Ajukan KK", url: "/permohonan-kk-mandiri/tambah", icon: IconChartBar, roles: RU },
+        { name: "Ajukan SKL", url: "/permohonan-skl-mandiri/tambah", icon: IconChartBar, roles: RU },
+        { name: "Ajukan SKTM", url: "/permohonan-sktm-mandiri/tambah", icon: IconChartBar, roles: RU },
+        { name: "Ajukan SKK", url: "/permohonan-skk-mandiri/tambah", icon: IconChartBar, roles: RU },
+        { name: "Ajukan SKU", url: "/permohonan-sku-mandiri/tambah", icon: IconChartBar, roles: RU },
+        { name: "Ajukan SKD", url: "/permohonan-skd-mandiri/tambah", icon: IconChartBar, roles: RU },
+        { name: "Ajukan Perbaikan Desil", url: "/perbaikan-desil/tambah", icon: IconChartBar, roles: RU },
     ],
     FOOTER: [
         { name: "Pengaturan", url: PATHS.SETTING, icon: IconSettings2, roles: ALL },
