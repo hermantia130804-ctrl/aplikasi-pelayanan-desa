@@ -30,7 +30,7 @@ export async function scanKKAction(imageDataUrl: string) {
     const mimeType = meta.match(/data:(image\/[\w.]+);/)?.[1] ?? "image/jpeg";
 
     const res = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
       {
         method: "POST",
         headers: {
