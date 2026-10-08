@@ -23,7 +23,6 @@ export async function scanKKAction(imageDataUrl: string) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return { ok: false, error: "GEMINI_API_KEY belum diset di server." };
-
     if (!imageDataUrl?.startsWith("data:image/")) {
       return { ok: false, error: "Gambar tidak valid." };
     }
@@ -33,6 +32,7 @@ export async function scanKKAction(imageDataUrl: string) {
 
     let lastErrText = "";
     let result: { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> } | null = null;
+    let modelTerpakai = "";
 
     for (const model of MODELS_FALLBACK) {
       try {
@@ -40,30 +40,20 @@ export async function scanKKAction(imageDataUrl: string) {
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
           {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-goog-api-key": apiKey,
-            },
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-              contents: [{
-                role: "user",
-                parts: [
-                  { text: "Baca Kartu Keluarga ini. Kembalikan JSON saja." },
-                  { inlineData: { mimeType, data: base64 } },
-                ],
-              }],
-              generationConfig: { temperature: 0.05 },
+              contents: [{ role: "user", parts: [
+                { text: "Baca Kartu Keluarga ini dengan teliti. Kembalikan JSON saja." },
+                { inlineData: { mimeType, data: base64 } },
+              ]}],
+              generationConfig: { temperature: 0.05, thinkingConfig: { thinkingBudget: 0 } },
             }),
             signal: AbortSignal.timeout(50000),
           }
         );
-
-        if (res.ok) {
-          result = await res.json();
-          break;
-        }
-        lastErrText = `${res.status}: ${(await res.text()).substring(0, 120)}`;
+        if (res.ok) { result = await res.json(); modelTerpakai = model; break; }
+        lastErrText = `${res.status}: ${(await res.text()).substring(0, 100)}`;
         console.error(`GEMINI [${model}] gagal: ${lastErrText}`);
       } catch (e) {
         lastErrText = e instanceof Error ? e.message : String(e);
@@ -75,8 +65,10 @@ export async function scanKKAction(imageDataUrl: string) {
       console.error("GEMINI ERROR (semua model):", lastErrText);
       return { ok: false, error: "AI sedang sibuk. Coba lagi beberapa saat." };
     }
+    console.log("GEMINI model terpakai:", modelTerpakai);
 
-    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    console.log("GEMINI raw (400 char):", text.substring(0, 400));
     if (!text) return { ok: false, error: "AI tidak mengembalikan respons." };
 
     let cleaned = text.trim();
@@ -84,15 +76,15 @@ export async function scanKKAction(imageDataUrl: string) {
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (jsonMatch) cleaned = jsonMatch[0];
 
-    try {
-      const parsed = JSON.parse(cleaned);
-      if (!parsed.noKK && (!parsed.anggota || parsed.anggota.length === 0)) {
-        return { ok: false, error: "AI membaca tetapi data kosong. Coba foto lebih jelas." };
-      }
-      return { ok: true, data: parsed };
-    } catch (e) {
-      return { ok: false, error: "AI response tidak valid: " + (e instanceof Error ? e.message : "parse error") };
+    let parsed: Record<string, unknown>;
+    try { parsed = JSON.parse(cleaned); }
+    catch (e) { return { ok: false, error: "AI response tidak valid: " + (e instanceof Error ? e.message : "parse error") }; }
+
+    if (!parsed.noKK && (!parsed.anggota || (parsed.anggota as unknown[]).length === 0)) {
+      console.error("GEMINI data kosong. Raw:", text.substring(0, 500));
+      return { ok: false, error: "AI membaca tetapi data kosong. Coba foto lebih jelas/tegak lurus." };
     }
+    return { ok: true, data: parsed };
   } catch (error) {
     console.error("ERROR ASLI (scanKK):", error);
     return { ok: false, error: "Terjadi kesalahan pada server." };
