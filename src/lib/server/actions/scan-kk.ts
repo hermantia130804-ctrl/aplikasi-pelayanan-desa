@@ -1,7 +1,5 @@
 "use server";
 
-export const maxDuration = 60;
-
 const SYSTEM_PROMPT = `Kamu adalah AI OCR spesialis untuk membaca Kartu Keluarga (KK) Indonesia.
 
 Baca gambar KK Indonesia dan kembalikan data JSON EXACTLY sesuai schema.
