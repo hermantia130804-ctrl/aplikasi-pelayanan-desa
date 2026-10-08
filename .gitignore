@@ -43,3 +43,6 @@ next-env.d.ts
 /src/generated/prisma
 src/generated/prisma
 gemini-key.txt
+gemini-key.txt
+cek-model.js
+models.json
