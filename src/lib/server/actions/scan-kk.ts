@@ -17,6 +17,8 @@ NILAI VALID:
 
 KEMBALIKAN HANYA JSON.`;
 
+const MODELS_FALLBACK = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"];
+
 export async function scanKKAction(imageDataUrl: string) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -29,35 +31,51 @@ export async function scanKKAction(imageDataUrl: string) {
     const [meta, base64] = imageDataUrl.split(",");
     const mimeType = meta.match(/data:(image\/[\w.]+);/)?.[1] ?? "image/jpeg";
 
-    const res = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        signal: AbortSignal.timeout(50000),
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [{
-            role: "user",
-            parts: [
-              { text: "Baca Kartu Keluarga ini. Kembalikan JSON saja." },
-              { inlineData: { mimeType, data: base64 } },
-            ],
-          }],
-          generationConfig: { temperature: 0.05 },
-        }),
-      });
+    let lastErrText = "";
+    let result: { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> } | null = null;
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("GEMINI ERROR:", res.status, errText.substring(0, 300));
-      return { ok: false, error: `AI API error ${res.status}: ${errText.substring(0, 150)}` };
+    for (const model of MODELS_FALLBACK) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": apiKey,
+            },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+              contents: [{
+                role: "user",
+                parts: [
+                  { text: "Baca Kartu Keluarga ini. Kembalikan JSON saja." },
+                  { inlineData: { mimeType, data: base64 } },
+                ],
+              }],
+              generationConfig: { temperature: 0.05 },
+            }),
+            signal: AbortSignal.timeout(50000),
+          }
+        );
+
+        if (res.ok) {
+          result = await res.json();
+          break;
+        }
+        lastErrText = `${res.status}: ${(await res.text()).substring(0, 120)}`;
+        console.error(`GEMINI [${model}] gagal: ${lastErrText}`);
+      } catch (e) {
+        lastErrText = e instanceof Error ? e.message : String(e);
+        console.error(`GEMINI [${model}] error: ${lastErrText}`);
+      }
     }
 
-    const result = await res.json();
+    if (!result) {
+      console.error("GEMINI ERROR (semua model):", lastErrText);
+      return { ok: false, error: "AI sedang sibuk. Coba lagi beberapa saat." };
+    }
+
     const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) return { ok: false, error: "AI tidak mengembalikan respons." };
 
