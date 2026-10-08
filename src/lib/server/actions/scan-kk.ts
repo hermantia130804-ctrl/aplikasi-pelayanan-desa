@@ -1,5 +1,7 @@
 "use server";
 
+export const maxDuration = 60;
+
 const SYSTEM_PROMPT = `Kamu adalah AI OCR spesialis untuk membaca Kartu Keluarga (KK) Indonesia.
 
 Baca gambar KK Indonesia dan kembalikan data JSON EXACTLY sesuai schema.
@@ -30,13 +32,14 @@ export async function scanKKAction(imageDataUrl: string) {
     const mimeType = meta.match(/data:(image\/[\w.]+);/)?.[1] ?? "image/jpeg";
 
     const res = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey,
         },
+        signal: AbortSignal.timeout(50000),
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
           contents: [{
