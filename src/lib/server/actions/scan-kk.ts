@@ -47,7 +47,7 @@ export async function scanKKAction(imageDataUrl: string) {
                 { text: "Baca Kartu Keluarga ini dengan teliti. Kembalikan JSON saja." },
                 { inlineData: { mimeType, data: base64 } },
               ]}],
-              generationConfig: { temperature: 0.05, thinkingConfig: { thinkingBudget: 0 } },
+              generationConfig: { temperature: 0.05 },
             }),
             signal: AbortSignal.timeout(50000),
           }
