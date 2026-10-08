@@ -80,6 +80,36 @@ export async function scanKKAction(imageDataUrl: string) {
     try { parsed = JSON.parse(cleaned); }
     catch (e) { return { ok: false, error: "AI response tidak valid: " + (e instanceof Error ? e.message : "parse error") }; }
 
+    // ===== Normalisasi field: terima snake_case / camelCase dari AI =====
+    const anggotaRaw = parsed.anggota_keluarga ?? parsed.anggota ?? parsed.anggotaKeluarga ?? [];
+    const mapAnggota = (a: Record<string, unknown>) => ({
+        nik: String(a.nik ?? ""),
+        namaLengkap: String(a.nama_lengkap ?? a.namaLengkap ?? a.nama ?? ""),
+        jenisKelamin: String(a.jenis_kelamin ?? a.jenisKelamin ?? a.jk ?? ""),
+        tempatLahir: String(a.tempat_lahir ?? a.tempatLahir ?? ""),
+        tanggalLahir: String(a.tanggal_lahir ?? a.tanggalLahir ?? ""),
+        agama: String(a.agama ?? ""),
+        pendidikan: String(a.pendidikan ?? ""),
+        pekerjaan: String(a.pekerjaan ?? ""),
+        statusPerkawinan: String(a.status_perkawinan ?? a.statusPerkawinan ?? ""),
+        statusKeluarga: String(a.status_hubungan ?? a.status_keluarga ?? a.statusKeluarga ?? ""),
+        kewarganegaraan: String(a.kewarganegaraan ?? "WNI"),
+    });
+    const anggotaNorm = (Array.isArray(anggotaRaw) ? anggotaRaw : []).map(mapAnggota);
+    parsed.noKK = String(parsed.no_kk ?? parsed.noKK ?? parsed.noKk ?? "");
+    parsed.namaKepala = String(parsed.nama_kepala_keluarga ?? parsed.namaKepala ?? "");
+    parsed.alamat = String(parsed.alamat ?? parsed.alamat ?? "");
+    parsed.rt = String(parsed.rt ?? "");
+    parsed.rw = String(parsed.rw ?? "");
+    parsed.desa = String(parsed.kel_desa ?? parsed.desa ?? parsed.kelurahan ?? "");
+    parsed.kecamatan = String(parsed.kecamatan ?? "");
+    parsed.kabupaten = String(parsed.kabupaten_kota ?? parsed.kabupaten ?? "");
+    parsed.provinsi = String(parsed.provinsi ?? "");
+    parsed.namaAyah = String(parsed.nama_ayah ?? parsed.namaAyah ?? "");
+    parsed.namaIbu = String(parsed.nama_ibu ?? parsed.namaIbu ?? "");
+    parsed.anggota = anggotaNorm;
+    // ===== End normalisasi =====
+
     if (!parsed.noKK && (!parsed.anggota || (parsed.anggota as unknown[]).length === 0)) {
       console.error("GEMINI data kosong. Raw:", text.substring(0, 500));
       return { ok: false, error: "AI membaca tetapi data kosong. Coba foto lebih jelas/tegak lurus." };
