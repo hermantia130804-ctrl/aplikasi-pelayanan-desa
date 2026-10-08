@@ -16,6 +16,16 @@ async function requireUser() {
   return session;
 }
 
+// Normalisasi input: terima nama field camelCase lama (noKK/noHP/punyaKTP) maupun baru (noKk/noHp/punyaKtp)
+function normalisasiInput(d: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...d,
+    noKk: (d.noKk as string) ?? (d.noKK as string) ?? "",
+    noHp: (d.noHp as string) ?? (d.noHP as string) ?? "",
+    punyaKtp: (d.punyaKtp as string) ?? (d.punyaKTP as string) ?? "BELUM",
+  };
+}
+
 export async function pendudukRTAction(operation: string, payload?: unknown) {
   try {
     const session = await requireUser();
