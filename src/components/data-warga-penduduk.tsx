@@ -424,6 +424,35 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       setShowAddMenu(false);
       setAddMode('KK_BARU');
 
+      // Normalisasi client: terima snake_case / camelCase dari AI
+      const rawHeader = parsedData as Record<string, unknown>;
+      const anggotaRaw = (rawHeader.anggota_keluarga ?? rawHeader.anggota ?? []) as Record<string, unknown>[];
+      const mapA = (a: Record<string, unknown>) => ({
+        nik: String(a.nik ?? ""),
+        namaLengkap: String(a.nama_lengkap ?? a.namaLengkap ?? a.nama ?? ""),
+        jenisKelamin: String(a.jenis_kelamin ?? a.jk ?? a.jenisKelamin ?? ""),
+        statusKeluarga: String(a.status_hubungan ?? a.status_keluarga ?? a.statusKeluarga ?? ""),
+        tempatLahir: String(a.tempat_lahir ?? a.tempatLahir ?? ""),
+        tanggalLahir: String(a.tanggal_lahir ?? a.tanggalLahir ?? ""),
+        agama: String(a.agama ?? ""),
+        pendidikan: String(a.pendidikan ?? ""),
+        pekerjaan: String(a.pekerjaan ?? ""),
+        statusPerkawinan: String(a.status_perkawinan ?? a.statusPerkawinan ?? ""),
+        kewarganegaraan: String(a.kewarganegaraan ?? "WNI"),
+        namaAyah: String(a.nama_ayah ?? a.namaAyah ?? ""),
+        namaIbu: String(a.nama_ibu ?? a.namaIbu ?? ""),
+        namaPanggilan: String(a.nama_panggilan ?? a.namaPanggilan ?? ""),
+        noHP: String(a.no_hp ?? a.noHP ?? ""),
+        noKK: String(a.no_kk ?? a.noKK ?? ""),
+      });
+      parsedData.noKK = String(rawHeader.no_kk ?? rawHeader.noKK ?? rawHeader.noKk ?? "") || (parsedData.noKK ?? "");
+      parsedData.namaKepala = String(rawHeader.nama_kepala_keluarga ?? rawHeader.namaKepala ?? "");
+      parsedData.alamat = String(rawHeader.alamat ?? "") || parsedData.alamat;
+      parsedData.namaAyah = String(rawHeader.nama_ayah ?? rawHeader.namaAyah ?? "") || (parsedData.namaAyah ?? "");
+      parsedData.namaIbu = String(rawHeader.nama_ibu ?? rawHeader.namaIbu ?? "") || (parsedData.namaIbu ?? "");
+      parsedData.anggota = anggotaRaw.map(mapA);
+      // ===== End normalisasi client =====
+
       const kepala = parsedData.anggota?.find((a: Record<string, unknown>) => a.statusKeluarga === 'KEPALA KELUARGA') || parsedData.anggota?.[0];
       const otherAnggota = parsedData.anggota?.filter((a: Record<string, unknown>) => a.statusKeluarga !== 'KEPALA KELUARGA') || [];
 
