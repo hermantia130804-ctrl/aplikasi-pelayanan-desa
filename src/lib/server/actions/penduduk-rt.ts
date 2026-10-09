@@ -191,7 +191,7 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
         jk: findCol("JK", "JENIS KELAMIN"), statusKeluarga: findCol("STATUS KK", "STATUS KELUARGA"),
         tempat: findCol("TEMPAT", "TEMPAT LAHIR"), tgl: findCol("TGL LAHIR", "TANGGAL LAHIR"), agama: findCol("AGAMA"),
         pendidikan: findCol("PENDIDIKAN"), pekerjaan: findCol("PEKERJAAN", "JENIS PEKERJAAN"),
-        kawin: findCol("STATUS KAWIN", "PERKAWINAN"), wn: findCol("WARGANEGARAAN", "KEWARGANEGARAAN"),
+        kawin: findCol("STATUS KAWIN", "SATAUS PERKAWINAN", "PERKAWINAN"), wn: findCol("KEWARGANEGARAAN", "KEWARGA NEGARAAN", "WARGANEGARAAN"),
         ayah: findCol("AYAH", "NAMA AYAH"), ibu: findCol("IBU", "NAMA IBU"),
         panggilan: findCol("PANGGILAN"), ket: findCol("KETERANGAN"),
       };
