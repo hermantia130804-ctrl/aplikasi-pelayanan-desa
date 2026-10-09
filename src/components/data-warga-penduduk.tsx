@@ -566,7 +566,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       jenisKelamin: p.jenisKelamin,
       statusKeluarga: p.statusKeluarga,
       tempatLahir: p.tempatLahir,
-      tanggalLahir: p.tanggalLahir.split('T')[0],
+      tanggalLahir: String(p.tanggalLahir).split('T')[0].slice(0, 10),
       agama: p.agama,
       pendidikan: p.pendidikan,
       pekerjaan: p.pekerjaan,
