@@ -173,7 +173,14 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
         if (rs.includes("NO. KK") || rs.includes("NOKK") || rs.includes("NO KK")) { headerIdx = i; break; }
         if (rs.includes("NIK") && rs.includes("NAMA")) { headerIdx = i; break; }
       }
-      const head = (rows[headerIdx] || []).map(x => String(x || "").toUpperCase().trim());
+      // Dukungan header DUA TINGKAT (contoh: "Nama Orang Tua" di baris atas, "Ayah"/"Ibu" di baris bawah)
+      const head1 = (rows[headerIdx] || []).map(x => String(x || "").toUpperCase().trim());
+      const head2 = (rows[headerIdx + 1] || []).map(x => String(x || "").toUpperCase().trim());
+      const head2PunyaNama = head2.filter(h => h && !h.includes("TANGGAL") && !h.includes("AGAMA")).length >= 2;
+      const head = head1.map((h, i) => {
+        const bawah = head2[i];
+        return bawah && head2PunyaNama ? bawah : h;
+      });
       const findCol = (...names: string[]) => {
         for (const n of names) { const i = head.indexOf(n); if (i >= 0) return i; }
         for (const n of names) { const i = head.findIndex(h => h.includes(n)); if (i >= 0) return i; }
