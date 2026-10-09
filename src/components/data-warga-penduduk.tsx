@@ -52,8 +52,8 @@ async function apiFetch(path: string, init?: { method?: string; body?: any; head
   const method = (init?.method ?? "GET").toUpperCase();
   const mk = (status: number, payload: any) => ({ ok: status < 400, status, error: payload?.error as string | undefined, message: payload?.message as string | undefined, json: async () => payload as any });
   const normalize = (b: Record<string, unknown>) => {
-    const { noKK, noHP, rt, rw, kelurahan, kecamatan, kabupaten, provinsi, ...rest } = b;
-    return { ...rest, noKk: (noKK as string) ?? (b.noKk as string), noHp: (noHP as string) ?? (b.noHp as string) };
+    const { noKk, noHp, rt, rw, kelurahan, kecamatan, kabupaten, provinsi, ...rest } = b;
+    return { ...rest, noKk: (noKk as string) ?? (b.noKk as string), noHp: (noHp as string) ?? (b.noHp as string) };
   };
 
   if (path.startsWith("/api/penduduk/import")) {
@@ -85,21 +85,21 @@ function useAutoRefresh(fn: () => void, ms: number): number {
 
 interface Penduduk {
   dataWargaId: string;
-  noKK: string; nik: string; namaLengkap: string; jenisKelamin: string; statusKeluarga: string;
+  noKk: string; nik: string; namaLengkap: string; jenisKelamin: string; statusKeluarga: string;
   tempatLahir: string; tanggalLahir: string; agama: string; pendidikan: string; pekerjaan: string;
   statusPerkawinan: string; kewarganegaraan: string; namaAyah: string; namaIbu: string;
-  namaPanggilan: string | null; noHP: string | null; punyaKTP: string; bantuan: string[];
+  namaPanggilan: string | null; noHp: string | null; punyaKtp: string; bantuan: string[];
   bpjs: string | null; alamat: string; keterangan: string | null;
 }
 
 interface KKGroup {
-  noKK: string;
+  noKk: string;
   kepala: Penduduk;
   anggota: Penduduk[];
 }
 
 const defaultFormData = {
-  noKK: '',
+  noKk: '',
   nik: '',
   namaLengkap: '',
   jenisKelamin: '',
@@ -114,8 +114,8 @@ const defaultFormData = {
   namaAyah: '',
   namaIbu: '',
   namaPanggilan: '',
-  noHP: '',
-  punyaKTP: 'BELUM',
+  noHp: '',
+  punyaKtp: 'BELUM',
   bantuan: [] as string[],
   bpjs: '',
   alamat: ALAMAT_DEFAULT,  keterangan: '',
@@ -184,7 +184,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
   const originalScanRef = useRef<string | null>(null);
 
   // KK options for anggota mode
-  const kkList = kkGroups.map(g => ({ noKK: g.noKK, namaKepala: g.kepala?.namaLengkap || '-' }));
+  const kkList = kkGroups.map(g => ({ noKk: g.noKk, namaKepala: g.kepala?.namaLengkap || '-' }));
 
   useEffect(() => {
     if (!showAddMenu) return;
@@ -216,10 +216,10 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
   const groupByKK = (data: Penduduk[]) => {
     const map = new Map<string, KKGroup>();
     for (const p of data) {
-      let group = map.get(p.noKK);
+      let group = map.get(p.noKk);
       if (!group) {
-        group = { noKK: p.noKK, kepala: null as unknown as Penduduk, anggota: [] };
-        map.set(p.noKK, group);
+        group = { noKk: p.noKk, kepala: null as unknown as Penduduk, anggota: [] };
+        map.set(p.noKk, group);
       }
       if (p.statusKeluarga === 'KEPALA KELUARGA') {
         group.kepala = p;
@@ -442,10 +442,10 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
         namaAyah: String(a.nama_ayah ?? a.namaAyah ?? ""),
         namaIbu: String(a.nama_ibu ?? a.namaIbu ?? ""),
         namaPanggilan: String(a.nama_panggilan ?? a.namaPanggilan ?? ""),
-        noHP: String(a.no_hp ?? a.noHP ?? ""),
-        noKK: String(a.no_kk ?? a.noKK ?? ""),
+        noHp: String(a.no_hp ?? a.noHp ?? ""),
+        noKk: String(a.no_kk ?? a.noKk ?? ""),
       });
-      parsedData.noKK = String(rawHeader.no_kk ?? rawHeader.noKK ?? rawHeader.noKk ?? "") || (parsedData.noKK ?? "");
+      parsedData.noKk = String(rawHeader.no_kk ?? rawHeader.noKk ?? rawHeader.noKk ?? "") || (parsedData.noKk ?? "");
       parsedData.namaKepala = String(rawHeader.nama_kepala_keluarga ?? rawHeader.namaKepala ?? "");
       parsedData.alamat = String(rawHeader.alamat ?? "") || parsedData.alamat;
       parsedData.namaAyah = String(rawHeader.nama_ayah ?? rawHeader.namaAyah ?? "") || (parsedData.namaAyah ?? "");
@@ -457,7 +457,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       const otherAnggota = parsedData.anggota?.filter((a: Record<string, unknown>) => a.statusKeluarga !== 'KEPALA KELUARGA') || [];
 
       const mappedKepala: typeof defaultFormData = {
-        noKK: parsedData.noKK || '',
+        noKk: parsedData.noKk || '',
         nik: kepala?.nik || '',
         namaLengkap: kepala?.namaLengkap || parsedData.namaKepala || '',
         jenisKelamin: kepala?.jenisKelamin || '',
@@ -471,8 +471,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
         kewarganegaraan: kepala?.kewarganegaraan || 'WNI',
         namaAyah: kepala?.namaAyah || parsedData.namaAyah || '',
         namaIbu: kepala?.namaIbu || parsedData.namaIbu || '',
-        namaPanggilan: '', noHP: '',
-        punyaKTP: 'BELUM',
+        namaPanggilan: '', noHp: '',
+        punyaKtp: 'BELUM',
         bantuan: [], bpjs: '',
         alamat: parsedData.alamat || ALAMAT_DEFAULT,
         keterangan: '',
@@ -480,7 +480,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       setFormData(mappedKepala);
 
       const mappedAnggota = otherAnggota.map((a: Record<string, unknown>) => ({
-        noKK: parsedData.noKK || '',
+        noKk: parsedData.noKk || '',
         nik: a.nik || '', namaLengkap: a.namaLengkap || '',
         jenisKelamin: a.jenisKelamin || '',
         statusKeluarga: a.statusKeluarga || 'ANAK',
@@ -490,8 +490,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
         kewarganegaraan: a.kewarganegaraan || 'WNI',
         namaAyah: a.namaAyah || parsedData.namaAyah || '',
         namaIbu: a.namaIbu || parsedData.namaIbu || '',
-        namaPanggilan: '', noHP: '',
-        punyaKTP: 'BELUM',
+        namaPanggilan: '', noHp: '',
+        punyaKtp: 'BELUM',
         bantuan: [], bpjs: '',
         alamat: parsedData.alamat || ALAMAT_DEFAULT,
         keterangan: '',
@@ -512,14 +512,14 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
     }
   };
 
-  const openAddForm = (noKK?: string, isAnggota?: boolean) => {
+  const openAddForm = (noKk?: string, isAnggota?: boolean) => {
     setEditingId(null);
     setFormError('');
     setShowAddMenu(false);
     setAddMode(isAnggota ? 'ANGGOTA' : 'KK_BARU');
     setFormData({
       ...defaultFormData,
-      noKK: noKK || '',
+      noKk: noKk || '',
       bantuan: [],
       statusKeluarga: isAnggota ? '' : 'KEPALA KELUARGA',
     });
@@ -531,7 +531,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
   const addAnggota = () => {
     setAnggotaList(prev => [...prev, {
       ...defaultFormData,
-      noKK: formData.noKK || '',
+      noKk: formData.noKk || '',
       statusKeluarga: '',
       bantuan: [],
       alamat: formData.alamat || ALAMAT_DEFAULT,      kewarganegaraan: formData.kewarganegaraan || 'WNI',
@@ -559,7 +559,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
     setAnggotaList(prev => prev.map((item, i) => {
       if (i !== index) return item;
       const next = { ...item, [field]: value };
-      // Jangan auto-override punyaKTP — admin yang menentukan status KTP
+      // Jangan auto-override punyaKtp — admin yang menentukan status KTP
       return next;
     }));
   };
@@ -589,7 +589,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
     setEditingId(p.dataWargaId);
     setFormError('');
     setFormData({
-      noKK: p.noKK,
+      noKk: p.noKk,
       nik: p.nik,
       namaLengkap: p.namaLengkap,
       jenisKelamin: p.jenisKelamin,
@@ -604,8 +604,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       namaAyah: p.namaAyah,
       namaIbu: p.namaIbu,
       namaPanggilan: p.namaPanggilan || '',
-      noHP: p.noHP || '',
-      punyaKTP: p.punyaKTP || 'BELUM',
+      noHp: p.noHp || '',
+      punyaKtp: p.punyaKtp || 'BELUM',
       bantuan: p.bantuan || [],
       bpjs: p.bpjs || '',
       alamat: p.alamat || ALAMAT_DEFAULT,      keterangan: p.keterangan || '',
@@ -667,7 +667,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       }
 
       // --- Tambah KK Baru mode ---
-      if (!validateNoKK(formData.noKK)) {
+      if (!validateNoKK(formData.noKk)) {
         setFormError('No. KK harus 16 digit angka');
         setSubmitting(false);
         return;
@@ -686,7 +686,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       // Validate anggota list
       for (let i = 0; i < anggotaList.length; i++) {
         const a = anggotaList[i];
-        a.noKK = formData.noKK;
+        a.noKk = formData.noKk;
         if (!validateNIK(a.nik)) {
           setFormError(`NIK anggota #${i + 1} (${a.namaLengkap || 'belum diisi'}) harus 16 digit angka`);
           setSubmitting(false);
@@ -715,7 +715,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       let successCount = 1;
       let errorMsg = '';
       for (let i = 0; i < anggotaList.length; i++) {
-        const a = { ...anggotaList[i], noKK: formData.noKK };
+        const a = { ...anggotaList[i], noKk: formData.noKk };
         try {
           const res = await apiFetch('/api/penduduk', {
             method: 'POST',
@@ -844,7 +844,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       ];
 
       const rows = exportData.map(p => [
-        p.noKK, p.namaLengkap, p.nik,
+        p.noKk, p.namaLengkap, p.nik,
         p.jenisKelamin === 'LAKI-LAKI' ? 'L' : p.jenisKelamin === 'PEREMPUAN' ? 'P' : p.jenisKelamin,
         p.statusKeluarga, p.tempatLahir, formatTanggal(p.tanggalLahir),
         p.agama, p.pendidikan, p.pekerjaan, p.statusPerkawinan,
@@ -878,17 +878,17 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
     }
   };
 
-  const toggleExpand = (noKK: string) => {
+  const toggleExpand = (noKk: string) => {
     const next = new Set(expandedKK);
-    if (next.has(noKK)) next.delete(noKK);
-    else next.add(noKK);
+    if (next.has(noKk)) next.delete(noKk);
+    else next.add(noKk);
     setExpandedKK(next);
   };
 
   const updateField = (field: string, value: string | string[]) => {
     setFormData(prev => {
       const next = { ...prev, [field]: value };
-      // Jangan auto-override punyaKTP — admin yang menentukan status KTP
+      // Jangan auto-override punyaKtp — admin yang menentukan status KTP
       // Auto-propagate ke semua anggota (mode KK_BARU)
       if (!editingId && addMode === 'KK_BARU' && anggotaList.length > 0) {
         const addrFields = ['alamat', 'rt', 'rw', 'kelurahan', 'kecamatan', 'kabupaten', 'provinsi'];
@@ -903,8 +903,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       setAnggotaList(prev => prev.map(a => ({ ...a, keterangan: value as string })));
     }
     // Auto-fill keterangan dan alamat dari KK head saat pilih KK (mode ANGGOTA)
-    if (field === 'noKK' && !editingId && addMode === 'ANGGOTA' && value) {
-      const group = kkGroups.find(g => g.noKK === value);
+    if (field === 'noKk' && !editingId && addMode === 'ANGGOTA' && value) {
+      const group = kkGroups.find(g => g.noKk === value);
       if (group?.kepala) {
         setFormData(prev => ({ ...prev,
           keterangan: group.kepala.keterangan || '',
@@ -958,7 +958,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       switch (activeFilter) {
         case 'WAJIB_KTP_17': {
           if (!p.tanggalLahir) return false;
-          if (p.punyaKTP === 'PUNYA') return false;
+          if (p.punyaKtp === 'PUNYA') return false;
           const u = hitungUmur(p.tanggalLahir);
           return u.umurTahun === 17;
         }
@@ -978,7 +978,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
         case 'BPJS_TIDAK_ADA':
           return !p.bpjs || p.bpjs === '' || p.bpjs === 'TIDAK ADA';
         case 'BELUM_KTP':
-          return p.punyaKTP === 'BELUM';
+          return p.punyaKtp === 'BELUM';
         default:
           return false;
       }
@@ -1162,7 +1162,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
                         isAdmin={isAdmin}
                         onEdit={openEditForm}
                         onDelete={setDeleteTarget}
-                        onAddMember={p.statusKeluarga === 'KEPALA KELUARGA' ? () => openAddForm(p.noKK, true) : undefined}
+                        onAddMember={p.statusKeluarga === 'KEPALA KELUARGA' ? () => openAddForm(p.noKk, true) : undefined}
                         _refreshKey={lastRefresh}
                       />
                     </CardContent>
@@ -1177,16 +1177,16 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
           ) : (
             // Tampilan KK groups (normal atau filter KK)
             filteredGroups.map(group => {
-              const isExpanded = expandedKK.has(group.noKK);
+              const isExpanded = expandedKK.has(group.noKk);
               const totalL = (group.kepala?.jenisKelamin === 'LAKI-LAKI' ? 1 : 0) + group.anggota.filter(a => a.jenisKelamin === 'LAKI-LAKI').length;
               const totalP = (group.kepala?.jenisKelamin === 'PEREMPUAN' ? 1 : 0) + group.anggota.filter(a => a.jenisKelamin === 'PEREMPUAN').length;
 
               return (
-                <Card key={group.noKK} className="overflow-hidden">
+                <Card key={group.noKk} className="overflow-hidden">
                   <CardContent className="p-0">
                     {/* KK Header */}
                     <button
-                      onClick={() => toggleExpand(group.noKK)}
+                      onClick={() => toggleExpand(group.noKk)}
                       className="w-full flex items-center gap-2 p-3 hover:bg-emerald-50 transition-colors text-left"
                     >
                       {isExpanded ? (
@@ -1196,7 +1196,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm truncate">{group.kepala?.namaLengkap || '-'}</p>
-                        <p className="text-[11px] text-muted-foreground">KK: {group.noKK}</p>
+                        <p className="text-[11px] text-muted-foreground">KK: {group.noKk}</p>
                       </div>
                       <div className="flex gap-1 items-center shrink-0">
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">L:{totalL}</Badge>
@@ -1214,7 +1214,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
                             isAdmin={isAdmin}
                             onEdit={openEditForm}
                             onDelete={setDeleteTarget}
-                            onAddMember={() => openAddForm(group.noKK, true)}
+                            onAddMember={() => openAddForm(group.noKk, true)}
                             _refreshKey={lastRefresh}
                           />
                         )}
@@ -1260,14 +1260,14 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
               {!editingId && addMode === 'ANGGOTA' ? (
                 <div className="col-span-2 space-y-1">
                   <Label className="text-xs">Pilih KK *</Label>
-                  <Select value={formData.noKK} onValueChange={v => updateField('noKK', v)}>
+                  <Select value={formData.noKk} onValueChange={v => updateField('noKk', v)}>
                     <SelectTrigger className="text-sm">
                       <SelectValue placeholder="Pilih KK..." />
                     </SelectTrigger>
                     <SelectContent>
                       {kkList.map(kk => (
-                        <SelectItem key={kk.noKK} value={kk.noKK}>
-                          <span className="font-mono text-xs">{kk.noKK}</span> — {kk.namaKepala}
+                        <SelectItem key={kk.noKk} value={kk.noKk}>
+                          <span className="font-mono text-xs">{kk.noKk}</span> — {kk.namaKepala}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1279,8 +1279,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
                     <Label className="text-xs">No. KK *</Label>
                     <Input
                       className="text-sm"
-                      value={formData.noKK}
-                      onChange={e => updateField('noKK', e.target.value)}
+                      value={formData.noKk}
+                      onChange={e => updateField('noKk', e.target.value)}
                       placeholder="16 digit"
                       maxLength={16}
                     />
@@ -1427,8 +1427,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
                 <Label className="text-xs">No. HP</Label>
                 <Input
                   className="text-sm"
-                  value={formData.noHP}
-                  onChange={e => updateField('noHP', e.target.value)}
+                  value={formData.noHp}
+                  onChange={e => updateField('noHp', e.target.value)}
                 />
               </div>
             </div>
@@ -1436,7 +1436,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Status KTP</Label>
-                <Select value={formData.punyaKTP} onValueChange={v => updateField('punyaKTP', v)}>
+                <Select value={formData.punyaKtp} onValueChange={v => updateField('punyaKtp', v)}>
                   <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {STATUS_KTP.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -1665,8 +1665,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
                               <Label className="text-xs">No. HP</Label>
                               <Input
                                 className="text-sm"
-                                value={anggota.noHP}
-                                onChange={e => updateAnggotaField(idx, 'noHP', e.target.value)}
+                                value={anggota.noHp}
+                                onChange={e => updateAnggotaField(idx, 'noHp', e.target.value)}
                               />
                             </div>
                           </div>
@@ -1693,7 +1693,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <Label className="text-xs">Status KTP</Label>
-                              <Select value={anggota.punyaKTP} onValueChange={v => updateAnggotaField(idx, 'punyaKTP', v)}>
+                              <Select value={anggota.punyaKtp} onValueChange={v => updateAnggotaField(idx, 'punyaKtp', v)}>
                                 <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                   {STATUS_KTP.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}

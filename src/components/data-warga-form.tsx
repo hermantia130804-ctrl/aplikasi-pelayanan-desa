@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeftIcon, Loader2, Save } from "lucide-react";
+import { ComboInput } from "@/components/ui/combo-input";
 import Link from "next/link";
 
 type Props = { dataWargaId?: string; defaultValues: Record<string, string | Date> };
@@ -60,7 +61,10 @@ export function DataWargaForm({ dataWargaId, defaultValues }: Props) {
         <Txt label="Tempat Lahir *" value={f.tempatLahir ?? ""} onChange={sel("tempatLahir")} />
         <Txt label="Tanggal Lahir *" type="date" value={String(f.tanggalLahir ?? "").slice(0, 10)} onChange={sel("tanggalLahir")} />
         <Sel label="Pendidikan *" value={f.pendidikan ?? "SD/SEDERAJAT"} onChange={sel("pendidikan")} options={PENDIDIKAN} />
-        <Sel label="Pekerjaan *" value={f.pekerjaan ?? "BELUM/TIDAK BEKERJA"} onChange={sel("pekerjaan")} options={PEKERJAAN} />
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-sm">Pekerjaan *</Label>
+          <ComboInput value={f.pekerjaan ?? ""} onChange={sel("pekerjaan")} options={[...PEKERJAAN]} />
+        </div>
         <Sel label="Status Perkawinan *" value={f.statusPerkawinan ?? "BELUM MENIKAH"} onChange={sel("statusPerkawinan")} options={STATUS_PERKAWINAN} />
         <Sel label="Punya KTP" value={f.punyaKtp ?? "BELUM"} onChange={sel("punyaKtp")} options={STATUS_KTP} />
         <Txt label="Nama Ayah *" value={f.namaAyah ?? ""} onChange={sel("namaAyah")} />
