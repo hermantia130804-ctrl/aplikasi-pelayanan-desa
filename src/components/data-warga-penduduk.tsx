@@ -878,6 +878,25 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
     }
   };
 
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [deleteAllText, setDeleteAllText] = useState("");
+  const [deletingAll, setDeletingAll] = useState(false);
+
+  const handleDeleteAll = async () => {
+    if (deleteAllText !== "HAPUS") return;
+    setDeletingAll(true);
+    try {
+      const res = await pendudukRTAction("deleteAll", { konfirmasi: "HAPUS" });
+      if (res.status === 200) {
+        toast.success(res.message);
+        setShowDeleteAll(false);
+        setDeleteAllText("");
+        fetchPenduduk();
+      } else toast.error(res.error || res.message || "Gagal menghapus");
+    } catch { toast.error("Gagal menghapus data"); }
+    finally { setDeletingAll(false); }
+  };
+
   const toggleExpand = (noKk: string) => {
     const next = new Set(expandedKK);
     if (next.has(noKk)) next.delete(noKk);
@@ -1011,7 +1030,17 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
         </div>
         <div className="flex gap-2">
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+            <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDeleteAll(true)}
+            className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            <Trash2 className="h-4 w-4 mr-1" /> HAPUS
+          </Button>
+          )}
+          {isAdmin && (
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
               {exporting ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-1" />
               ) : (
@@ -1809,6 +1838,36 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
             <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog Hapus Semua */}
+      <AlertDialog open={showDeleteAll} onOpenChange={(open) => { setShowDeleteAll(open); if (!open) setDeleteAllText(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-700">⚠ Hapus SEMUA Data Warga?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">Seluruh data warga wilayah Anda akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.</span>
+              <span className="block font-semibold text-red-600">Ketik <strong>HAPUS</strong> untuk konfirmasi:</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <input
+            type="text"
+            value={deleteAllText}
+            onChange={(e) => setDeleteAllText(e.target.value)}
+            placeholder="HAPUS"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAll}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAll}
+              disabled={deletingAll || deleteAllText !== "HAPUS"}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deletingAll ? "Menghapus..." : "Ya, Hapus Semua"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

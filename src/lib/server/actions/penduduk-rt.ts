@@ -140,6 +140,19 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
       return { status: 200, message: "Data berhasil dihapus" };
     }
 
+    // ===== DELETE ALL (dengan konfirmasi ketik HAPUS) =====
+    if (operation === "deleteAll") {
+      const { konfirmasi } = (payload ?? {}) as { konfirmasi?: string };
+      if (konfirmasi !== "HAPUS") throw new ApiError(status.BAD_REQUEST, "Ketik HAPUS untuk konfirmasi.");
+
+      const where = isStaff ? {} : { userId: session.user.userId };
+      const jumlah = await prisma.dataWarga.count({ where });
+      await prisma.dataWarga.deleteMany({ where });
+      revalidatePath("/data-warga");
+      revalidatePath("/kelola-data-warga");
+      return { status: 200, message: `Seluruh data berhasil dihapus (${jumlah} warga)` };
+    }
+
     // ===== IMPORT EXCEL =====
     if (operation === "importExcel") {
       if (session.user.role !== "RT") throw new ApiError(status.FORBIDDEN, "Impor hanya dapat dilakukan oleh Ketua RT.");
