@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import * as XLSX from "xlsx";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -9,12 +10,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { sementaraRTAction } from "@/lib/server/actions/penduduk-sementara-rt";
 import { AGAMA, PENDIDIKAN, PEKERJAAN, STATUS_PERKAWINAN, JENIS_KELAMIN, ALAMAT_DEFAULT } from "@/constants/data-warga";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Plus, Search, Trash2, Pencil } from "lucide-react";
+import { Loader2, Plus, Search, Trash2, Pencil, FileUp, FileDown } from "lucide-react";
 
 const STATUS_OPSI = ["KONTRAK", "SEWA", "MENUMPANG", "KOS", "NUMPANG KELUARGA"];
 
@@ -66,6 +68,63 @@ export default function PendudukSementaraRT({ isRT, isAdmin }: { isRT: boolean; 
     else toast.error(res.error || "Gagal menghapus");
   };
 
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [deleteAllText, setDeleteAllText] = useState("");
+  const [deletingAll, setDeletingAll] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleDeleteAll = async () => {
+    if (deleteAllText !== "HAPUS") return;
+    setDeletingAll(true);
+    try {
+      const res = await sementaraRTAction("deleteAll", { konfirmasi: "HAPUS" });
+      if (res.status === 200) { toast.success(res.message); setShowDeleteAll(false); setDeleteAllText(""); muat(); router.refresh(); }
+      else toast.error(res.error || res.message || "Gagal menghapus");
+    } catch { toast.error("Gagal menghapus"); }
+    finally { setDeletingAll(false); }
+  };
+
+  const handleExport = () => {
+    if (data.length === 0) { toast.error("Tidak ada data untuk diekspor"); return; }
+    const headers = ["NO. KK", "NAMA", "NIK", "JK", "STATUS KK", "STATUS TINGGAL", "TGL LAHIR", "AGAMA", "PENDIDIKAN", "PEKERJAAN", "STATUS KAWIN", "ASAL", "TGL MASUK", "TGL KELUAR", "KETERANGAN"];
+    const rows = data.map((d: Record<string, unknown>) => [
+      String(d.noKk), String(d.namaLengkap), String(d.nik),
+      String(d.jenisKelamin) === "LAKI-LAKI" ? "L" : "P",
+      String(d.statusKeluarga), String(d.statusKeterangan),
+      String(d.tanggalLahir).split("T")[0], String(d.agama),
+      String(d.pendidikan), String(d.pekerjaan), String(d.statusPerkawinan),
+      String(d.alamatAsal ?? ""), String(d.tanggalMasuk).split("T")[0],
+      d.tanggalKeluar ? String(d.tanggalKeluar).split("T")[0] : "",
+      String(d.keterangan ?? ""),
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Penduduk Sementara");
+    const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" });
+    const url = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = "penduduk-sementara-" + new Date().toISOString().slice(0, 10) + ".xlsx";
+    a.click(); URL.revokeObjectURL(url);
+    toast.success("Data berhasil diekspor (" + data.length + " orang)");
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    setImporting(true);
+    const fd = new FormData(); fd.append("file", file);
+    try {
+      const res = await sementaraRTAction("importExcel", fd);
+      if (res.status === 200) {
+        toast.success(res.message);
+        if (res.errors && res.errors.length > 0) toast.warning(res.errors.slice(0, 3).join("; "), { duration: 10000 });
+        muat(); router.refresh(); setShowImport(false);
+      } else toast.error(res.error || "Gagal mengimpor");
+    } catch { toast.error("Gagal mengimpor file"); }
+    finally { setImporting(false); e.target.value = ""; }
+  };
+
   const simpan = async () => {
     try {
       setLoading(true);
@@ -97,6 +156,19 @@ export default function PendudukSementaraRT({ isRT, isAdmin }: { isRT: boolean; 
               {STATUS_OPSI.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
+          {isRT && (
+            <Button variant="outline" size="sm" onClick={() => setShowDeleteAll(true)} className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700">
+              <Trash2 className="h-4 w-4 mr-1" /> HAPUS
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+            <FileDown className="h-4 w-4 mr-1" /> Ekspor
+          </Button>
+          {isRT && (
+            <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
+              <FileUp className="h-4 w-4 mr-1" /> Impor
+            </Button>
+          )}
           {(isRT || isAdmin) && (
             <Button size="sm" onClick={() => { openTambah(); }} className="bg-emerald-600 hover:bg-emerald-700">
               <Plus className="h-4 w-4 mr-1" /> Tambah
@@ -224,6 +296,38 @@ export default function PendudukSementaraRT({ isRT, isAdmin }: { isRT: boolean; 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Dialog Hapus Semua */}
+      <AlertDialog open={showDeleteAll} onOpenChange={(o: boolean) => { setShowDeleteAll(o); if (!o) setDeleteAllText(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-700">⚠ Hapus SEMUA Penduduk Sementara?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">Seluruh data penduduk sementara wilayah Anda akan dihapus permanen.</span>
+              <span className="block font-semibold text-red-600">Ketik <strong>HAPUS</strong> untuk konfirmasi:</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <input type="text" value={deleteAllText} onChange={(e) => setDeleteAllText(e.target.value)} placeholder="HAPUS" className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md" />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAll}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAll} disabled={deletingAll || deleteAllText !== "HAPUS"} className="bg-red-600 hover:bg-red-700">
+              {deletingAll ? "Menghapus..." : "Ya, Hapus Semua"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog Impor */}
+      <Dialog open={showImport} onOpenChange={setShowImport}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Impor Data dari Excel</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Kolom yang dibaca: NO. KK, NAMA, NIK, JK, STATUS KK, TGL LAHIR, AGAMA, PENDIDIKAN, PEKERJAAN, STATUS KAWIN, STATUS (tinggal), ASAL, MASUK, KELUAR, KETERANGAN.</p>
+            <Input type="file" accept=".xlsx,.xls" onChange={handleImport} disabled={importing} />
+            {importing && <div className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" /> Mengimpor data...</div>}
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
