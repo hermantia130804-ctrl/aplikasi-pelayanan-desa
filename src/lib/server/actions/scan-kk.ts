@@ -65,10 +65,8 @@ export async function scanKKAction(imageDataUrl: string) {
       console.error("GEMINI ERROR (semua model):", lastErrText);
       return { ok: false, error: "AI sedang sibuk. Coba lagi beberapa saat." };
     }
-    console.log("GEMINI model terpakai:", modelTerpakai);
 
     const text = result?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    console.log("GEMINI raw (400 char):", text.substring(0, 400));
     if (!text) return { ok: false, error: "AI tidak mengembalikan respons." };
 
     let cleaned = text.trim();
