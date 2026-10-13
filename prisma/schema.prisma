@@ -555,6 +555,8 @@ model PendudukSementara {
   alamatAsal          String   @default("") @map("alamat_asal")
   noHp                String?  @map("no_hp")
   namaPanggilan       String?  @map("nama_panggilan")
+  namaAyah           String   @default("-") @map("nama_ayah")
+  namaIbu            String   @default("-") @map("nama_ibu")
   alamat              String   @default("KP. CEMPLANG")
   noRt                String   @default("001") @map("no_rt")
   noRw                String   @default("002") @map("no_rw")
