@@ -90,7 +90,7 @@ export async function scanKKAction(imageDataUrl: string) {
         tanggalLahir: String(a.tanggal_lahir ?? a.tanggalLahir ?? ""),
         agama: String(a.agama ?? ""),
         pendidikan: String(a.pendidikan ?? ""),
-        pekerjaan: String(a.pekerjaan ?? ""),
+        pekerjaan: String(a.pekerjaan ?? a.jenis_pekerjaan ?? a.nama_pekerjaan ?? ""),
         statusPerkawinan: String(a.status_perkawinan ?? a.statusPerkawinan ?? ""),
         statusKeluarga: String(a.status_hubungan ?? a.status_keluarga ?? a.statusKeluarga ?? ""),
         kewarganegaraan: String(a.kewarganegaraan ?? "WNI"),
