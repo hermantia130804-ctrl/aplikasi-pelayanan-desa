@@ -17,7 +17,7 @@ NILAI VALID:
 
 KEMBALIKAN HANYA JSON.`;
 
-const MODELS_FALLBACK = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-flash-lite-latest"];
+const MODELS_FALLBACK = ["gemini-flash-lite-latest", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-2.5-flash"];
 
 export async function scanKKAction(imageDataUrl: string) {
   try {
