@@ -241,6 +241,8 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
               pekerjaan: toUpperCase(String(r[C.pekerjaan] ?? "BELUM/TIDAK BEKERJA")),
               statusPerkawinan: toUpperCase(String(r[C.kawin] ?? "BELUM MENIKAH")),
               statusKeterangan: normStatus(r[C.statusKet]),
+              namaAyah: toUpperCase(String(r[C.ayah] ?? "-")),
+              namaIbu: toUpperCase(String(r[C.ibu] ?? "-")),
               alamatAsal: toUpperCase(alamatAsal || "-"),
               noRt: me.noRt, noRw: me.noRw,
               tanggalMasuk: new Date(),
@@ -254,7 +256,6 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
       return { status: 200, message: "Impor selesai: " + created + " tersimpan, " + skipped + " dilewati", created, skipped, errors };
     }
 
-    return { status: 400, error: "Operasi tidak dikenal" };
     return { status: 400, error: "Operasi tidak dikenal" };
   } catch (error) {
     if (error instanceof ApiError) return { status: error.statusCode, error: error.message };
