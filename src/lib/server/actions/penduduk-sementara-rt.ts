@@ -13,6 +13,18 @@ const getSession = async () => {
   return s;
 };
 
+function findColS(head1: string[], head2: string[], ...names: string[]): number {
+  for (const n of names) {
+    const i1 = head1.indexOf(n); if (i1 >= 0) return i1;
+    const i2 = head2.indexOf(n); if (i2 >= 0) return i2;
+  }
+  for (const n of names) {
+    const i1 = head1.findIndex(h => h.includes(n)); if (i1 >= 0) return i1;
+    const i2 = head2.findIndex(h => h.includes(n)); if (i2 >= 0) return i2;
+  }
+  return -1;
+}
+
 export async function sementaraRTAction(operation: string, payload?: unknown) {
   try {
     const session = await getSession();
@@ -121,7 +133,7 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
       return { status: 200, message: `Seluruh data penduduk sementara berhasil dihapus (${jumlah} orang)` };
     }
 
-    // ===== IMPORT EXCEL =====
+    // ===== IMPORT EXCEL (v2: header dua tingkat, KONTRAN->KONTRAK, alamat asal dari keterangan) =====
     if (operation === "importExcel") {
       if (!isRT) throw new ApiError(status.FORBIDDEN, "Impor hanya dapat dilakukan oleh Ketua RT.");
       if (!me?.noRt || !me.noRw) throw new ApiError(status.BAD_REQUEST, "Akun RT belum memiliki data wilayah.");
@@ -134,75 +146,114 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" }) as unknown[][];
 
+      // Deteksi baris header: memuat NIK & (NO. KK atau NAMA)
       let headerIdx = 0;
-      for (let i = 0; i < Math.min(rows.length, 5); i++) {
-        const r = rows[i]; if (!r || r.length < 3) continue;
-        const rs = r.map(x => String(x || "").toUpperCase()).join("|");
-        if (rs.includes("NIK")) { headerIdx = i; break; }
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const rs = rows[i].map(x => String(x || "").toUpperCase()).join("|");
+        if (rs.includes("NIK") && (rs.includes("NO. KK") || rs.includes("NO KK") || rs.includes("NAMA"))) { headerIdx = i; break; }
       }
-      const head = (rows[headerIdx] || []).map(x => String(x || "").toUpperCase().trim());
-      const findCol = (...names: string[]) => {
-        for (const n of names) { const i = head.indexOf(n); if (i >= 0) return i; }
-        for (const n of names) { const i = head.findIndex(h => h.includes(n)); if (i >= 0) return i; }
-        return -1;
-      };
+      const head1 = (rows[headerIdx] || []).map(x => String(x || "").toUpperCase().trim());
+      const head2 = (rows[headerIdx + 1] || []).map(x => String(x || "").toUpperCase().trim());
+      const head2Ada = head2.filter(h => h && h !== "L" && h !== "P").length >= 2;
+      const kolom = (i: number) => (head2Ada && head2[i] ? head2[i] : head1[i] || "");
+
       const C = {
-        noKk: findCol("NO. KK", "NOKK", "NO KK"), nik: findCol("NIK"), nama: findCol("NAMA"),
-        jk: findCol("JK", "JENIS KELAMIN"), statusKeluarga: findCol("STATUS KK", "STATUS KELUARGA"),
-        tglLahir: findCol("TGL LAHIR", "TANGGAL LAHIR"), agama: findCol("AGAMA"),
-        pendidikan: findCol("PENDIDIKAN"), pekerjaan: findCol("PEKERJAAN"),
-        kawin: findCol("STATUS KAWIN", "PERKAWINAN"), statusKet: findCol("STATUS", "STATUS TINGGAL", "STATUS KETERANGAN"),
-        asal: findCol("ASAL", "ALAMAT ASAL"), tglMasuk: findCol("MASUK"), tglKeluar: findCol("KELUAR"),
-        ket: findCol("KETERANGAN"),
+        noKk: findColS(head1, head2, "NO. KK", "NOKK", "NO KK"),
+        nama: findColS(head1, head2, "NAMA", "NAMA LENGKAP"),
+        nik: findColS(head1, head2, "NIK"),
+        jk: findColS(head1, head2, "JK", "JENIS KELAMIN"),
+        statusKeluarga: findColS(head1, head2, "STATUS KK", "STATUS KELUARGA"),
+        tglLahir: findColS(head1, head2, "TGL LAHIR", "TANGGAL LAHIR"),
+        agama: findColS(head1, head2, "AGAMA"),
+        pendidikan: findColS(head1, head2, "PENDIDIKAN"),
+        pekerjaan: findColS(head1, head2, "PEKERJAAN", "JENIS PEKERJAAN"),
+        kawin: findColS(head1, head2, "STATUS KAWIN", "SATAUS PERKAWINAN", "PERKAWINAN"),
+        statusKet: findColS(head1, head2, "STATUS WARGA", "STATUS TINGGAL", "STATUS KETERANGAN"),
+        ayah: findColS(head1, head2, "AYAH"),
+        ibu: findColS(head1, head2, "IBU"),
+        panggilan: findColS(head1, head2, "PANGGILAN"),
+        ket: findColS(head1, head2, "KETERANGAN"),
       };
+
       const digitOnly = (v: unknown) => String(v ?? "").replace(/\D/g, "");
       const parseTgl = (raw: unknown): Date | null => {
         if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
-        const str = String(raw ?? "").trim(); if (!str) return null;
-        let m = str.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/); if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
-        m = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/); if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+        const str = String(raw ?? "").trim();
+        if (!str) return null;
+        const d = new Date(str);
+        if (!isNaN(d.getTime()) && d.getFullYear() > 1900 && d.getFullYear() < 2100) return d;
+        let m = str.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
+        if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+        m = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/);
+        if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
         return null;
+      };
+      const normStatus = (raw: unknown): string => {
+        const v = toUpperCase(String(raw ?? "").trim());
+        if (!v) return "KONTRAK";
+        if (v.includes("KONTRAN") || v.includes("KONTRAK")) return "KONTRAK";
+        if (v.includes("NUMPANG")) return "NUMPANG KELUARGA";
+        if (v.includes("SEWA")) return "SEWA";
+        if (v.includes("KOS")) return "KOS";
+        return v;
       };
 
       let created = 0, skipped = 0;
       const errors: string[] = [];
+      let lastNoKk = "";
+
       for (let i = headerIdx + 1; i < rows.length; i++) {
         const r = rows[i];
         if (!r || !r.some(x => String(x || "").trim())) continue;
-        const nik = digitOnly(r[C.nik]).substring(0, 16);
         const nama = toUpperCase(String(r[C.nama] ?? "").trim());
-        if (!nik || nik.length !== 16 || !nama) { skipped++; continue; }
+        const nik = digitOnly(r[C.nik]).substring(0, 16);
+
+        // Carry-forward No. KK
+        const kkBaru = digitOnly(r[C.noKk]);
+        if (kkBaru.length >= 8) lastNoKk = kkBaru.padStart(16, "0").slice(-16);
+        const noKk = lastNoKk;
+
+        if (!nama) continue;
+        if (!noKk || noKk.length !== 16) { skipped++; errors.push("Baris " + (i + 1) + " (" + nama + "): No. KK tidak valid"); continue; }
+        if (!nik || nik.length !== 16) { skipped++; errors.push("Baris " + (i + 1) + " (" + nama + "): NIK tidak valid"); continue; }
         const dup = await prisma.pendudukSementara.findUnique({ where: { nik } });
         if (dup) { skipped++; continue; }
         const tglLahir = parseTgl(r[C.tglLahir]);
         if (!tglLahir) { errors.push("Baris " + (i + 1) + " (" + nama + "): tanggal lahir tidak valid"); continue; }
+
+        const jk = toUpperCase(String(r[C.jk] ?? ""));
+        const keterangan = r[C.ket] ? String(r[C.ket]).trim() : "";
+        // Alamat asal: dari kolom Keterangan yang berawalan "Alamat Asal/Asat"
+        let alamatAsal = "";
+        if (/^ALAMAT AS/i.test(keterangan.toUpperCase())) alamatAsal = keterangan;
         try {
           await prisma.pendudukSementara.create({
             data: {
-              userId: session.user.userId, noKk: digitOnly(r[C.noKk]).padStart(16, "0"), nik, namaLengkap: nama,
-              jenisKelamin: toUpperCase(String(r[C.jk] ?? "")).includes("LAKI") ? "LAKI-LAKI" : "PEREMPUAN",
+              userId: session.user.userId,
+              noKk, nik, namaLengkap: nama,
+              jenisKelamin: jk.includes("LAKI") || jk === "L" ? "LAKI-LAKI" : "PEREMPUAN",
               statusKeluarga: toUpperCase(String(r[C.statusKeluarga] ?? "LAINNYA")),
-              tempatLahir: toUpperCase(String(r[C.tglLahir >= 0 ? C.tglLahir : C.tglLahir] ?? "-")),
+              tempatLahir: toUpperCase(String(r[C.tempat] ?? "-")),
               tanggalLahir: tglLahir,
               agama: toUpperCase(String(r[C.agama] ?? "ISLAM")),
               pendidikan: toUpperCase(String(r[C.pendidikan] ?? "TIDAK/BELUM SEKOLAH")),
               pekerjaan: toUpperCase(String(r[C.pekerjaan] ?? "BELUM/TIDAK BEKERJA")),
               statusPerkawinan: toUpperCase(String(r[C.kawin] ?? "BELUM MENIKAH")),
-              statusKeterangan: toUpperCase(String(r[C.statusKet] ?? "KONTRAK")),
-              alamatAsal: toUpperCase(String(r[C.asal] ?? "")),
-              tanggalMasuk: parseTgl(r[C.tglMasuk]) ?? new Date(),
-              tanggalKeluar: parseTgl(r[C.tglKeluar]),
+              statusKeterangan: normStatus(r[C.statusKet]),
+              alamatAsal: toUpperCase(alamatAsal || "-"),
               noRt: me.noRt, noRw: me.noRw,
-              keterangan: r[C.ket] ? String(r[C.ket]) : null,
+              tanggalMasuk: new Date(),
+              keterangan: keterangan && !/^ALAMAT AS/i.test(keterangan.toUpperCase()) ? keterangan : null,
             },
           });
           created++;
-        } catch (e) { errors.push("Baris " + (i + 1) + " (" + nama + "): gagal"); }
+        } catch (e) { errors.push("Baris " + (i + 1) + " (" + nama + "): gagal tersimpan"); }
       }
       revalidatePath("/data-warga");
       return { status: 200, message: "Impor selesai: " + created + " tersimpan, " + skipped + " dilewati", created, skipped, errors };
     }
 
+    return { status: 400, error: "Operasi tidak dikenal" };
     return { status: 400, error: "Operasi tidak dikenal" };
   } catch (error) {
     if (error instanceof ApiError) return { status: error.statusCode, error: error.message };
