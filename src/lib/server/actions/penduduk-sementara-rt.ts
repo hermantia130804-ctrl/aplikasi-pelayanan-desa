@@ -211,6 +211,7 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
         if (rUpper.includes("AYAH") || rUpper.includes("IBU")) continue;
         const nama = toUpperCase(String(r[C.nama] ?? "").trim());
         const nik = digitOnly(r[C.nik]).substring(0, 16);
+        if (i < headerIdx + 5) console.log("DEBUG impor[" + i + "]: C=" + JSON.stringify(C) + " | r[5]=" + JSON.stringify(r[5]) + " | r[13]=" + JSON.stringify(r[13]) + " | r[14]=" + JSON.stringify(r[14]) + " | tempat=" + JSON.stringify(r[C.tempat]) + " | ayah=" + JSON.stringify(r[C.ayah]) + " | ibu=" + JSON.stringify(r[C.ibu]));
 
         // Carry-forward No. KK
         const kkBaru = digitOnly(r[C.noKk]);
