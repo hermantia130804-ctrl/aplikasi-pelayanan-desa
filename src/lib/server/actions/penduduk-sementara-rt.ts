@@ -151,7 +151,7 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
       let headerIdx = 0;
       for (let i = 0; i < Math.min(rows.length, 10); i++) {
         const rs = rows[i].map(x => String(x || "").toUpperCase()).join("|");
-        if (rs.includes("NIK") && (rs.includes("NO. KK") || rs.includes("NO KK") || rs.includes("NAMA"))) { headerIdx = i; break; }
+        if (rs.includes("NIK") && (rs.includes("NAMA LENGKAP") || rs.includes("NO. KK") || rs.includes("NO KK"))) { headerIdx = i; break; }
       }
       const head1 = (rows[headerIdx] || []).map(x => String(x || "").toUpperCase().trim());
       const head2 = (rows[headerIdx + 1] || []).map(x => String(x || "").toUpperCase().trim());
@@ -206,6 +206,9 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
       for (let i = headerIdx + 1; i < rows.length; i++) {
         const r = rows[i];
         if (!r || !r.some(x => String(x || "").trim())) continue;
+        // Skip baris header kedua (Ayah/Ibu) dan baris ringkasan
+        const rUpper = r.map(x => String(x || "").toUpperCase().trim());
+        if (rUpper.includes("AYAH") || rUpper.includes("IBU")) continue;
         const nama = toUpperCase(String(r[C.nama] ?? "").trim());
         const nik = digitOnly(r[C.nik]).substring(0, 16);
         if (i < headerIdx + 5) console.log("DEBUG impor[" + i + "]: C=" + JSON.stringify(C) + " | r[5]=" + JSON.stringify(r[5]) + " | r[13]=" + JSON.stringify(r[13]) + " | r[14]=" + JSON.stringify(r[14]) + " | tempat=" + JSON.stringify(r[C.tempat]) + " | ayah=" + JSON.stringify(r[C.ayah]) + " | ibu=" + JSON.stringify(r[C.ibu]));
