@@ -173,7 +173,7 @@ export default async function DataWargaPage() {
                     <TabsContent value="penduduk"><PendudukRT /></TabsContent>
 
                     <TabsContent value="sementara"><PendudukSementaraRT /></TabsContent>
-                    <TabsContent value="kejadian"><PendudukKejadianRT isRT={session.user.role === "RT"} isAdmin={isStaff} /></TabsContent>
+                    <TabsContent value="kejadian"><PendudukKejadianRT isAdmin /></TabsContent>
                     <TabsContent value="bantuan"><div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">Modul Bansos - Segera</div></TabsContent>
                     <TabsContent value="laporan"><div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">Modul Laporan - Segera</div></TabsContent>
                     <TabsContent value="dokumen"><div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">Modul Dokumen - Segera</div></TabsContent>

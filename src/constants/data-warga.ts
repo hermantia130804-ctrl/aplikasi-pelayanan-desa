@@ -15,3 +15,4 @@ export const KELURAHAN_DEFAULT = 'SUKAMAJU';
 export const KECAMATAN_DEFAULT = 'CIBUNGBULANG';
 export const KABUPATEN_DEFAULT = 'BOGOR';
 export const PROVINSI_DEFAULT = 'JAWA BARAT';
+export const JENIS_KEJADIAN = ['LAHIR', 'MATI', 'PINDAH', 'DATANG'] as const;
