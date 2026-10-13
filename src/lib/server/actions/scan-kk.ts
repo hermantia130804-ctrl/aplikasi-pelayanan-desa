@@ -17,7 +17,7 @@ NILAI VALID:
 
 KEMBALIKAN HANYA JSON.`;
 
-const MODELS_FALLBACK = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-flash-lite-latest"];
+const MODELS_FALLBACK = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-flash-lite-latest"];
 
 export async function scanKKAction(imageDataUrl: string) {
   try {
@@ -47,7 +47,7 @@ export async function scanKKAction(imageDataUrl: string) {
                 { text: "Baca Kartu Keluarga ini dengan teliti. Kembalikan JSON saja." },
                 { inlineData: { mimeType, data: base64 } },
               ]}],
-              generationConfig: { temperature: 0.05 },
+              generationConfig: { temperature: 0.05, thinkingConfig: { thinkingBudget: 1024 } },
             }),
             signal: AbortSignal.timeout(50000),
           }
