@@ -1,12 +1,18 @@
 'use client';
 
 import { kejadianRTAction } from "@/lib/server/actions/kejadian-rt";
+import { pendudukRTAction } from "@/lib/server/actions/penduduk-rt";
 
 // Shim: apiFetch diadaptasi ke Server Action kejadian
 async function apiFetch(path: string, init?: { method?: string; body?: any; headers?: Record<string, string> }) {
   const method = (init?.method ?? "GET").toUpperCase();
   const urlObj = new URL(path, "http://x");
   const mk = (status: number, payload: any) => ({ ok: status < 400, status, json: async () => payload });
+  if (path.startsWith("/api/penduduk")) {
+    const u2 = new URL(path, "http://x");
+    const r = await pendudukRTAction("list", { search: u2.searchParams.get("search") ?? "" });
+    return mk(r.status ?? 200, "data" in r ? r.data : { error: r.error });
+  }
   if (method === "GET") {
     const jenis = urlObj.searchParams.get("jenis") ?? "";
     const res = await kejadianRTAction("list", { jenis });
