@@ -250,7 +250,7 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
             },
           });
           created++;
-        } catch (e) { errors.push("Baris " + (i + 1) + " (" + nama + "): gagal tersimpan"); }
+        } catch (e) { errors.push("Baris " + (i + 1) + " (" + nama + "): " + (e instanceof Error ? e.message : String(e)).substring(0, 150)); }
       }
       revalidatePath("/data-warga");
       return { status: 200, message: "Impor selesai: " + created + " tersimpan, " + skipped + " dilewati", created, skipped, errors };
