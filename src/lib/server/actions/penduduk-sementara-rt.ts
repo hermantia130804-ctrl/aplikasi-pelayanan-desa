@@ -6,6 +6,7 @@ import { ApiError } from "next/dist/server/api-utils";
 import { prisma } from "@/lib/prisma";
 import { findCurrentSessionService } from "../services/session";
 import { toUpperCase, validateNIK, validateNoKK } from "../utils/kependudukan";
+import * as XLSX from "xlsx";
 
 const getSession = async () => {
   const s = await findCurrentSessionService();
