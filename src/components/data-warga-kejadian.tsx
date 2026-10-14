@@ -169,7 +169,7 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false }:
       if (res.ok) {
         const data = await res.json();
         const members = data
-          .filter((p: any) => p.noKK === noKK)
+          .filter((p: any) => (p.noKk ?? p.noKK) === noKK)
           .map((p: any) => ({
             id: p.id, namaLengkap: p.namaLengkap, nik: p.nik,
             jenisKelamin: p.jenisKelamin, statusKeluarga: p.statusKeluarga,
