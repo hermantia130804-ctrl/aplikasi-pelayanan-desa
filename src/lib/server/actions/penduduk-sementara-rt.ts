@@ -96,7 +96,13 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
       if (d.noKk && !validateNoKK(String(d.noKk))) throw new ApiError(status.BAD_REQUEST, "No. KK harus 16 digit angka");
 
       const u: Record<string, unknown> = {};
-      const str = (k: string) => { if (d[k] !== undefined) u[k] = toUpperCase(String(d[k])); };
+      const NOT_NULL = ["statusKeterangan", "alamat", "alamatAsal"];
+      const str = (k: string) => {
+        if (d[k] === undefined) return;
+        const v = toUpperCase(String(d[k]));
+        if (NOT_NULL.includes(k) && v.trim() === "") return; // jangan kirim kosong ke kolom NOT NULL
+        u[k] = v;
+      };
       str("noKk"); str("nik"); str("namaLengkap"); str("jenisKelamin"); str("statusKeluarga"); str("tempatLahir"); str("agama"); str("pendidikan"); str("pekerjaan"); str("statusPerkawinan"); str("statusKeterangan"); str("alamatAsal"); str("alamat");
       if (d.tanggalLahir !== undefined) u.tanggalLahir = new Date(String(d.tanggalLahir));
       if (d.tanggalMasuk !== undefined) u.tanggalMasuk = new Date(String(d.tanggalMasuk));
