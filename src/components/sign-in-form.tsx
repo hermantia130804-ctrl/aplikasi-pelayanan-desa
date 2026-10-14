@@ -38,7 +38,6 @@ export const SignInForm = ({
 
   const onSubmit = form.handleSubmit(async (data) => {
     try {
-      console.log(data);
       const response = await signInAction(data);
       if (response.status === 200) {
         form.reset();
