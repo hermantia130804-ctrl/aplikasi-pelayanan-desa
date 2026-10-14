@@ -154,7 +154,7 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false }:
         for (const p of data) {
           if (p.statusKeluarga === 'KEPALA KELUARGA' && !seen.has(p.noKK)) {
             seen.add(p.noKK);
-            options.push({ noKK: p.noKK, namaKepala: p.namaLengkap });
+            options.push({ noKK: p.noKk ?? p.noKK, namaKepala: p.namaLengkap });
           }
         }
         setKKOptions(options);
@@ -380,8 +380,8 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false }:
     const search = (formData.noKK || '').toLowerCase();
     if (!search) return kkOptions;
     return kkOptions.filter(kk =>
-      kk.noKK.includes(search) ||
-      kk.namaKepala.toLowerCase().includes(search)
+      String(kk.noKK ?? "").includes(search) ||
+      String(kk.namaKepala ?? "").toLowerCase().includes(search)
     );
   };
 
