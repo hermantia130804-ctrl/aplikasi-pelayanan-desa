@@ -134,6 +134,11 @@ interface TabPendudukProps {
   isActive?: boolean;
 }
 
+const tanggalValid = (v: unknown, fallback: string): string => {
+  const d = new Date(String(v ?? ""));
+  return isNaN(d.getTime()) ? fallback : d.toISOString().slice(0, 10);
+};
+
 export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPendudukProps) {
   const [penduduk, setPenduduk] = useState<Penduduk[]>([]);
   const [kkGroups, setKKGroups] = useState<KKGroup[]>([]);
@@ -623,7 +628,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       kewarganegaraan: p.kewarganegaraan,
       statusKeterangan: p.statusKeterangan || 'KONTRAK',
       alamatAsal: p.alamatAsal || '',
-      tanggalMasuk: p.tanggalMasuk ? String(p.tanggalMasuk).split('T')[0] : new Date().toISOString().slice(0, 10),
+      tanggalMasuk: tanggalValid(p.tanggalMasuk, new Date().toISOString().slice(0, 10)),
       tanggalKeluar: p.tanggalKeluar ? String(p.tanggalKeluar).split('T')[0] : '',
       namaAyah: p.namaAyah,
       namaIbu: p.namaIbu,
