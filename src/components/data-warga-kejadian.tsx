@@ -90,7 +90,7 @@ interface KKOption {
 }
 
 interface AnggotaKK {
-  id: number;
+  id: string;
   namaLengkap: string;
   nik: string;
   jenisKelamin: string;
@@ -165,15 +165,15 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false }:
   const fetchAnggotaKK = useCallback(async (noKK: string) => {
     if (!noKK) { setAnggotaKK([]); return; }
     try {
-      const res = await apiFetch('/api/penduduk');
-      if (res.ok) {
-        const data = await res.json();
-        const members = data
-          .filter((p: any) => (p.noKk ?? p.noKK) === noKK)
-          .map((p: any) => ({
-            id: p.id, namaLengkap: p.namaLengkap, nik: p.nik,
-            jenisKelamin: p.jenisKelamin, statusKeluarga: p.statusKeluarga,
-          }));
+      const res = await pendudukRTAction("listAnggota", { noKK });
+      if (res.status === 200) {
+        const members = (res.data as Array<Record<string, unknown>>).map((p) => ({
+          id: String(p.id),
+          namaLengkap: String(p.namaLengkap),
+          nik: String(p.nik),
+          jenisKelamin: String(p.jenisKelamin ?? ""),
+          statusKeluarga: String(p.statusKeluarga ?? "") + (p.sumber === "sementara" ? " (Sementara)" : ""),
+        }));
         setAnggotaKK(members);
       }
     } catch (error) { console.error(error); }

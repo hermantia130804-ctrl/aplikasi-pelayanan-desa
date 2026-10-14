@@ -140,6 +140,33 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
       return { status: 200, message: "Data berhasil dihapus" };
     }
 
+    // ===== LIST ANGGOTA satu KK (gabungan tetap + sementara, untuk dropdown kejadian) =====
+    if (operation === "listAnggota") {
+      const { noKK } = (payload ?? {}) as { noKK?: string };
+      if (!noKK) return { status: 200, data: [] };
+      const tetap = await prisma.dataWarga.findMany({
+        where: { noKk: noKK },
+        orderBy: { createdAt: "asc" },
+      });
+      const sementara = await prisma.pendudukSementara.findMany({
+        where: { noKk: noKK },
+        orderBy: { createdAt: "asc" },
+      });
+      const data = [
+        ...tetap.map(p => ({
+          id: p.dataWargaId, sumber: "tetap",
+          noKk: p.noKk, nik: p.nik, namaLengkap: p.namaLengkap,
+          jenisKelamin: p.jenisKelamin, statusKeluarga: p.statusKeluarga,
+        })),
+        ...sementara.map(p => ({
+          id: p.pendudukSementaraId, sumber: "sementara",
+          noKk: p.noKk, nik: p.nik, namaLengkap: p.namaLengkap,
+          jenisKelamin: p.jenisKelamin, statusKeluarga: p.statusKeluarga,
+        })),
+      ];
+      return { status: 200, data };
+    }
+
     // ===== DELETE ALL (dengan konfirmasi ketik HAPUS) =====
     if (operation === "deleteAll") {
       const { konfirmasi } = (payload ?? {}) as { konfirmasi?: string };
