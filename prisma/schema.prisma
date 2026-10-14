@@ -137,6 +137,7 @@ model User {
   dataWarga            DataWarga[]
   pendudukSementara      PendudukSementara[]
   kejadian               Kejadian[]
+  penerimaSembako      PenerimaSembako[]
 }
 
 model Session {
@@ -587,4 +588,24 @@ model Kejadian {
   user          User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@map("kejadian")
+}
+
+model PenerimaSembako {
+  penerimaSembakoId String   @id @default(cuid()) @map("penerima_sembako_id")
+  userId            String   @map("user_id")
+  noKk              String   @map("no_kk")
+  nik               String
+  namaLengkap       String   @map("nama_lengkap")
+  jenisKelamin      String   @map("jenis_kelamin")
+  statusKeluarga    String   @map("status_keluarga")
+  tanggalLahir      String   @default("") @map("tanggal_lahir")
+  alamat            String   @default("KP. CEMPLANG")
+  noRt              String   @default("001") @map("no_rt")
+  noRw              String   @default("002") @map("no_rw")
+  keterangan        String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  user              User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("PenerimaSembako")
 }
