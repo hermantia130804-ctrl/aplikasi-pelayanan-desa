@@ -6,6 +6,7 @@ import { getStatistikDataWarga } from "@/lib/server/actions/statistik-data-warga
 import PendudukRT from "@/components/data-warga-penduduk";
 import PendudukSementaraRT from "@/components/data-warga-sementara";
 import PendudukKejadianRT from "@/components/data-warga-kejadian";
+import PendudukBansosRT from "@/components/data-warga-bansos";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -174,7 +175,7 @@ export default async function DataWargaPage() {
 
                     <TabsContent value="sementara"><PendudukSementaraRT /></TabsContent>
                     <TabsContent value="kejadian"><PendudukKejadianRT isAdmin /></TabsContent>
-                    <TabsContent value="bantuan"><div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">Modul Bansos - Segera</div></TabsContent>
+                    <TabsContent value="bantuan"><PendudukBansosRT isRT={session.user.role === "RT"} isAdmin={isStaff} /></TabsContent>
                     <TabsContent value="laporan"><div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">Modul Laporan - Segera</div></TabsContent>
                     <TabsContent value="dokumen"><div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">Modul Dokumen - Segera</div></TabsContent>
                 </Tabs>
