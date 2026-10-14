@@ -57,7 +57,10 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
 
       // --- Side effect per jenis ---
       if (jenis === "MATI" && nik) {
-        await prisma.dataWarga.deleteMany({ where: { nik } });
+        // deteksi sumber: hapus dari data warga (tetap) atau penduduk sementara
+        const tetap = await prisma.dataWarga.findFirst({ where: { nik } });
+        if (tetap) await prisma.dataWarga.deleteMany({ where: { nik } });
+        else await prisma.pendudukSementara.deleteMany({ where: { nik } });
       }
       if (jenis === "LAHIR" && nik && namaLengkap) {
         const finalNoKK = String(d.noKKBaru ?? "") || noKK;
@@ -87,7 +90,9 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
         }
       }
       if (jenis === "PINDAH" && nik) {
-        await prisma.dataWarga.deleteMany({ where: { nik } });
+        const tetap = await prisma.dataWarga.findFirst({ where: { nik } });
+        if (tetap) await prisma.dataWarga.deleteMany({ where: { nik } });
+        else await prisma.pendudukSementara.deleteMany({ where: { nik } });
       }
       if (jenis === "DATANG") {
         const anggotaBaru = (d.anggotaBaru ?? []) as Array<Record<string, unknown>>;
