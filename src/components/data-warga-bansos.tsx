@@ -740,24 +740,34 @@ const data: PenerimaSembako[] = rawSem.map((x) => { const o = x as Record<string
     }
   };
 
-  // Export sembako Excel
+  // Export sembako Excel - bangun XLSX asli di client (pola sama dgn export Data Bansos)
   const handleExportSembako = async () => {
     try {
-      const res = await apiFetch('/api/sembako/export');
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        const today = new Date().toISOString().split('T')[0];
-        link.download = `penerima_sembako_desa_${today}.xlsx`;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast.success('File Excel berhasil didownload');
-      } else {
-        const err = await res.json();
-        toast.error(err.error || 'Gagal mengekspor data');
-      }
+      const res = await apiFetch('/api/sembako');
+      if (!res.ok) { toast.error('Gagal mengambil data penerima'); return; }
+      const raw: unknown[] = await res.json();
+      const list = raw.map((x) => { const o = x as Record<string, unknown>; return {
+        noKK: String(o.noKk ?? o.noKK ?? ""), nik: String(o.nik ?? ""),
+        namaLengkap: String(o.namaLengkap ?? ""), jenisKelamin: String(o.jenisKelamin ?? ""),
+        statusKeluarga: String(o.statusKeluarga ?? ""), tanggalLahir: String(o.tanggalLahir ?? ""),
+        alamat: String(o.alamat ?? ""), keterangan: String(o.keterangan ?? "")
+      }; });
+      if (list.length === 0) { toast.error('Tidak ada data penerima untuk diekspor'); return; }
+      const headers = ['No', 'No. KK', 'NIK', 'Nama Lengkap', 'L/P', 'Status Keluarga', 'Tanggal Lahir', 'Alamat', 'Keterangan'];
+      const rows = list.map((p, i) => [i + 1, p.noKK, p.nik, p.namaLengkap, p.jenisKelamin === 'LAKI-LAKI' ? 'L' : 'P', p.statusKeluarga, p.tanggalLahir, p.alamat, p.keterangan]);
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Penerima Sembako');
+      const buffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date().toISOString().split('T')[0];
+      link.download = `penerima_sembako_desa_${today}.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success('File Excel berhasil didownload');
     } catch {
       toast.error('Terjadi kesalahan');
     }
