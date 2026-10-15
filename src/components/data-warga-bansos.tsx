@@ -58,7 +58,7 @@ async function apiFetch(path: string, init?: { method?: string; body?: any; head
     }
     if (method === "POST") {
       const r = await sembakoRTAction("snapshotSave", body);
-      return mk(r.status ?? 500, { message: r.message, jumlahPenerima: r.data?.jumlahPenerima });
+      return mk(r.status ?? 500, { message: r.message, jumlahPenerima: (r.data as unknown as { jumlahPenerima?: number } | undefined)?.jumlahPenerima });
     }
     if (method === "DELETE") {
       const r = await sembakoRTAction("snapshotDelete", { id: u.searchParams.get("id") });
@@ -73,7 +73,7 @@ async function apiFetch(path: string, init?: { method?: string; body?: any; head
       return mk(r.status ?? 500, "data" in r ? r.data : { error: r.error });
     }
     const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
-    if (method === "POST") { const r = await sembakoRTAction("add", body); return mk(r.status ?? 500, { message: r.message, id: r.data?.penerimaSembakoId }); }
+    if (method === "POST") { const r = await sembakoRTAction("add", body); return mk(r.status ?? 500, { message: r.message, id: (r.data as unknown as { penerimaSembakoId?: string } | undefined)?.penerimaSembakoId }); }
     if (method === "DELETE") {
       if (u.searchParams.get("all") === "true") {
         const r = await sembakoRTAction("deleteAll", { konfirmasi: "HAPUS" });

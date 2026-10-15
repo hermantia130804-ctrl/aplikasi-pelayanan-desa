@@ -35,6 +35,7 @@ export async function sembakoRTAction(operation: string, payload?: unknown) {
       const dup = await prisma.penerimaSembako.findFirst({ where: { nik } });
       if (dup) throw new ApiError(status.BAD_REQUEST, "NIK sudah terdaftar sebagai penerima sembako");
 
+      const me = await prisma.user.findUnique({ where: { userId: session.user.userId }, select: { noRt: true, noRw: true } });
       const data = await prisma.penerimaSembako.create({
         data: {
           userId: session.user.userId,
@@ -44,7 +45,7 @@ export async function sembakoRTAction(operation: string, payload?: unknown) {
           statusKeluarga: toUpperCase(String(d.statusKeluarga ?? "")),
           tanggalLahir: String(d.tanggalLahir ?? ""),
           alamat: toUpperCase(String(d.alamat ?? "KP. CEMPLANG")),
-          noRt: me.noRt, noRw: me.noRw,
+          noRt: me?.noRt ?? "001", noRw: me?.noRw ?? "002",
           keterangan: (d.keterangan as string) || null,
         },
       });
@@ -56,10 +57,10 @@ export async function sembakoRTAction(operation: string, payload?: unknown) {
     if (operation === "delete") {
       const { id } = (payload ?? {}) as { id?: string };
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
-      const existing = await prisma.penerimaSembako.findUnique({ where: { penerimaSembakoId: String(id) } });
+      const existing = await prisma.penerimaSembako.findUnique({ where: { penerimaSembakoId: Number(id) } });
       if (!existing) throw new ApiError(status.NOT_FOUND, "Data tidak ditemukan.");
       if (!isStaff && existing.userId !== session.user.userId) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
-      await prisma.penerimaSembako.delete({ where: { penerimaSembakoId: String(id) } });
+      await prisma.penerimaSembako.delete({ where: { penerimaSembakoId: Number(id) } });
       revalidatePath("/data-warga");
       return { status: 200, message: "Data penerima sembako berhasil dihapus" };
     }
@@ -97,7 +98,7 @@ export async function sembakoRTAction(operation: string, payload?: unknown) {
           userId: session.user.userId,
           nama: String(nama || "Penerima Sembako"),
           jumlahPenerima: jumlah,
-          data: dataPenerima as unknown as object,
+          data: JSON.stringify(dataPenerima),
         },
       });
       return { status: 200, message: "Snapshot tersimpan", data };
@@ -107,20 +108,20 @@ export async function sembakoRTAction(operation: string, payload?: unknown) {
     if (operation === "snapshotLoad") {
       const { id } = (payload ?? {}) as { id?: string };
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
-      const snap = await prisma.sembakoSnapshot.findUnique({ where: { sembakoSnapshotId: String(id) } });
+      const snap = await prisma.sembakoSnapshot.findUnique({ where: { sembakoSnapshotId: Number(id) } });
       if (!snap) throw new ApiError(status.NOT_FOUND, "Snapshot tidak ditemukan.");
       if (!isStaff && snap.userId !== session.user.userId) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
-      return { status: 200, data: { id: snap.sembakoSnapshotId, nama: snap.nama, jumlahPenerima: snap.jumlahPenerima, data: snap.data, createdAt: snap.createdAt } };
+      return { status: 200, data: { id: snap.sembakoSnapshotId, nama: snap.nama, jumlahPenerima: snap.jumlahPenerima, data: JSON.parse(snap.data || "[]"), createdAt: snap.createdAt } };
     }
 
     // ===== SNAPSHOT: DELETE =====
     if (operation === "snapshotDelete") {
       const { id } = (payload ?? {}) as { id?: string };
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
-      const snap = await prisma.sembakoSnapshot.findUnique({ where: { sembakoSnapshotId: String(id) } });
+      const snap = await prisma.sembakoSnapshot.findUnique({ where: { sembakoSnapshotId: Number(id) } });
       if (!snap) throw new ApiError(status.NOT_FOUND, "Snapshot tidak ditemukan.");
       if (!isStaff && snap.userId !== session.user.userId) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
-      await prisma.sembakoSnapshot.delete({ where: { sembakoSnapshotId: String(id) } });
+      await prisma.sembakoSnapshot.delete({ where: { sembakoSnapshotId: Number(id) } });
       return { status: 200, message: "Snapshot berhasil dihapus" };
     }
 

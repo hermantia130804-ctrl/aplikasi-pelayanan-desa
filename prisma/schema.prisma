@@ -591,21 +591,34 @@ model Kejadian {
 }
 
 model PenerimaSembako {
-  penerimaSembakoId String   @id @default(cuid()) @map("penerima_sembako_id")
-  userId            String   @map("user_id")
-  noKk              String   @map("no_kk")
+  penerimaSembakoId Int      @id @default(autoincrement()) @map("id")
+  userId            String   @map("userId")
+  noKk              String   @map("noKK")
   nik               String
-  namaLengkap       String   @map("nama_lengkap")
-  jenisKelamin      String   @map("jenis_kelamin")
-  statusKeluarga    String   @map("status_keluarga")
-  tanggalLahir      String   @default("") @map("tanggal_lahir")
+  namaLengkap       String   @map("namaLengkap")
+  jenisKelamin      String   @map("jenisKelamin")
+  statusKeluarga    String   @map("statusKeluarga")
+  tanggalLahir      String   @default("") @map("tanggalLahir")
   alamat            String   @default("KP. CEMPLANG")
-  noRt              String   @default("001") @map("no_rt")
-  noRw              String   @default("002") @map("no_rw")
+  noRt              String   @default("001") @map("noRt")
+  noRw              String   @default("002") @map("noRw")
   keterangan        String?
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  createdAt         DateTime @default(now()) @map("createdAt")
+  updatedAt         DateTime @updatedAt @map("updatedAt")
   user              User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@map("PenerimaSembako")
+}
+
+model SembakoSnapshot {
+  sembakoSnapshotId Int      @id @default(autoincrement()) @map("id")
+  rtId              Int      @default(1) @map("rtId")
+  userId            String?  @map("userId")
+  nama              String
+  jumlahPenerima    Int      @map("jumlahPenerima")
+  data              String
+  createdAt         DateTime @default(now()) @map("createdAt")
+  updatedAt         DateTime @updatedAt @map("updatedAt")
+
+  @@map("SembakoSnapshot")
 }
