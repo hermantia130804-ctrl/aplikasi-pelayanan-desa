@@ -254,10 +254,15 @@ export default function PendudukBansosRT({ isAdmin = true, isActive = false }: P
 
   // ==================== BANSOS FUNCTIONS ====================
   // Normalisasi: server memakai field noKk, komponen ini memakai noKK
+// bantuan dinormalisasi ke string JSON (komponen ini membacanya dgn JSON.parse)
+const toBantuanStr = (v: unknown): string => {
+  if (Array.isArray(v)) return JSON.stringify(v.map(String));
+  try { const r = JSON.parse(String(v ?? "[]")); return JSON.stringify(Array.isArray(r) ? r.map(String) : []); } catch { return "[]"; }
+};
 const normKK = (arr: unknown): Penduduk[] =>
   (Array.isArray(arr) ? arr : []).map((x) => {
     const o = x as Record<string, unknown>;
-    return { ...o, noKK: String(o.noKk ?? o.noKK ?? ""), id: String(o.id ?? o.dataWargaId ?? o.pendudukSementaraId ?? "") };
+    return { ...o, noKK: String(o.noKk ?? o.noKK ?? ""), id: String(o.id ?? o.dataWargaId ?? o.pendudukSementaraId ?? ""), bantuan: toBantuanStr(o.bantuan) };
   }) as unknown as Penduduk[];
 
 const fetchPenduduk = useCallback(async () => {
