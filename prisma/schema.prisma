@@ -622,3 +622,17 @@ model SembakoSnapshot {
 
   @@map("SembakoSnapshot")
 }
+
+
+model LaporanBulanan {
+  id         Int      @id @default(autoincrement())
+  rtId       Int      @default(1)
+  bulan      Int
+  tahun      Int
+  data       String
+  keterangan String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([rtId, bulan, tahun])
+}
