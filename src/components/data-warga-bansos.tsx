@@ -28,7 +28,11 @@ async function apiFetch(path: string, init?: { method?: string; body?: any; head
   if (path.startsWith("/api/penduduk")) {
     const u = new URL(path, "http://x");
     if (method === "GET") {
-      const r = await pendudukRTAction("list", { search: u.searchParams.get("search") ?? "" });
+      if (u.searchParams.get("noKK")) {
+  const rA = await pendudukRTAction("listAnggota", { noKK: u.searchParams.get("noKK") });
+  return mk(rA.status ?? 500, "data" in rA ? rA.data : { error: rA.error });
+}
+const r = await pendudukRTAction("list", { search: u.searchParams.get("search") ?? "" });
       return mk(r.status ?? 500, "data" in r ? r.data : { error: r.error });
     }
     const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
