@@ -253,17 +253,24 @@ export default function PendudukBansosRT({ isAdmin = true, isActive = false }: P
   });
 
   // ==================== BANSOS FUNCTIONS ====================
-  const fetchPenduduk = useCallback(async () => {
+  // Normalisasi: server memakai field noKk, komponen ini memakai noKK
+const normKK = (arr: unknown): Penduduk[] =>
+  (Array.isArray(arr) ? arr : []).map((x) => {
+    const o = x as Record<string, unknown>;
+    return { ...o, noKK: String(o.noKk ?? o.noKK ?? "") };
+  }) as unknown as Penduduk[];
+
+const fetchPenduduk = useCallback(async () => {
     try {
       const params = search ? `?search=${encodeURIComponent(search)}` : '';
 
       // Fetch penduduk tetap
       const resTetap = await apiFetch(`/api/penduduk${params}`);
-      const dataTetap: Penduduk[] = resTetap.ok ? await resTetap.json() : [];
+      const dataTetap: Penduduk[] = resTetap.ok ? normKK(await resTetap.json()) : [];
 
       // Fetch penduduk sementara
       const resSem = await apiFetch(`/api/penduduk-sementara${params}`);
-      const dataSem: Penduduk[] = resSem.ok ? await resSem.json() : [];
+      const dataSem: Penduduk[] = resSem.ok ? normKK(await resSem.json()) : [];
 
       // Tandai penduduk sementara
       dataSem.forEach(p => { p._isSementara = true; });
@@ -580,7 +587,7 @@ export default function PendudukBansosRT({ isAdmin = true, isActive = false }: P
     try {
       const res = await apiFetch(`/api/penduduk?noKK=${encodeURIComponent(noKK)}`);
       if (res.ok) {
-        const data: Penduduk[] = await res.json();
+        const data: Penduduk[] = normKK(await res.json());
         setAnggotaList(data);
         setShowSearchDropdown(true);
       }
@@ -609,11 +616,11 @@ export default function PendudukBansosRT({ isAdmin = true, isActive = false }: P
 
       let data: Penduduk[] = [];
       if (resTetap.ok) {
-        const tetap: Penduduk[] = await resTetap.json();
+        const tetap: Penduduk[] = normKK(await resTetap.json());
         data.push(...tetap);
       }
       if (resSem.ok) {
-        const sem: Penduduk[] = await resSem.json();
+        const sem: Penduduk[] = normKK(await resSem.json());
         sem.forEach(p => { p._isSementara = true; });
         data.push(...sem);
       }
