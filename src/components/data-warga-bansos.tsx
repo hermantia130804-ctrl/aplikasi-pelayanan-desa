@@ -571,13 +571,13 @@ const data: PenerimaSembako[] = rawSem.map((x) => { const o = x as Record<string
       const resPenduduk = await apiFetch('/api/penduduk');
       const resSembako = await apiFetch('/api/sembako');
       if (resPenduduk.ok && resSembako.ok) {
-        const pendudukData: Penduduk[] = await resPenduduk.json();
-        const sembakoData: PenerimaSembako[] = await resSembako.json();
+        const pendudukData: Penduduk[] = normKK(await resPenduduk.json());
+        const sembakoRaw: unknown[] = await resSembako.json(); const sembakoData: PenerimaSembako[] = sembakoRaw.map((x) => { const o = x as Record<string, unknown>; return { ...o, id: String(o.id ?? o.penerimaSembakoId ?? ""), noKK: String(o.noKk ?? o.noKK ?? "") } as unknown as PenerimaSembako; });
         // Ambil No KK yang sudah terdaftar sebagai penerima
         const existingNoKK = new Set(sembakoData.map(s => s.noKK));
         // Ambil KK heads yang belum terdaftar, urutkan by nama
         const heads = pendudukData
-          .filter(p => p.statusKeluarga === 'KEPALA KELUARGA' && !existingNoKK.has(p.noKK))
+          .filter(p => p.statusKeluarga === 'KEPALA KELUARGA' && p.noKK && !existingNoKK.has(p.noKK))
           .sort((a, b) => a.namaLengkap.localeCompare(b.namaLengkap, 'id', { sensitivity: 'base' }));
         setKKList(heads);
       }
