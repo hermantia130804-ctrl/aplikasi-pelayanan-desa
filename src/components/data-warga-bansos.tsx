@@ -257,7 +257,7 @@ export default function PendudukBansosRT({ isAdmin = true, isActive = false }: P
 const normKK = (arr: unknown): Penduduk[] =>
   (Array.isArray(arr) ? arr : []).map((x) => {
     const o = x as Record<string, unknown>;
-    return { ...o, noKK: String(o.noKk ?? o.noKK ?? "") };
+    return { ...o, noKK: String(o.noKk ?? o.noKK ?? ""), id: String(o.id ?? o.dataWargaId ?? o.pendudukSementaraId ?? "") };
   }) as unknown as Penduduk[];
 
 const fetchPenduduk = useCallback(async () => {
@@ -537,7 +537,8 @@ const fetchPenduduk = useCallback(async () => {
     try {
       const res = await apiFetch('/api/sembako');
       if (res.ok) {
-        const data: PenerimaSembako[] = await res.json();
+        const rawSem: unknown[] = await res.json();
+const data: PenerimaSembako[] = rawSem.map((x) => { const o = x as Record<string, unknown>; return { ...o, id: String(o.id ?? o.penerimaSembakoId ?? ""), noKK: String(o.noKk ?? o.noKK ?? "") } as unknown as PenerimaSembako; });
         setSembakoData(data);
       }
     } catch (error) {
