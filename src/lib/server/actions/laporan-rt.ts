@@ -25,6 +25,8 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
     const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
     const whereUser = isStaff ? {} : { userId: session.user.userId };
     const rtId = 1; // deployment single-RT (RT 001 RW 002) = default model asli
+    const me = await prisma.user.findUnique({ where: { userId: session.user.userId }, select: { noRt: true, noRw: true } });
+    const rtLabel = `RT ${me?.noRt || "001"} RW ${me?.noRw || "002"}`;
 
     // ===== GENERATE (port: GET /api/laporan) =====
     if (operation === "generate") {
@@ -32,7 +34,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
       const now = new Date();
       const bulan = bIn ?? now.getMonth() + 1;
       const tahun = tIn ?? now.getFullYear();
-      const data = await generateReportData(bulan, tahun, whereUser);
+      const data = await generateReportData(bulan, tahun, whereUser, rtLabel);
       return { status: 200, data };
     }
 
@@ -60,7 +62,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
       const now = new Date();
       const bulan = bIn ?? now.getMonth() + 1;
       const tahun = tIn ?? now.getFullYear();
-      const reportData = await generateReportData(bulan, tahun, whereUser);
+      const reportData = await generateReportData(bulan, tahun, whereUser, rtLabel);
 
       const saved = await prisma.laporanBulanan.upsert({
         where: { rtId_bulan_tahun: { rtId, bulan, tahun } },
@@ -88,7 +90,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
       if (!record) {
         const bulan = bIn ?? new Date().getMonth() + 1;
         const tahun = tIn ?? new Date().getFullYear();
-        const reportData = await generateReportData(bulan, tahun, whereUser);
+        const reportData = await generateReportData(bulan, tahun, whereUser, rtLabel);
         record = await prisma.laporanBulanan.create({
           data: { rtId, bulan, tahun, data: JSON.stringify(reportData), keterangan: keterangan || null },
         });
@@ -120,7 +122,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
       const now = new Date();
       const bulan = bIn ?? now.getMonth() + 1;
       const tahun = tIn ?? now.getFullYear();
-      const data = await generateReportData(bulan, tahun, whereUser);
+      const data = await generateReportData(bulan, tahun, whereUser, rtLabel);
 
       const asCell = (label: string): string | number => {
         const n = Number(label);
@@ -160,7 +162,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
       addMerge('C2', 'M2');
       setCell('C3', 'DESA SUKAMAJU KECAMATAN CIBUNGBULANG KABUPATEN BOGOR');
       addMerge('C3', 'M3');
-      setCell('C4', `RT 001 RW 002 BULAN ${BULAN_NAMES[bulan - 1]} TAHUN ${tahun}`);
+      setCell('C4', `${data.rtLabel} BULAN ${BULAN_NAMES[bulan - 1]} TAHUN ${tahun}`);
       addMerge('C4', 'M4');
 
       // Header row
@@ -216,7 +218,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
       // Signature
       setCell('G46', 'CIBUNGBULANG, .....................');
       addMerge('G46', 'I46');
-      setCell('G47', 'KETUA RT.001 RW.002');
+      setCell('G47', `KETUA ${data.rtLabel}`);
       addMerge('G47', 'I47');
 
       ws['!merges'] = merges;
@@ -236,7 +238,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
 }
 
 // ===== Shared generator (port: generateReportData asli + fallback getJk dari GET /api/laporan) =====
-async function generateReportData(bulan: number, tahun: number, whereUser: Record<string, unknown>) {
+async function generateReportData(bulan: number, tahun: number, whereUser: Record<string, unknown>, rtLabel: string) {
   const refDate = new Date(tahun, bulan - 1, 15);
   const startDate = new Date(tahun, bulan - 1, 1);
   const endDate = new Date(tahun, bulan, 0, 23, 59, 59);
@@ -332,6 +334,7 @@ async function generateReportData(bulan: number, tahun: number, whereUser: Recor
   return {
     bulan,
     tahun,
+    rtLabel,
     leftAges,
     rightAges,
     totalLeftL,

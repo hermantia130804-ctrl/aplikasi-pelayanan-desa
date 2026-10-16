@@ -55,6 +55,7 @@ interface AgeRow {
 }
 
 interface LaporanData {
+  rtLabel?: string;
   bulan: number;
   tahun: number;
   leftAges: AgeRow[];
@@ -526,7 +527,7 @@ export default function TabLaporan({ isAdmin = true, isActive = false }: TabLapo
     <div class="title-section">
       <div class="t1">LAPORAN DATA (LAHIR, MENINGGAL, PINDAH DAN DATANG) PENDUDUK</div>
       <div class="t2">DESA SUKAMAJU KECAMATAN CIBUNGBULANG KABUPATEN BOGOR</div>
-      <div class="t3">RT 001 RW 002 BULAN ${b} TAHUN ${data.tahun}</div>
+      <div class="t3">${data.rtLabel ?? "RT 001 RW 002"} BULAN ${b} TAHUN ${data.tahun}</div>
     </div>
 
     <div class="table-wrapper">
@@ -550,7 +551,7 @@ export default function TabLaporan({ isAdmin = true, isActive = false }: TabLapo
 
       <div class="signature">
         <div>CIBUNGBULANG, .....................</div>
-        <div class="sig-name">KETUA RT.001 RW.002</div>
+        <div class="sig-name">KETUA ${data.rtLabel ?? "RT 001 RW 002"}</div>
       </div>
     </div>
   </div>
@@ -825,7 +826,7 @@ export default function TabLaporan({ isAdmin = true, isActive = false }: TabLapo
                     DESA SUKAMAJU KECAMATAN CIBUNGBULANG KABUPATEN BOGOR
                   </div>
                   <div className="text-[11px]">
-                    RT 001 RW 002 BULAN {BULAN[laporanData.bulan - 1]} TAHUN {laporanData.tahun}
+                    {laporanData.rtLabel ?? "RT 001 RW 002"} BULAN {BULAN[laporanData.bulan - 1]} TAHUN {laporanData.tahun}
                   </div>
                 </div>
 
@@ -858,7 +859,7 @@ export default function TabLaporan({ isAdmin = true, isActive = false }: TabLapo
                 <div className="flex justify-end mt-4 text-[11px] text-right">
                   <div className="space-y-0.5">
                     <div>CIBUNGBULANG, .....................</div>
-                    <div className="mt-6">KETUA RT.001 RW.002</div>
+                    <div className="mt-6">KETUA {laporanData.rtLabel ?? "RT 001 RW 002"}</div>
                   </div>
                 </div>
               </div>
