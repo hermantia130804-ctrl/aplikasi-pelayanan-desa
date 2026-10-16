@@ -636,3 +636,17 @@ model LaporanBulanan {
 
   @@unique([rtId, bulan, tahun])
 }
+
+
+model SuratPengantar {
+  id           Int      @id @default(autoincrement())
+  rtId         Int      @default(1)
+  nomorSurat   String
+  namaPemohon  String
+  nik          String
+  tujuan       String
+  keterangan   String?
+  ketuaRW      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
