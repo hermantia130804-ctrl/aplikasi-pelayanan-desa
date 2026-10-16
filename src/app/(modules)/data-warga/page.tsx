@@ -2,12 +2,14 @@ import Link from "next/link";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LayoutDashboard, Users, UserRound, CalendarDays, Shield, FileSpreadsheet, FileText } from "lucide-react";
 import { findCurrentSessionService } from "@/lib/server/services/session";
+import { prisma } from "@/lib/prisma";
 import { getStatistikDataWarga } from "@/lib/server/actions/statistik-data-warga";
 import PendudukRT from "@/components/data-warga-penduduk";
 import PendudukSementaraRT from "@/components/data-warga-sementara";
 import PendudukKejadianRT from "@/components/data-warga-kejadian";
 import PendudukBansosRT from "@/components/data-warga-bansos";
 import TabLaporan from "@/components/data-warga-laporan";
+import TabDokumenRT from "@/components/data-warga-dokumen";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -28,6 +30,12 @@ const tabTrigger = "flex flex-col items-center gap-0.5 py-2 px-1 data-[state=act
 export default async function DataWargaPage() {
     const session = await findCurrentSessionService();
     if (!session?.user) redirect("/masuk");
+
+    const meDoc = await prisma.user.findUnique({
+      where: { userId: session.user.userId },
+      select: { noRt: true, noRw: true, namaKetua: true },
+    });
+    const rtInfo = { namaRT: meDoc?.noRt || "001", rw: meDoc?.noRw || "002", kelurahan: "SUKAMAJU", kecamatan: "CIBUNGBULANG", kabupaten: "BOGOR", provinsi: "JAWA BARAT", ketuaRT: meDoc?.namaKetua || null };
     const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
     const u = await prismaUser(session.user.userId);
 
@@ -178,7 +186,7 @@ export default async function DataWargaPage() {
                     <TabsContent value="kejadian"><PendudukKejadianRT isAdmin /></TabsContent>
                     <TabsContent value="bantuan"><PendudukBansosRT /></TabsContent>
                     <TabsContent value="laporan"><TabLaporan /></TabsContent>
-                    <TabsContent value="dokumen"><div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">Modul Dokumen - Segera</div></TabsContent>
+                    <TabsContent value="dokumen"><TabDokumenRT isAdmin rtInfo={rtInfo} /></TabsContent>
                 </Tabs>
             </div>
         </div>
