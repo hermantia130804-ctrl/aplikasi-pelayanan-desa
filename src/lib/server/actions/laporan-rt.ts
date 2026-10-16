@@ -55,7 +55,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
 
     // ===== SAVE (port: POST /api/laporan/save) =====
     if (operation === "save") {
-      if (!isStaff) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+      if (!isStaff && session.user.role !== "RT") throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
       const { bulan: bIn, tahun: tIn, keterangan } = (payload ?? {}) as { bulan?: number; tahun?: number; keterangan?: string };
       const now = new Date();
       const bulan = bIn ?? now.getMonth() + 1;
@@ -73,7 +73,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
 
     // ===== SIMPAN KETERANGAN (port: PATCH /api/laporan/save) =====
     if (operation === "saveKeterangan") {
-      if (!isStaff) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+      if (!isStaff && session.user.role !== "RT") throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
       const { id, bulan: bIn, tahun: tIn, keterangan } = (payload ?? {}) as { id?: number; bulan?: number; tahun?: number; keterangan?: string };
 
       let record: { id: number } | null = null;
@@ -104,7 +104,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
 
     // ===== DELETE SAVED (port: DELETE /api/laporan/save?id=) =====
     if (operation === "deleteSaved") {
-      if (!isStaff) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+      if (!isStaff && session.user.role !== "RT") throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
       const { id } = (payload ?? {}) as { id?: number };
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID tidak valid");
       const record = await prisma.laporanBulanan.findUnique({ where: { id } });
