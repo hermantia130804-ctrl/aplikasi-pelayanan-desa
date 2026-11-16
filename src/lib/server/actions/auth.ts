@@ -70,27 +70,50 @@ export const forgotPasswordAction = async (payload: TForgotPasswordSchema) => {
         if (!data) throw new ApiError(status.BAD_REQUEST, message.EMAIL_NOT_FOUND);
         const { data: fp } = await createForgotPasswordService(data.userId);
 
-        // Kirim email berisi tautan reset (sebelumnya hanya komentar //EMAIL - tidak pernah diimplementasikan)
+        // Kirim email berisi tautan reset.
+        // APP_URL wajib diset di Vercel (Settings -> Environment Variables).
+        // Fallback: kalau kosong, pakai localhost (hanya berguna di dev lokal).
+        const appUrl = (process.env.APP_URL || "http://localhost:3000").replace(/\/+$/, "");
+        const resetUrl = `${appUrl}/lupa-password/${fp.forgotPasswordId}`;
+
+        // Flag berhasil/kirim email untuk feedback yang lebih akurat ke user.
+        let emailTerkirim = false;
+        let emailError: string | null = null;
         try {
-            const resetUrl = `${process.env.APP_URL}/lupa-password/${fp.forgotPasswordId}`;
             const html = `
                 <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #eee;border-radius:8px;">
-                    <h2>🔐 Reset Password</h2>
+                    <h2>Reset Password</h2>
                     <p>Anda (atau seseorang) meminta pengaturan ulang password akun Desa Sukamaju Anda.</p>
                     <p style="text-align:center;margin:24px 0;">
                         <a href="${resetUrl}" style="background:#0f766e;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
                             Atur Password Baru
                         </a>
                     </p>
-                    <p style="font-size:12px;color:#888;">Tautan berlaku 1 jam dan hanya bisa digunakan sekali. Abaikan email ini jika Anda tidak meminta reset.</p>
+                    <p style="font-size:12px;color:#888;">
+                        Tautan berlaku 1 jam dan hanya bisa digunakan sekali.
+                        Abaikan email ini jika Anda tidak meminta reset.
+                    </p>
                 </div>`;
-            await sendEmail(data.email, "🔐 Reset Password - Desa Sukamaju", html);
-            console.log(`[LUPA PASSWORD] Email reset terkirim ke ${data.email}`);
+            await sendEmail(data.email, "Reset Password - Desa Sukamaju", html);
+            emailTerkirim = true;
+            console.log(`[LUPA PASSWORD] Email reset terkirim ke ${data.email} | URL: ${resetUrl}`);
         } catch (e) {
-            console.error("GAGAL EMAIL RESET:", e);
+            emailError = e instanceof Error ? e.message : String(e);
+            console.error("[LUPA PASSWORD] GAGAL kirim email reset:", emailError);
+            console.error("[LUPA PASSWORD] Reset URL (untuk admin fallback):", resetUrl);
         }
 
-        return { status: status.OK, message: message.FORGOT_OK };
+        // Pesan berbeda sesuai hasil kirim email:
+        //  - Berhasil: arahkan user cek email.
+        //  - Gagal: tetap terselesaikan di server (record dibuat), tapi kasih tahu user
+        //    agar hubungi admin (admin bisa lihat URL reset di log Vercel).
+        if (emailTerkirim) {
+            return { status: status.OK, message: "Permintaan lupa password berhasil. Cek email Anda (termasuk folder Spam) untuk tautan reset." };
+        }
+        return {
+            status: status.OK,
+            message: "Permintaan dicatat, tetapi email reset gagal terkirim. Hubungi admin agar mengirimkan tautan reset manual (cek log server).",
+        };
     } catch (error) {
         return errorHandler(error);
     }
@@ -101,9 +124,13 @@ export const resetPasswordAction = async (payload: TResetPasswordSchema) => {
         const message = MESSAGE.AUTH;
         const parsed = resetPasswordSchema.parse(payload);
         const { data: forgotPassword } = await validateForgotPasswordService(parsed.forgotPasswordId);
+        // Validasi kekuatan password (defensif: tidak memblokir kalau HIBP unreachable).
+        const { verifyPasswordStrength } = await import("../utils/password");
+        const isKuat = await verifyPasswordStrength(parsed.password);
+        if (!isKuat) throw new ApiError(status.BAD_REQUEST, "Password minimal 8 karakter dan tidak termasuk password yang bocor secara umum");
         await updateUserPasswordService(forgotPassword.userId, parsed.password);
         await consumeForgotPasswordService(forgotPassword.forgotPasswordId);
-        return { status: status.OK, message: message.FORGOT_OK };
+        return { status: status.OK, message: message.RESET_PASSWORD_OK };
     } catch (error) {
         return errorHandler(error);
     }

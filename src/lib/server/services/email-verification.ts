@@ -19,7 +19,8 @@ export const createEmailVerificationService = async (userId: string) => {
     try {
         const user = await prisma.user.findUnique({ where: { userId } });
         if (!user) throw new Error("User tidak ditemukan");
-        const verificationUrl = `${process.env.APP_URL}/verifikasi/${emailVerificationId}`;
+        const appUrl = (process.env.APP_URL || "http://localhost:3000").replace(/\/+$/, "");
+        const verificationUrl = `${appUrl}/verifikasi/${emailVerificationId}`;
         await sendVerificationEmail(user.email, verificationUrl);
     } catch (error) {
         console.error("GAGAL KIRIM EMAIL VERIFIKASI:", error);

@@ -13,7 +13,7 @@ import status from "http-status";
 import { revalidatePath } from "next/cache";
 import { ApiError } from "next/dist/server/api-utils";
 import { errorHandler } from "../services/error";
-import { hashPassword, verifyPasswordStrength } from "../utils/password";
+import { verifyPasswordStrength } from "../utils/password";
 import {
   countUserService,
   createUserService,
@@ -56,8 +56,9 @@ export const updateUserAction = async (userId: string, payload: TUpdateUserSchem
       if (!isKuat) {
         throw new ApiError(status.BAD_REQUEST, "Password minimal 8 karakter dan tidak termasuk password yang bocor secara umum");
       }
-      const passwordHash = await hashPassword(password);
-      await updateUserPasswordService(userId, passwordHash);
+      // FIX: kirim PLAIN password ke service; service yang hash sekali.
+      // (Sebelumnya di-hash di sini lalu di-hash lagi di service -> double hash -> login gagal.)
+      await updateUserPasswordService(userId, password);
     }
 
     const data = await updateUserService(userId, restPayload);
@@ -71,6 +72,10 @@ export const updateUserAction = async (userId: string, payload: TUpdateUserSchem
 export const updateUserPasswordAction = async (userId: string, payload: TUpdateUserPasswordSchema) => {
   try {
     await requireFullAdmin();
+    const isKuat = await verifyPasswordStrength(payload.password);
+    if (!isKuat) {
+      throw new ApiError(status.BAD_REQUEST, "Password minimal 8 karakter dan tidak termasuk password yang bocor secara umum");
+    }
     await updateUserPasswordService(userId, payload.password);
     return { status: status.OK, message: "Password berhasil diperbarui" };
   } catch (error) {
