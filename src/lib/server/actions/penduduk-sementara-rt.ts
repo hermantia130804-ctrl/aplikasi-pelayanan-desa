@@ -143,13 +143,22 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
 
     // ===== DELETE ALL (konfirmasi ketik HAPUS) =====
     if (operation === "deleteAll") {
-      const { konfirmasi } = (payload ?? {}) as { konfirmasi?: string };
+      const { konfirmasi, filterRt, filterRw } = (payload ?? {}) as { konfirmasi?: string; filterRt?: string; filterRw?: string };
       if (konfirmasi !== "HAPUS") throw new ApiError(status.BAD_REQUEST, "Ketik HAPUS untuk konfirmasi.");
-      const where = isStaff ? {} : { userId: session.user.userId };
+      const where: Record<string, unknown> =
+        isStaff
+          ? {}
+          : me?.noRt && me?.noRw
+            ? { noRt: me.noRt, noRw: me.noRw }
+            : { userId: session.user.userId };
+      if (isStaff) {
+        if (filterRt && filterRt !== "SEMUA") where.noRt = String(filterRt);
+        if (filterRw && filterRw !== "SEMUA") where.noRw = String(filterRw);
+      }
       const jumlah = await prisma.pendudukSementara.count({ where });
       await prisma.pendudukSementara.deleteMany({ where });
       revalidatePath("/data-warga");
-      return { status: 200, message: `Seluruh data penduduk sementara berhasil dihapus (${jumlah} orang)` };
+      return { status: 200, message: `Seluruh data penduduk sementara berhasil dihapus (${jumlah} orang)`, jumlah };
     }
 
     // ===== IMPORT EXCEL (v2: header dua tingkat, KONTRAN->KONTRAK, alamat asal dari keterangan) =====

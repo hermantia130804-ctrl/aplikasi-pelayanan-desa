@@ -200,15 +200,25 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
 
     // ===== DELETE ALL (dengan konfirmasi ketik HAPUS) =====
     if (operation === "deleteAll") {
-      const { konfirmasi } = (payload ?? {}) as { konfirmasi?: string };
+      const { konfirmasi, filterRt, filterRw } = (payload ?? {}) as { konfirmasi?: string; filterRt?: string; filterRw?: string };
       if (konfirmasi !== "HAPUS") throw new ApiError(status.BAD_REQUEST, "Ketik HAPUS untuk konfirmasi.");
 
-      const where = isStaff ? {} : { userId: session.user.userId };
+      // Filter sama seperti list: staff bebas (boleh filter RT/RW); RT terkunci wilayahnya
+      const where: Record<string, unknown> =
+        isStaff
+          ? {}
+          : me?.noRt && me?.noRw
+            ? { noRt: me.noRt, noRw: me.noRw }
+            : { userId: session.user.userId };
+      if (isStaff) {
+        if (filterRt && filterRt !== "SEMUA") where.noRt = String(filterRt);
+        if (filterRw && filterRw !== "SEMUA") where.noRw = String(filterRw);
+      }
       const jumlah = await prisma.dataWarga.count({ where });
       await prisma.dataWarga.deleteMany({ where });
       revalidatePath("/data-warga");
       revalidatePath("/kelola-data-warga");
-      return { status: 200, message: `Seluruh data berhasil dihapus (${jumlah} warga)` };
+      return { status: 200, message: `Seluruh data berhasil dihapus (${jumlah} warga)`, jumlah };
     }
 
     // ===== IMPORT EXCEL v2 (carry-forward KK, tanggal YYYY-first, laporan lengkap) =====

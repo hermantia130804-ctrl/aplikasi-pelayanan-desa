@@ -196,6 +196,21 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
       return { status: 200, message: "Kejadian berhasil dihapus" };
     }
 
+    // ===== DELETE ALL (konfirmasi ketik HAPUS) =====
+    // Tabel Kejadian tidak punya kolom RT/RW -> kunci wilayah lewat No. KK milik RT (sama seperti list).
+    if (operation === "deleteAll") {
+      const { konfirmasi, filterRt, filterRw } = (payload ?? {}) as { konfirmasi?: string; filterRt?: string; filterRw?: string };
+      if (konfirmasi !== "HAPUS") throw new ApiError(status.BAD_REQUEST, "Ketik HAPUS untuk konfirmasi.");
+      const where: Record<string, unknown> = {
+        ...(await kunciWilayah()),
+        ...(isStaff ? await filterWilayahStaff(filterRt, filterRw) : {}),
+      };
+      const jumlah = await prisma.kejadian.count({ where });
+      await prisma.kejadian.deleteMany({ where });
+      revalidatePath("/data-warga");
+      return { status: 200, message: `Data kejadian berhasil dihapus (${jumlah} catatan)`, jumlah };
+    }
+
     return { status: 400, error: "Operasi tidak dikenal" };
   } catch (error) {
     if (error instanceof ApiError) return { status: error.statusCode, error: error.message };

@@ -2,16 +2,30 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { LayoutDashboard, Users, UserRound, CalendarDays, Shield, FileSpreadsheet, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, UserRound, CalendarDays, Shield, FileSpreadsheet, FileText, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { FilterWilayah, useOpsiWilayah, pecahFilterWilayah, type OpsiWilayah } from '@/components/filter-wilayah';
 import { getStatistikDataWarga } from '@/lib/server/actions/statistik-data-warga';
+import { resetDataWilayahAction } from '@/lib/server/actions/reset-data-wilayah';
 import PendudukRT from '@/components/data-warga-penduduk';
 import PendudukSementaraRT from '@/components/data-warga-sementara';
 import PendudukKejadianRT from '@/components/data-warga-kejadian';
 import PendudukBansosRT from '@/components/data-warga-bansos';
 import TabLaporan from '@/components/data-warga-laporan';
 import TabDokumenRT from '@/components/data-warga-dokumen';
+import { toast } from 'sonner';
 
 export interface StatistikBeranda {
   totalKK: number;
@@ -67,6 +81,11 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
   const [statistik, setStatistik] = useState<StatistikBeranda | null>(initialStatistik);
   const [statLoading, setStatLoading] = useState(false);
 
+  // Reset Data state
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetKonfirmasi, setResetKonfirmasi] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
   const fw = pecahFilterWilayah(filterWilayah);
 
   const refreshStatistik = useCallback(async () => {
@@ -81,6 +100,41 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
       setStatLoading(false);
     }
   }, [fw.filterRt, fw.filterRw]);
+
+  // Handler Reset Data: panggil action agregat -> toast -> reload page
+  const handleResetData = async () => {
+    if (resetKonfirmasi !== 'HAPUS') {
+      toast.error('Ketik "HAPUS" (huruf kapital) untuk konfirmasi.');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const r = await resetDataWilayahAction({
+        konfirmasi: 'HAPUS',
+        filterRt: fw.filterRt,
+        filterRw: fw.filterRw,
+      });
+      if (r.status === 200 && 'data' in r && Array.isArray(r.data)) {
+        toast.success(r.message);
+        for (const h of r.data as Array<{ tab: string; pesan: string; jumlah: number; status: number }>) {
+          if (h.status >= 400) toast.error(`${h.tab}: ${h.pesan}`);
+          else if (h.jumlah > 0) toast.message(`${h.tab}: ${h.jumlah} record dihapus`);
+        }
+        setShowResetModal(false);
+        setResetKonfirmasi('');
+        // Reload halaman untuk refresh data semua tab
+        setTimeout(() => window.location.reload(), 800);
+      } else {
+        const errMsg = ('error' in r && typeof r.error === 'string') ? r.error : ('message' in r ? r.message : 'Gagal reset data');
+        toast.error(errMsg);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Terjadi kesalahan pada server.';
+      toast.error(msg);
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   // Saat filter berubah (hanya admin/petugas), re-fetch statistik Beranda
   useEffect(() => {
@@ -122,7 +176,7 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
           </p>
         </div>
 
-        {/* FILTER GLOBAL: 1 dropdown untuk SEMUA tab (admin & petugas saja) */}
+        {/* FILTER GLOBAL + RESET DATA: 1 dropdown untuk SEMUA tab (admin & petugas saja) */}
         {isStaff && (
           <div className='flex flex-wrap items-center gap-2 bg-white border rounded-lg p-2 shadow-sm'>
             <span className='text-xs font-semibold text-emerald-700 mr-1'>Filter Wilayah:</span>
@@ -133,6 +187,23 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
               </span>
             )}
             {statLoading && <span className='text-[11px] text-muted-foreground animate-pulse'>Memuat ulang statistik…</span>}
+
+            {/* Tombol Reset Data: hapus SEMUA data di 5 tab sesuai filter */}
+            <div className='ml-auto'>
+              <Button
+                type='button'
+                variant='destructive'
+                size='sm'
+                onClick={() => {
+                  setResetKonfirmasi('');
+                  setShowResetModal(true);
+                }}
+                className='gap-1.5'
+              >
+                <Trash2 className='h-4 w-4' />
+                Reset Data {filterWilayah !== 'SEMUA' ? `RT.${fw.filterRt}/RW.${fw.filterRw}` : 'Semua'}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -264,6 +335,76 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
           <TabsContent value='laporan'><TabLaporan wilayah={filterWilayah} /></TabsContent>
           <TabsContent value='dokumen'><TabDokumenRT isAdmin rtInfo={rtInfo} wilayah={filterWilayah} /></TabsContent>
         </Tabs>
+
+        {/* DIALOG KONFIRMASI RESET DATA */}
+        <AlertDialog open={showResetModal} onOpenChange={(o) => { setShowResetModal(o); if (!o) setResetKonfirmasi(''); }}>
+          <AlertDialogContent className='max-w-md'>
+            <AlertDialogHeader>
+              <AlertDialogTitle className='flex items-center gap-2 text-red-700'>
+                <AlertTriangle className='h-5 w-5' />
+                Konfirmasi Reset Data
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className='space-y-3 text-sm'>
+                  <p className='font-semibold text-red-700'>
+                    {filterWilayah === 'SEMUA'
+                      ? 'PERHATIAN: Anda akan menghapus SEMUA data di SEMUA RT/RW.'
+                      : `PERHATIAN: Anda akan menghapus data milik RT.${fw.filterRt} RW.${fw.filterRw}.`}
+                  </p>
+                  <p>
+                    Operasi ini akan menghapus <b>permanen</b> data di 5 tab berikut:
+                  </p>
+                  <ul className='list-disc pl-5 space-y-0.5 text-xs'>
+                    <li>Penduduk tetap (tabel DataWarga)</li>
+                    <li>Penduduk sementara</li>
+                    <li>Catatan Kejadian (LAHIR/MATI/PINDAH/DATANG)</li>
+                    <li>Penerima Sembako</li>
+                    <li>Surat Pengantar (tab Dokumen)</li>
+                  </ul>
+                  <p className='text-xs text-muted-foreground'>
+                    Catatan: <b>Laporan Bulanan</b> (snapshot tersimpan) dan <b>Bansos per KK</b> dari Kemensos tidak ikut dihapus.
+                  </p>
+                  <p className='text-red-700 font-medium'>
+                    Tindakan ini tidak dapat dibatalkan. Pastikan Anda memiliki backup database.
+                  </p>
+                  <div className='pt-1'>
+                    <label className='block text-xs font-medium mb-1'>
+                      Ketik <span className='font-mono font-bold tracking-wider'>HAPUS</span> untuk konfirmasi:
+                    </label>
+                    <Input
+                      value={resetKonfirmasi}
+                      onChange={(e) => setResetKonfirmasi(e.target.value.toUpperCase())}
+                      placeholder='HAPUS'
+                      className='font-mono tracking-wider'
+                      autoComplete='off'
+                      disabled={resetLoading}
+                    />
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={resetLoading}>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleResetData}
+                disabled={resetKonfirmasi !== 'HAPUS' || resetLoading}
+                className='bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 disabled:cursor-not-allowed'
+              >
+                {resetLoading ? (
+                  <>
+                    <Loader2 className='h-4 w-4 mr-1 animate-spin' />
+                    Memproses…
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className='h-4 w-4 mr-1' />
+                    Hapus Sekarang
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

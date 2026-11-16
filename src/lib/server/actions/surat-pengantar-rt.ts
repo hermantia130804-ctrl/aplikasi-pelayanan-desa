@@ -94,6 +94,29 @@ export async function suratPengantarRTAction(operation: string, payload?: unknow
       return { status: 200, message: "Surat pengantar berhasil dihapus" };
     }
 
+    // ===== DELETE ALL (konfirmasi ketik HAPUS; filter via NIK lookup) =====
+    // Tabel SuratPengantar tidak punya kolom RT/RW -> filter admin lewat NIK yang
+    // terdaftar di DataWarga pada RT/RW terpilih. Tanpa filter -> hapus SEMUA.
+    if (operation === "deleteAll") {
+      const session = await getSession();
+      const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
+      if (!isStaff) throw new ApiError(status.FORBIDDEN, "Hanya Admin/Petugas yang dapat reset data surat pengantar.");
+      const { konfirmasi, filterRt, filterRw } = (payload ?? {}) as { konfirmasi?: string; filterRt?: string; filterRw?: string };
+      if (konfirmasi !== "HAPUS") throw new ApiError(status.BAD_REQUEST, "Ketik HAPUS untuk konfirmasi.");
+      let where: Record<string, unknown> = {};
+      if (filterRt && filterRt !== "SEMUA") {
+        const nikList = await prisma.dataWarga.findMany({
+          where: { noRt: String(filterRt), ...(filterRw && filterRw !== "SEMUA" ? { noRw: String(filterRw) } : {}) },
+          select: { nik: true },
+        });
+        where = { nik: { in: nikList.map(n => n.nik) } };
+      }
+      const jumlah = await prisma.suratPengantar.count({ where });
+      await prisma.suratPengantar.deleteMany({ where });
+      revalidatePath("/data-warga");
+      return { status: 200, message: `Data surat pengantar berhasil dihapus (${jumlah} surat)`, jumlah };
+    }
+
     return { status: 400, error: "Operasi tidak dikenal" };
   } catch (error) {
     if (error instanceof ApiError) return { status: error.statusCode, error: error.message };
