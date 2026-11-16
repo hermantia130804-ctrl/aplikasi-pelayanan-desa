@@ -206,9 +206,21 @@ export const validateEmailVerificationAction = async (id: string) => {
     try {
         const message = MESSAGE.AUTH;
         const { data } = await validateEmailVerificationService(id);
-        await updateUserAsVerifiedService(data.userId);
-        await activateUserService(data.userId);
-        await consumeEmailVerificationService(data.emailVerificationId);
+        // (#16) Atomik: 3 update (set verifiedAt, set status ACTIVE, consume token)
+        // dibungkus satu $transaction. Sebelumnya 3 update terpisah — kalau
+        // activateUser gagal setelah verifiedAt sukses, user verified tapi tidak
+        // active → tidak bisa login; dan token belum consumed → bisa dipakai ulang.
+        const { prisma } = await import("@/lib/prisma");
+        await prisma.$transaction(async (tx) => {
+            await tx.user.update({
+                where: { userId: data.userId },
+                data: { verifiedAt: new Date(), status: "ACTIVE" },
+            });
+            await tx.emailVerification.update({
+                where: { emailVerificationId: data.emailVerificationId },
+                data: { consumedAt: new Date() },
+            });
+        });
         return { status: status.OK, message: message.EMAIL_VERIFICATION_OK };
     } catch (error) {
         return errorHandler(error);
