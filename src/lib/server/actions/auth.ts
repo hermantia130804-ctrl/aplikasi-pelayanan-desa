@@ -13,18 +13,50 @@ import { activateUserService, createUserService, findUserByEmailService, updateU
 import { sendEmail } from "../utils/email";
 import { verifyPasswordHash } from "../utils/password";
 import { deleteSessionTokenCookie, setSessionTokenCookie } from "../utils/session";
+import { getClientIp } from "../utils/client-info";
+import { rateLimit, resetRateLimit } from "../utils/rate-limit";
+
+// Konfigurasi rate limit untuk signIn (#10).
+// - 5 percobaan / 15 menit per IP  → cegah brute-force dari satu sumber.
+// - 5 percobaan / 15 menit per email → cegah password-spray lintas IP ke satu akun.
+// Reset counter setelah login berhasil agar user sah tidak terkunci.
+const SIGNIN_LIMIT = 5;
+const SIGNIN_WINDOW_MS = 15 * 60 * 1000;
 
 export const signInAction = async (payload: TSignInSchema) => {
     try {
         const global = MESSAGE.GLOBAL;
         const message = MESSAGE.AUTH;
         const { email, password } = payload;
+
+        // ===== Rate limit (#10) =====
+        // Cek DULU sebelum menyentuh DB, agar attacker yang membanjiri endpoint
+        // punya response cepat dan tidak membebani database.
+        const ip = await getClientIp();
+        const emailKey = `signin:email:${email.toLowerCase()}`;
+        const ipKey = `signin:ip:${ip}`;
+        const ipCheck = rateLimit(ipKey, SIGNIN_LIMIT, SIGNIN_WINDOW_MS);
+        const emailCheck = rateLimit(emailKey, SIGNIN_LIMIT, SIGNIN_WINDOW_MS);
+        if (!ipCheck.allowed || !emailCheck.allowed) {
+            const retryAfterMs = Math.max(ipCheck.retryAfterMs, emailCheck.retryAfterMs);
+            const retryAfterMin = Math.max(1, Math.ceil(retryAfterMs / 60000));
+            throw new ApiError(
+                status.TOO_MANY_REQUESTS,
+                `Terlalu banyak percobaan masuk. Coba lagi dalam ${retryAfterMin} menit.`
+            );
+        }
+
         const { data } = await findUserByEmailService(email);
         if (!data) throw new ApiError(status.UNAUTHORIZED, global.UNAUTHORIZED);
         if (!data.verifiedAt) throw new ApiError(status.UNAUTHORIZED, message.SIGN_IN_NOT_VERIFIED);
         if (data.status !== "ACTIVE") throw new ApiError(status.UNAUTHORIZED, message.SIGN_IN_NOT_ACTIVE);
         const isPasswordValid = await verifyPasswordHash(data.password, password);
         if (!isPasswordValid) throw new ApiError(status.UNAUTHORIZED, message.SIGN_IN_INCORRECT);
+
+        // Login berhasil: reset counter rate limit agar user sah bersih lagi.
+        resetRateLimit(ipKey);
+        resetRateLimit(emailKey);
+
         const session = await createSessionService(data.userId);
         await setSessionTokenCookie(session.data.sessionId, session.data.expiresAt);
         return { status: status.OK, message: message.SIGN_IN_OK };
