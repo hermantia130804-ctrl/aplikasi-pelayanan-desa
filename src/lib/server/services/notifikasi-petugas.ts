@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "../utils/email";
 import { kirimWa } from "./whatsapp";
 import { TUGAS_JABATAN } from "@/constants/jabatan";
+import { escapeHtml } from "../utils/sanitize";
 
 const STATUS_LABEL: Record<string, string> = {
   DIAJUKAN: "Menunggu Proses",
@@ -18,17 +19,26 @@ const pesanWa = (jenis: string, d: { nomor?: string; nama?: string; alasan?: str
   `\nSilakan proses melalui menu Kelola ${jenis} di aplikasi.\n` +
   `_Aplikasi Pelayanan Desa Sukamaju_`;
 
-const htmlEmail = (jenis: string, d: { nomor?: string; nama?: string; alasan?: string; pengaju?: string }) =>
-  `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #eee;border-radius:8px;">
-     <h2>📬 Permohonan ${jenis} Baru</h2>
+const htmlEmail = (jenis: string, d: { nomor?: string; nama?: string; alasan?: string; pengaju?: string }) => {
+  // (#8) Escape SEMUA field user-controlled sebelum disisipkan ke HTML.
+  // Tanpa ini, attacker yang set nama/alasan berisi tag <script>/<img> bisa
+  // inject tracking pixel atau phishing link ke email petugas.
+  const j = escapeHtml(jenis);
+  const nomor = escapeHtml(d.nomor);
+  const nama = escapeHtml(d.nama);
+  const alasan = escapeHtml(d.alasan);
+  const pengaju = escapeHtml(d.pengaju);
+  return `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #eee;border-radius:8px;">
+     <h2>📬 Permohonan ${j} Baru</h2>
      <ul>
-       ${d.nomor ? `<li><b>No. Permohonan:</b> ${d.nomor}</li>` : ""}
-       <li><b>Nama:</b> ${d.nama ?? "-"}</li>
-       ${d.alasan ? `<li><b>Perihal:</b> ${d.alasan}</li>` : ""}
-       ${d.pengaju ? `<li><b>Pengaju:</b> ${d.pengaju}</li>` : ""}
+       ${nomor ? `<li><b>No. Permohonan:</b> ${nomor}</li>` : ""}
+       <li><b>Nama:</b> ${nama || "-"}</li>
+       ${alasan ? `<li><b>Perihal:</b> ${alasan}</li>` : ""}
+       ${pengaju ? `<li><b>Pengaju:</b> ${pengaju}</li>` : ""}
      </ul>
-     <p>Silakan proses melalui menu <b>Kelola ${jenis}</b> di aplikasi.</p>
+     <p>Silakan proses melalui menu <b>Kelola ${j}</b> di aplikasi.</p>
    </div>`;
+};
 
 /**
  * Notifikasi lengkap ke semua PETUGAS & ADMIN (dari database):
