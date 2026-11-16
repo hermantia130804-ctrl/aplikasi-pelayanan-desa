@@ -12,7 +12,7 @@ import { createSessionService, findCurrentSessionService, invalidateSessionServi
 import { activateUserService, createUserService, findUserByEmailService, updateUserAsVerifiedService, updateUserPasswordService } from "../services/user";
 import { sendEmail } from "../utils/email";
 import { verifyPasswordHash } from "../utils/password";
-import { setSessionTokenCookie } from "../utils/session";
+import { deleteSessionTokenCookie, setSessionTokenCookie } from "../utils/session";
 
 export const signInAction = async (payload: TSignInSchema) => {
     try {
@@ -66,6 +66,9 @@ export const signOutAction = async () => {
         const global = MESSAGE.GLOBAL;
         const message = MESSAGE.AUTH;
         const session = await findCurrentSessionService();
+        // Hapus cookie SELALU — bahkan jika sesi sudah tidak ditemukan di DB,
+        // agar browser benar-benar lepas dari cookie lama (#7).
+        await deleteSessionTokenCookie();
         if (!session) throw new ApiError(status.UNAUTHORIZED, global.UNAUTHORIZED);
         await invalidateSessionService(session.session.sessionId);
         return { status: status.OK, message: message.SIGN_OUT_OK };
