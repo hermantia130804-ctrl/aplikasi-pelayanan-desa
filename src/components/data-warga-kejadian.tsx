@@ -1,7 +1,7 @@
 'use client';
 
 import { kejadianRTAction } from "@/lib/server/actions/kejadian-rt";
-import { FilterWilayah, useOpsiWilayah, pecahFilterWilayah } from '@/components/filter-wilayah';
+import { pecahFilterWilayah } from '@/components/filter-wilayah';
 import { pendudukRTAction } from "@/lib/server/actions/penduduk-rt";
 
 // Shim: apiFetch diadaptasi ke Server Action kejadian
@@ -118,6 +118,7 @@ interface AnggotaBaru {
 interface PendudukKejadianRTProps {
   isAdmin?: boolean;
   isActive?: boolean;
+  wilayah?: string;
 }
 
 const emptyAnggotaBaru = (): AnggotaBaru => ({
@@ -127,11 +128,9 @@ const emptyAnggotaBaru = (): AnggotaBaru => ({
   statusPerkawinan: 'BELUM MENIKAH', namaAyah: '', namaIbu: '', punyaKTP: 'BELUM',
 });
 
-export default function PendudukKejadianRT({ isAdmin = true, isActive = false }: PendudukKejadianRTProps) {
+export default function PendudukKejadianRT({ isAdmin = true, isActive = false, wilayah: filterWilayah = 'SEMUA' }: PendudukKejadianRTProps) {
   const [kejadian, setKejadian] = useState<Kejadian[]>([]);
   const [activeTab, setActiveTab] = useState<string>('LAHIR');
-  const [filterWilayah, setFilterWilayah] = useState('SEMUA');
-  const { opsi: opsiWilayah } = useOpsiWilayah(isAdmin);
   const [loading, setLoading] = useState(true);
   const [kkOptions, setKKOptions] = useState<KKOption[]>([]);
   const [anggotaKK, setAnggotaKK] = useState<AnggotaKK[]>([]);
@@ -780,11 +779,6 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false }:
         )}
       </div>
 
-      {isAdmin && (
-        <div className="mb-2">
-          <FilterWilayah opsi={opsiWilayah} value={filterWilayah} onChange={setFilterWilayah} />
-        </div>
-      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {JENIS_KEJADIAN.map(type => (
           <button

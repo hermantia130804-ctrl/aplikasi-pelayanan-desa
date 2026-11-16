@@ -23,10 +23,22 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
   try {
     const session = await getSession();
     const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
-    const whereUser = isStaff ? {} : { userId: session.user.userId };
     const rtId = 1; // deployment single-RT (RT 001 RW 002) = default model asli
     const me = await prisma.user.findUnique({ where: { userId: session.user.userId }, select: { noRt: true, noRw: true } });
     const rtLabel = `RT ${me?.noRt || "001"} RW ${me?.noRw || "002"}`;
+
+    // Filter wilayah global (dari dropdown di page shell). Hanya staff yang boleh memilih.
+    const p = (payload ?? {}) as { filterRt?: string; filterRw?: string; [k: string]: unknown };
+    const filterRt = typeof p.filterRt === "string" ? p.filterRt : undefined;
+    const filterRw = typeof p.filterRw === "string" ? p.filterRw : undefined;
+    // Bangun whereWilayah untuk DataWarga & PendudukSementara di generateReportData
+    const whereWilayah: Record<string, unknown> = isStaff
+      ? {}
+      : (me?.noRt && me?.noRw ? { noRt: me.noRt, noRw: me.noRw } : { userId: session.user.userId });
+    if (isStaff) {
+      if (filterRt && filterRt !== "SEMUA") whereWilayah.noRt = String(filterRt);
+      if (filterRw && filterRw !== "SEMUA") whereWilayah.noRw = String(filterRw);
+    }
 
     // ===== GENERATE (port: GET /api/laporan) =====
     if (operation === "generate") {
@@ -34,7 +46,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
       const now = new Date();
       const bulan = bIn ?? now.getMonth() + 1;
       const tahun = tIn ?? now.getFullYear();
-      const data = await generateReportData(bulan, tahun, whereUser, rtLabel);
+      const data = await generateReportData(bulan, tahun, whereWilayah, rtLabel);
       return { status: 200, data };
     }
 
@@ -62,7 +74,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
       const now = new Date();
       const bulan = bIn ?? now.getMonth() + 1;
       const tahun = tIn ?? now.getFullYear();
-      const reportData = await generateReportData(bulan, tahun, whereUser, rtLabel);
+      const reportData = await generateReportData(bulan, tahun, whereWilayah, rtLabel);
 
       const saved = await prisma.laporanBulanan.upsert({
         where: { rtId_bulan_tahun: { rtId, bulan, tahun } },
@@ -90,7 +102,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
       if (!record) {
         const bulan = bIn ?? new Date().getMonth() + 1;
         const tahun = tIn ?? new Date().getFullYear();
-        const reportData = await generateReportData(bulan, tahun, whereUser, rtLabel);
+        const reportData = await generateReportData(bulan, tahun, whereWilayah, rtLabel);
         record = await prisma.laporanBulanan.create({
           data: { rtId, bulan, tahun, data: JSON.stringify(reportData), keterangan: keterangan || null },
         });
@@ -122,7 +134,7 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
       const now = new Date();
       const bulan = bIn ?? now.getMonth() + 1;
       const tahun = tIn ?? now.getFullYear();
-      const data = await generateReportData(bulan, tahun, whereUser, rtLabel);
+      const data = await generateReportData(bulan, tahun, whereWilayah, rtLabel);
 
       const asCell = (label: string): string | number => {
         const n = Number(label);
@@ -245,9 +257,32 @@ async function generateReportData(bulan: number, tahun: number, whereUser: Recor
 
   const allPenduduk = await prisma.dataWarga.findMany({ where: whereUser });
   const allSementara = await prisma.pendudukSementara.findMany({ where: whereUser });
-  const kejadian = await prisma.kejadian.findMany({
-    where: { ...whereUser, tanggal: { gte: startDate, lte: endDate } },
-  });
+
+  // Kejadian tidak punya kolom RT/RW. Jika whereUser berisi noRt/noRw (filter admin), kunci via No. KK
+  // milik RT tersebut. Selain itu, fallback ke perilaku asli (userId atau {}).
+  const { noRt: fRt, noRw: fRw, ...sisa } = whereUser;
+  let kejadianWhere: Record<string, unknown> = { ...sisa };
+  if (fRt || fRw) {
+    const cond: Record<string, unknown> = {};
+    if (fRt) cond.noRt = fRt;
+    if (fRw) cond.noRw = fRw;
+    const [kkTetap, kkSem] = await Promise.all([
+      prisma.dataWarga.findMany({ where: cond, select: { noKk: true }, distinct: ["noKk"] }),
+      prisma.pendudukSementara.findMany({ where: cond, select: { noKk: true }, distinct: ["noKk"] }),
+    ]);
+    const kkSet = new Set<string>();
+    for (const k of [...kkTetap, ...kkSem]) if (k.noKk) kkSet.add(k.noKk);
+    if (kkSet.size > 0) {
+      // admin with filter -> only matching KK; non-staff (RT lock) -> matching KK OR own userId (data ia buat sendiri)
+      if (sisa.userId) {
+        kejadianWhere = { OR: [{ userId: sisa.userId }, { noKk: { in: Array.from(kkSet) } }] };
+      } else {
+        kejadianWhere = { noKk: { in: Array.from(kkSet) } };
+      }
+    }
+  }
+  kejadianWhere.tanggal = { gte: startDate, lte: endDate };
+  const kejadian = await prisma.kejadian.findMany({ where: kejadianWhere });
 
   let bayiL = 0, bayiP = 0;
   const leftAgeMap: Record<number, { l: number; p: number }> = {};

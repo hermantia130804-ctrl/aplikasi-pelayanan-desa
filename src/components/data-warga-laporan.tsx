@@ -21,16 +21,21 @@ const apiFetch = async (path: string, init?: RequestInit): Promise<Response> => 
   const mk = (status: number, payload: unknown): Response =>
     new Response(JSON.stringify(payload), { status, headers: { "Content-Type": "application/json" } });
   const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
+  // Filter wilayah global: parse "wil" dari URL, pecah jadi filterRt/filterRw
+  const wilRaw = u.searchParams.get("wil") ?? "";
+  const [fRt, fRw] = wilRaw && wilRaw !== "SEMUA" ? wilRaw.split("|") : [undefined, undefined];
+  const filterRt = fRt || undefined;
+  const filterRw = fRw || undefined;
 
   if (path.startsWith("/api/laporan/save")) {
     if (method === "GET") { const r = await laporanRTAction("listSaved", {}); return mk(r.status ?? 500, "data" in r ? r.data : { error: r.error }); }
-    if (method === "POST") { const r = await laporanRTAction("save", body); return mk(r.status ?? 500, r); }
-    if (method === "PATCH") { const r = await laporanRTAction("saveKeterangan", body); return mk(r.status ?? 500, r); }
+    if (method === "POST") { const r = await laporanRTAction("save", { ...(body ?? {}), filterRt, filterRw }); return mk(r.status ?? 500, r); }
+    if (method === "PATCH") { const r = await laporanRTAction("saveKeterangan", { ...(body ?? {}), filterRt, filterRw }); return mk(r.status ?? 500, r); }
     if (method === "DELETE") { const r = await laporanRTAction("deleteSaved", { id: parseInt(u.searchParams.get("id") || "0") }); return mk(r.status ?? 500, r); }
   }
 
   if (path.startsWith("/api/laporan/export")) {
-    const r = await laporanRTAction("export", { bulan: parseInt(u.searchParams.get("bulan") || "0") || undefined, tahun: parseInt(u.searchParams.get("tahun") || "0") || undefined });
+    const r = await laporanRTAction("export", { bulan: parseInt(u.searchParams.get("bulan") || "0") || undefined, tahun: parseInt(u.searchParams.get("tahun") || "0") || undefined, filterRt, filterRw });
     if ("data" in r && typeof r.data === "string") {
       const bin = atob(r.data);
       const bytes = new Uint8Array(bin.length);
@@ -41,7 +46,7 @@ const apiFetch = async (path: string, init?: RequestInit): Promise<Response> => 
   }
 
   if (path.startsWith("/api/laporan")) {
-    const r = await laporanRTAction("generate", { bulan: parseInt(u.searchParams.get("bulan") || "0") || undefined, tahun: parseInt(u.searchParams.get("tahun") || "0") || undefined });
+    const r = await laporanRTAction("generate", { bulan: parseInt(u.searchParams.get("bulan") || "0") || undefined, tahun: parseInt(u.searchParams.get("tahun") || "0") || undefined, filterRt, filterRw });
     return mk(r.status ?? 500, "data" in r ? r.data : { error: r.error });
   }
 
@@ -97,10 +102,12 @@ const summarySections = [
 interface TabLaporanProps {
   isAdmin?: boolean;
   isActive?: boolean;
+  wilayah?: string;
 }
 
-export default function TabLaporan({ isAdmin = true, isActive = false }: TabLaporanProps) {
+export default function TabLaporan({ isAdmin = true, isActive = false, wilayah = 'SEMUA' }: TabLaporanProps) {
   const now = new Date();
+  const wilQ = wilayah && wilayah !== 'SEMUA' ? `&wil=${encodeURIComponent(wilayah)}` : '';
   const [bulan, setBulan] = useState(String(now.getMonth() + 1));
   const [tahun, setTahun] = useState(String(now.getFullYear()));
   const [laporanData, setLaporanData] = useState<LaporanData | null>(null);
@@ -143,7 +150,7 @@ export default function TabLaporan({ isAdmin = true, isActive = false }: TabLapo
     setLoading(true);
     setSaveMsg('');
     try {
-      const res = await apiFetch(`/api/laporan?bulan=${bulan}&tahun=${tahun}`);
+      const res = await apiFetch(`/api/laporan?bulan=${bulan}&tahun=${tahun}${wilQ}`);
       if (res.ok) {
         setLaporanData(await res.json());
         loadKeterangan(bulan, tahun);
@@ -158,7 +165,7 @@ export default function TabLaporan({ isAdmin = true, isActive = false }: TabLapo
   const exportExcel = async () => {
     setExporting(true);
     try {
-      const res = await apiFetch(`/api/laporan/export?bulan=${bulan}&tahun=${tahun}`);
+      const res = await apiFetch(`/api/laporan/export?bulan=${bulan}&tahun=${tahun}${wilQ}`);
       if (res.ok) {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
@@ -235,7 +242,7 @@ export default function TabLaporan({ isAdmin = true, isActive = false }: TabLapo
     setTahun(String(savedTahun));
     setLoading(true);
     try {
-      const res = await apiFetch(`/api/laporan?bulan=${savedBulan}&tahun=${savedTahun}`);
+      const res = await apiFetch(`/api/laporan?bulan=${savedBulan}&tahun=${savedTahun}${wilQ}`);
       if (res.ok) {
         const data = await res.json();
         setLaporanData(data);

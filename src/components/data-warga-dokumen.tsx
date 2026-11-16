@@ -35,7 +35,9 @@ const apiFetch = async (path: string, init?: RequestInit): Promise<Response> => 
   const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
 
   if (path.startsWith("/api/surat-pengantar")) {
-    if (method === "GET") { const r = await suratPengantarRTAction("list", {}); return mk(r.status ?? 500, "data" in r ? r.data : { error: r.error }); }
+    const wilRaw = u.searchParams.get("wil") ?? "";
+    const [fRt, fRw] = wilRaw && wilRaw !== "SEMUA" ? wilRaw.split("|") : [undefined, undefined];
+    if (method === "GET") { const r = await suratPengantarRTAction("list", { filterRt: fRt || undefined, filterRw: fRw || undefined }); return mk(r.status ?? 500, "data" in r ? r.data : { error: r.error }); }
     if (method === "POST") { const r = await suratPengantarRTAction("create", body); return mk(r.status ?? 500, r); }
     if (method === "PUT") { const r = await suratPengantarRTAction("update", body); return mk(r.status ?? 500, r); }
     if (method === "DELETE") { const r = await suratPengantarRTAction("delete", { id: parseInt(u.searchParams.get("id") || "0") }); return mk(r.status ?? 500, r); }
@@ -59,6 +61,7 @@ interface SuratPengantar {
 interface TabDokumenRTProps {
   isAdmin?: boolean;
   isActive?: boolean;
+  wilayah?: string;
   rtInfo?: {
     namaRT: string;
     rw: string;
@@ -70,7 +73,8 @@ interface TabDokumenRTProps {
   } | null;
 }
 
-export default function TabDokumenRT({ isAdmin = true, isActive = false, rtInfo }: TabDokumenRTProps) {
+export default function TabDokumenRT({ isAdmin = true, isActive = false, rtInfo, wilayah = 'SEMUA' }: TabDokumenRTProps) {
+  const wilQ = wilayah && wilayah !== 'SEMUA' ? `?wil=${encodeURIComponent(wilayah)}` : '';
   const [suratList, setSuratList] = useState<SuratPengantar[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -95,7 +99,7 @@ export default function TabDokumenRT({ isAdmin = true, isActive = false, rtInfo 
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/surat-pengantar');
+      const res = await apiFetch(`/api/surat-pengantar${wilQ}`);
       if (res.ok) {
         const data = await res.json();
         setSuratList(data);
@@ -105,7 +109,7 @@ export default function TabDokumenRT({ isAdmin = true, isActive = false, rtInfo 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [wilQ]);
 
   useEffect(() => {
     fetchData();

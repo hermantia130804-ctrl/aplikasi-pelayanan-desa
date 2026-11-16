@@ -2,7 +2,7 @@
 
 import { pendudukRTAction } from "@/lib/server/actions/penduduk-rt";
 import { sementaraRTAction } from "@/lib/server/actions/penduduk-sementara-rt";
-import { FilterWilayah, useOpsiWilayah, pecahFilterWilayah } from '@/components/filter-wilayah';
+import { pecahFilterWilayah } from '@/components/filter-wilayah';
 import { sembakoRTAction } from "@/lib/server/actions/sembako-rt";
 
 // Shim: apiFetch diadaptasi ke Server Action (penduduk + sementara + sembako)
@@ -212,9 +212,10 @@ interface SavedSembako {
 interface PendudukBansosRTProps {
   isAdmin?: boolean;
   isActive?: boolean;
+  wilayah?: string;
 }
 
-export default function PendudukBansosRT({ isAdmin = true, isActive = false }: PendudukBansosRTProps) {
+export default function PendudukBansosRT({ isAdmin = true, isActive = false, wilayah: filterWilayah = 'SEMUA' }: PendudukBansosRTProps) {
   // ==================== VIEW TOGGLE ====================
   const [activeView, setActiveView] = useState<'bansos' | 'sembako'>('bansos');
 
@@ -222,8 +223,6 @@ export default function PendudukBansosRT({ isAdmin = true, isActive = false }: P
   const [penduduk, setPenduduk] = useState<Penduduk[]>([]);
   const [kkGroups, setKKGroups] = useState<KKGroup[]>([]);
   const [search, setSearch] = useState('');
-  const [filterWilayah, setFilterWilayah] = useState('SEMUA');
-  const { opsi: opsiWilayah } = useOpsiWilayah(isAdmin);
   const [loading, setLoading] = useState(true);
   const [expandedKK, setExpandedKK] = useState<Set<string>>(new Set());
 
@@ -944,11 +943,8 @@ const data: PenerimaSembako[] = rawSem.map((x) => { const o = x as Record<string
             </div>
           </div>
 
-          {/* Search + Filter Wilayah */}
+          {/* Search */}
           <div className="flex gap-2 items-center">
-            {isAdmin && (
-              <FilterWilayah opsi={opsiWilayah} value={filterWilayah} onChange={setFilterWilayah} />
-            )}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -1088,9 +1084,6 @@ const data: PenerimaSembako[] = rawSem.map((x) => { const o = x as Record<string
               <Package className="h-5 w-5 text-emerald-600" />
               <h2 className="text-lg font-bold text-emerald-800">Penerima Sembako Desa</h2>
               <Badge variant="secondary" className="text-xs">{sembakoData.length} penerima</Badge>
-              {isAdmin && (
-                <FilterWilayah opsi={opsiWilayah} value={filterWilayah} onChange={setFilterWilayah} />
-              )}
             </div>
             <div className="flex gap-2 items-center flex-wrap">
               {sembakoTab === 'data' && (

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { findCurrentSessionService } from "../services/session";
 import { hitungUmur, isWajibKTP, formatTanggal } from "../utils/kependudukan";
 
-export async function getStatistikDataWarga() {
+export async function getStatistikDataWarga(filterRt?: string, filterRw?: string) {
   const session = await findCurrentSessionService();
   if (!session?.user) return null;
 
@@ -13,12 +13,37 @@ export async function getStatistikDataWarga() {
 
   // Role RT: statistik terkunci ke wilayah RT-nya (kolom no_rt/no_rw), bukan hanya data yang ia buat sendiri
   const me = await prisma.user.findUnique({ where: { userId: session.user.userId }, select: { noRt: true, noRw: true } });
-  const wilayahWhere = !isStaff && me?.noRt && me?.noRw ? { noRt: me.noRt, noRw: me.noRw } : whereUser;
+  const wilayahWhere: Record<string, unknown> =
+    !isStaff && me?.noRt && me?.noRw
+      ? { noRt: me.noRt, noRw: me.noRw }
+      : { ...whereUser };
+
+  // ADMIN/PETUGAS: terapkan filter RT/RW yang dipilih di dropdown global (jika bukan SEMUA)
+  if (isStaff) {
+    if (filterRt && filterRt !== "SEMUA") wilayahWhere.noRt = String(filterRt);
+    if (filterRw && filterRw !== "SEMUA") wilayahWhere.noRw = String(filterRw);
+  }
 
   const allPenduduk = await prisma.dataWarga.findMany({ where: wilayahWhere });
   const allSementara = await prisma.pendudukSementara.findMany({
     where: { ...wilayahWhere, tanggalKeluar: null },
   });
+
+  // Kejadian: tabel tidak punya kolom RT, jadi difilter via No. KK milik RT (untuk RT lock),
+  // atau via filterRt/filterRw staff (lookup KK dari DataWarga + PendudukSementara).
+  const kkWilayahSet = new Set<string>();
+  if (Object.keys(wilayahWhere).length > 0 && (wilayahWhere.noRt || wilayahWhere.noRw)) {
+    const [kkTetap, kkSem] = await Promise.all([
+      prisma.dataWarga.findMany({ where: { noRt: wilayahWhere.noRt as string, noRw: wilayahWhere.noRw as string }, select: { noKk: true }, distinct: ["noKk"] }),
+      prisma.pendudukSementara.findMany({ where: { noRt: wilayahWhere.noRt as string, noRw: wilayahWhere.noRw as string }, select: { noKk: true }, distinct: ["noKk"] }),
+    ]);
+    for (const k of [...kkTetap, ...kkSem]) if (k.noKk) kkWilayahSet.add(k.noKk);
+  }
+  const kejadianWhere: Record<string, unknown> = isStaff
+    ? (kkWilayahSet.size > 0 ? { noKk: { in: Array.from(kkWilayahSet) } } : {})
+    : (kkWilayahSet.size > 0
+        ? { OR: [{ userId: session.user.userId }, { noKk: { in: Array.from(kkWilayahSet) } }] }
+        : { userId: session.user.userId });
 
   const kkMap = new Set(allPenduduk.map(p => p.noKk));
   const totalKK = kkMap.size;
@@ -65,7 +90,7 @@ export async function getStatistikDataWarga() {
   const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
   const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const kejadianBulanIni = await prisma.kejadian.findMany({
-    where: { ...whereUser, tanggal: { gte: startDate, lte: endDate } },
+    where: { ...kejadianWhere, tanggal: { gte: startDate, lte: endDate } },
   });
 
   const kejadianCounts: Record<string, { l: number; p: number }> = {};

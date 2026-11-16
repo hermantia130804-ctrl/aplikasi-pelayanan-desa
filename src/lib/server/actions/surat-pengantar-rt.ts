@@ -18,9 +18,20 @@ export async function suratPengantarRTAction(operation: string, payload?: unknow
 
     // ===== LIST (port: GET /api/surat-pengantar) =====
     if (operation === "list") {
-      const data = await prisma.suratPengantar.findMany({
+      const { filterRt, filterRw } = (payload ?? {}) as { filterRt?: string; filterRw?: string };
+      // Tabel SuratPengantar tidak punya kolom RT/RW. Untuk filter admin, cari NIK di DataWarga
+      // yang cocok dengan RT/RW, lalu batasi surat yang NIK-nya ada di set itu.
+      let data = await prisma.suratPengantar.findMany({
         orderBy: { createdAt: "desc" },
       });
+      if (filterRt && filterRt !== "SEMUA") {
+        const nikList = await prisma.dataWarga.findMany({
+          where: { noRt: String(filterRt), ...(filterRw && filterRw !== "SEMUA" ? { noRw: String(filterRw) } : {}) },
+          select: { nik: true },
+        });
+        const nikSet = new Set(nikList.map(n => n.nik));
+        data = data.filter(s => nikSet.has(s.nik));
+      }
       return { status: 200, data };
     }
 

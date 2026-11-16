@@ -35,7 +35,7 @@ import {
 import { Plus, Search, FileUp, FileDown, Pencil, Trash2, ChevronDown, ChevronRight, ChevronUp, Users, X, Filter, SlidersHorizontal, Printer, Camera, Loader2, RotateCw, RotateCcw, FlipHorizontal, FlipVertical, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { sementaraRTAction } from "@/lib/server/actions/penduduk-sementara-rt";
-import { FilterWilayah, useOpsiWilayah, pecahFilterWilayah } from '@/components/filter-wilayah';
+import { pecahFilterWilayah } from '@/components/filter-wilayah';
 import { scanKKAction } from "@/lib/server/actions/scan-kk";
 import {
   AGAMA, PENDIDIKAN, PEKERJAAN, STATUS_PERKAWINAN, BANTUAN_OPTIONS,
@@ -129,12 +129,14 @@ const defaultFormData = {
   punyaKtp: 'BELUM',
   bantuan: [] as string[],
   bpjs: '',
-  alamat: ALAMAT_DEFAULT,  keterangan: '',
+  alamat: ALAMAT_DEFAULT,
+  keterangan: '',
 };
 
 interface TabPendudukProps {
   isAdmin?: boolean;
   isActive?: boolean;
+  wilayah?: string;
 }
 
 const tanggalValid = (v: unknown, fallback: string): string => {
@@ -142,12 +144,10 @@ const tanggalValid = (v: unknown, fallback: string): string => {
   return isNaN(d.getTime()) ? fallback : d.toISOString().slice(0, 10);
 };
 
-export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPendudukProps) {
+export default function TabPenduduk({ isAdmin = true, isActive = false, wilayah: filterWilayah = 'SEMUA' }: TabPendudukProps) {
   const [penduduk, setPenduduk] = useState<Penduduk[]>([]);
   const [kkGroups, setKKGroups] = useState<KKGroup[]>([]);
   const [search, setSearch] = useState('');
-  const [filterWilayah, setFilterWilayah] = useState('SEMUA');
-  const { opsi: opsiWilayah } = useOpsiWilayah(isAdmin);
   const [loading, setLoading] = useState(true);
   const [expandedKK, setExpandedKK] = useState<Set<string>>(new Set());
 
@@ -567,7 +567,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       noKk: formData.noKk || '',
       statusKeluarga: '',
       bantuan: [],
-      alamat: formData.alamat || ALAMAT_DEFAULT,      kewarganegaraan: formData.kewarganegaraan || 'WNI',
+      alamat: formData.alamat || ALAMAT_DEFAULT,
+      kewarganegaraan: formData.kewarganegaraan || 'WNI',
       namaAyah: formData.namaAyah || '',
       namaIbu: formData.namaIbu || '',
       keterangan: formData.keterangan || '',
@@ -645,7 +646,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       punyaKtp: p.punyaKtp || 'BELUM',
       bantuan: p.bantuan || [],
       bpjs: p.bpjs || '',
-      alamat: p.alamat || ALAMAT_DEFAULT,      keterangan: p.keterangan || '',
+      alamat: p.alamat || ALAMAT_DEFAULT,
+      keterangan: p.keterangan || '',
     });
     setShowForm(true);
   };
@@ -964,7 +966,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
       if (group?.kepala) {
         setFormData(prev => ({ ...prev,
           keterangan: group.kepala.keterangan || '',
-          alamat: group.kepala.alamat || ALAMAT_DEFAULT,        }));
+          alamat: group.kepala.alamat || ALAMAT_DEFAULT,
+        }));
       }
     }
   };
@@ -1150,11 +1153,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
         </div>
       </div>
 
-      {/* Search + Filter Wilayah */}
+      {/* Search */}
       <div className="flex gap-2 items-center">
-        {isAdmin && (
-          <FilterWilayah opsi={opsiWilayah} value={filterWilayah} onChange={setFilterWilayah} />
-        )}
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
