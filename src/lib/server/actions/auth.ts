@@ -113,19 +113,25 @@ export const forgotPasswordAction = async (payload: TForgotPasswordSchema) => {
     try {
         const message = MESSAGE.AUTH;
         const parsed = forgotPasswordSchema.parse(payload);
+
+        // ===== Anti user-enumeration (#11) =====
+        // Kirim pesan sukses yang SAMA persis baik email ada maupun tidak.
+        // Tidak ada lagi error "Email tidak terdaftar" yang bocor ke attacker.
+        // Jika email tidak ada, kita tetap return OK tanpa benar-benar kirim email.
+        const GENERIC_OK_MSG = message.FORGOT_OK + " Cek email Anda (termasuk folder Spam) untuk tautan reset.";
+
         const { data } = await findUserByEmailService(parsed.email);
-        if (!data) throw new ApiError(status.BAD_REQUEST, message.EMAIL_NOT_FOUND);
+        if (!data) {
+            // Jangan bocorkan bahwa email tidak terdaftar.
+            // Tidak perlu kirim email apa-apa; tetap return pesan sukses generik.
+            return { status: status.OK, message: GENERIC_OK_MSG };
+        }
+
         const { data: fp } = await createForgotPasswordService(data.userId);
 
-        // Kirim email berisi tautan reset.
-        // APP_URL wajib diset di Vercel (Settings -> Environment Variables).
-        // Fallback: kalau kosong, pakai localhost (hanya berguna di dev lokal).
         const appUrl = (process.env.APP_URL || "http://localhost:3000").replace(/\/+$/, "");
         const resetUrl = `${appUrl}/lupa-password/${fp.forgotPasswordId}`;
 
-        // Flag berhasil/kirim email untuk feedback yang lebih akurat ke user.
-        let emailTerkirim = false;
-        let emailError: string | null = null;
         try {
             const html = `
                 <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #eee;border-radius:8px;">
@@ -142,25 +148,24 @@ export const forgotPasswordAction = async (payload: TForgotPasswordSchema) => {
                     </p>
                 </div>`;
             await sendEmail(data.email, "Reset Password - Desa Sukamaju", html);
-            emailTerkirim = true;
-            console.log(`[LUPA PASSWORD] Email reset terkirim ke ${data.email} | URL: ${resetUrl}`);
+            // ===== Jangan log reset URL (#11) =====
+            // Log hanya event + tujuan email (email sendiri bukan rahasia),
+            // TANPA menyertakan token reset. Token di log Vercel bisa dibaca
+            // orang yang punya akses log → punya URL reset valid.
+            console.log(`[LUPA PASSWORD] Email reset terkirim ke ${data.email}`);
         } catch (e) {
-            emailError = e instanceof Error ? e.message : String(e);
-            console.error("[LUPA PASSWORD] GAGAL kirim email reset:", emailError);
-            console.error("[LUPA PASSWORD] Reset URL (untuk admin fallback):", resetUrl);
+            // Jangan bocorkan URL reset ke log bahkan saat gagal kirim.
+            // Hanya log pesan error umum + email tujuan (bukan token).
+            const errMsg = e instanceof Error ? e.message : String(e);
+            console.error(`[LUPA PASSWORD] GAGAL kirim email reset ke ${data.email}:`, errMsg);
+            // Catatan: sebelumnya URL reset (berisi token) di-log di sini sebagai
+            // "fallback admin". Praktik itu berbahaya — jika butuh manual reset,
+            // admin harus pakai endpoint internal terpisah, bukan baca dari log.
         }
 
-        // Pesan berbeda sesuai hasil kirim email:
-        //  - Berhasil: arahkan user cek email.
-        //  - Gagal: tetap terselesaikan di server (record dibuat), tapi kasih tahu user
-        //    agar hubungi admin (admin bisa lihat URL reset di log Vercel).
-        if (emailTerkirim) {
-            return { status: status.OK, message: "Permintaan lupa password berhasil. Cek email Anda (termasuk folder Spam) untuk tautan reset." };
-        }
-        return {
-            status: status.OK,
-            message: "Permintaan dicatat, tetapi email reset gagal terkirim. Hubungi admin agar mengirimkan tautan reset manual (cek log server).",
-        };
+        // Pesan ke user selalu generik agar tidak membocorkan apakah email benar-benar dikirim.
+        // (Email mungkin gagal terkirim karena masalah SMTP; user tetap disuruh cek spam.)
+        return { status: status.OK, message: GENERIC_OK_MSG };
     } catch (error) {
         return errorHandler(error);
     }
