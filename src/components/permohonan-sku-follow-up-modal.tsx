@@ -37,6 +37,7 @@ import { Loader2, Settings } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { Input } from "./ui/input";
 
 type PermohonanSKUWithUser = PermohonanSKU & {
@@ -57,6 +58,7 @@ export function PermohonanSKUFollowUpModal({
 }: PermohonanSKUFollowUpModalProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const form = useForm<TFollowUpPermohonanSKUSchema>({
     resolver: zodResolver(followUpPermohonanSKUSchema),
@@ -77,6 +79,7 @@ export function PermohonanSKUFollowUpModal({
         toast.success(result.message);
         setOpen(false);
         form.reset();
+        router.refresh();
       } else {
         toast.error(result.message);
       }
@@ -121,7 +124,6 @@ export function PermohonanSKUFollowUpModal({
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="DIAJUKAN">Diajukan</SelectItem>
-                      <SelectItem value="DIPROSES">Diproses</SelectItem>
                       <SelectItem value="DISETUJUI">Disetujui</SelectItem>
                       <SelectItem value="DITOLAK">Ditolak</SelectItem>
                     </SelectContent>
