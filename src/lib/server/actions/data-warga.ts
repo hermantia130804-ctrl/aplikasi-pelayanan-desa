@@ -86,6 +86,10 @@ export const createDataWargaAction = async (payload: unknown) => {
 };
 
 // ===== RT: edit (hanya miliknya) =====
+// (#5) Permission konsisten dengan penduduk-rt.ts: izin kelola jika
+// staff (ADMIN/PETUGAS) ATAU pembuat data ATAU Ketua RT yang wilayahnya
+// cocok (noRt/noRw). Sebelumnya PETUGAS diblokir edit walau diizinkan
+// delete & diizinkan di penduduk-rt.ts → inkonsisten.
 export const updateDataWargaAction = async (id: string, payload: unknown) => {
   try {
     const session = await requireSession();
@@ -93,7 +97,13 @@ export const updateDataWargaAction = async (id: string, payload: unknown) => {
 
     const existing = await prisma.dataWarga.findUnique({ where: { dataWargaId: id } });
     if (!existing) throw new ApiError(status.NOT_FOUND, "Data warga tidak ditemukan.");
-    if (session.user.role !== "ADMIN" && existing.userId !== session.user.userId) {
+    const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
+    const me = await prisma.user.findUnique({ where: { userId: session.user.userId } });
+    const bolehKelola =
+      isStaff ||
+      existing.userId === session.user.userId ||
+      (!!me?.noRt && !!me?.noRw && existing.noRt === me.noRt && existing.noRw === me.noRw);
+    if (!bolehKelola) {
       throw new ApiError(status.FORBIDDEN, "Tidak berhak mengubah data ini.");
     }
 
@@ -107,13 +117,21 @@ export const updateDataWargaAction = async (id: string, payload: unknown) => {
 };
 
 // ===== Hapus (RT miliknya / staff semua) =====
+// (#5) Sama seperti update: tambah cek RT wilayah sendiri agar konsisten
+// dengan penduduk-rt.ts. Sebelumnya RT yang bukan pembuat data tapi
+// wilayahnya cocok tetap diblokir hapus via form admin.
 export const deleteDataWargaAction = async (id: string) => {
   try {
     const session = await requireSession();
     const existing = await prisma.dataWarga.findUnique({ where: { dataWargaId: id } });
     if (!existing) throw new ApiError(status.NOT_FOUND, "Data warga tidak ditemukan.");
     const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
-    if (!isStaff && existing.userId !== session.user.userId) {
+    const me = await prisma.user.findUnique({ where: { userId: session.user.userId } });
+    const bolehKelola =
+      isStaff ||
+      existing.userId === session.user.userId ||
+      (!!me?.noRt && !!me?.noRw && existing.noRt === me.noRt && existing.noRw === me.noRw);
+    if (!bolehKelola) {
       throw new ApiError(status.FORBIDDEN, "Tidak berhak menghapus.");
     }
 
