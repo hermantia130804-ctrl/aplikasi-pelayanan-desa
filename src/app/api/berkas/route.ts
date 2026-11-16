@@ -52,9 +52,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Gagal memuat berkas" }, { status: 502 });
     }
 
+    // (#9) Cegah stored XSS via upload file HTML berisi <script>:
+    // 1. Force Content-Disposition: attachment → browser unduh, tidak render
+    //    inline (sebelumnya HTML bisa dirender sebagai halaman → XSS).
+    // 2. Sanitize MIME: hanya image/* dan application/pdf yang dipakai apa
+    //    adanya; MIME lain (mis. text/html) diturunkan jadi application/
+    //    octet-stream agar tidak di-render sebagai dokumen aktif.
+    const upstreamMime = upstream.headers.get("content-type") ?? "application/octet-stream";
+    const safeMime = /^image\/|application\/pdf/i.test(upstreamMime)
+      ? upstreamMime
+      : "application/octet-stream";
+    let filename = "dokumen";
+    try {
+      const urlPath = new URL(url).pathname;
+      const last = urlPath.split("/").pop();
+      if (last) filename = decodeURIComponent(last).slice(0, 100).replace(/["\\]/g, "");
+    } catch { /* fallback generic */ }
+
     return new NextResponse(upstream.body, {
       headers: {
-        "Content-Type": upstream.headers.get("content-type") ?? "application/octet-stream",
+        "Content-Type": safeMime,
+        "Content-Disposition": `attachment; filename="${filename}"`,
         "Cache-Control": "private, max-age=300",
       },
     });
