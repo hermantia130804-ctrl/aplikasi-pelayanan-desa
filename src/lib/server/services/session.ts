@@ -69,6 +69,23 @@ export const invalidateUserSessionsService = async (userId: string) => {
     return { data: true };
 }
 
+/**
+ * Hapus SEMUA sesi user KECUALI sesi saat ini (currentSessionId = DB id/hash).
+ * Dipakai setelah ubah password agar device lain dipaksa login ulang, sementara
+ * device yang melakukan perubahan tetap aktif (#14).
+ */
+export const invalidateOtherSessionsService = async (userId: string, currentSessionId: string) => {
+    if (!currentSessionId) {
+        // Fallback: jika tidak ada sesi saat ini, hapus semua.
+        await prisma.session.deleteMany({ where: { userId } });
+    } else {
+        await prisma.session.deleteMany({
+            where: { userId, NOT: { sessionId: currentSessionId } },
+        });
+    }
+    return { data: true };
+}
+
 export const findCurrentSessionService = cache(async () => {
     const store = await cookies();
     const token = store.get("session")?.value ?? null;

@@ -5,6 +5,7 @@ import status from "http-status";
 import { ApiError } from "next/dist/server/api-utils";
 import { errorHandler } from "../services/error";
 import { findCurrentSessionService } from "../services/session";
+import { invalidateOtherSessionsService } from "../services/session";
 import { prisma } from "@/lib/prisma";
 import { verifyPasswordHash, hashPassword, verifyPasswordStrength } from "../utils/password";
 
@@ -36,7 +37,14 @@ export const ubahPasswordAction = async (payload: {
       data: { password: passwordBaruHash },
     });
 
-    return { status: status.OK, message: "Password berhasil diubah" };
+    // (#14) Invalidate sesi di device LAIN, KECUALI sesi saat ini.
+    // Setelah ubah password, semua device lain dipaksa login ulang agar
+    // sesi curian (mis. dari device yang dicompromi) langsung tidak valid.
+    // currentSession.session.sessionId = DB id (hash) sesi saat ini.
+    const currentDbSessionId = currentSession.session?.sessionId ?? "";
+    await invalidateOtherSessionsService(user.userId, currentDbSessionId);
+
+    return { status: status.OK, message: "Password berhasil diubah. Sesi di perangkat lain telah dihentikan." };
   } catch (error) {
     return errorHandler(error);
   }
