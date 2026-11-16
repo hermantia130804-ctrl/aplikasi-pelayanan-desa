@@ -34,6 +34,7 @@ import { FileText, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { Input } from "./ui/input";
 import { FollowUpPermohonanSKDInput } from "@/lib/validators/permohonan-skd";
 
@@ -52,6 +53,7 @@ interface PermohonanSKDFollowUpModalProps {
 export function PermohonanSKDFollowUpModal({ permohonan }: PermohonanSKDFollowUpModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const form = useForm<FollowUpPermohonanSKDInput>({
     resolver: zodResolver(followUpPermohonanSKDSchema),
@@ -80,6 +82,7 @@ export function PermohonanSKDFollowUpModal({ permohonan }: PermohonanSKDFollowUp
         toast.success(result.message);
         setIsOpen(false);
         form.reset();
+        router.refresh();
       }
     } catch (error) {
       toast.error("Gagal melakukan tindak lanjut permohonan SKD");
