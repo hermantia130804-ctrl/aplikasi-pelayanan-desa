@@ -22,7 +22,7 @@ export const createPermohonanSKLMandiriAction = async (payload: TCreatePermohona
     await notifikasiPetugasBaru("SKL", { nama: payload.nama, alasan: "Pengajuan SKL", pengaju: "via aplikasi" });
 
     revalidatePath(PATHS.SKL_REQUEST || "/permohonan-skl");
-    return { status: status.OK, message: message.CREATE_OK || "Permohonan SKL berhasil dibuat", data };
+    return { status: status.OK, message: MESSAGE.SKL_REQUEST.CREATE_OK, data };
   } catch (error) {
     return errorHandler(error);
   }
