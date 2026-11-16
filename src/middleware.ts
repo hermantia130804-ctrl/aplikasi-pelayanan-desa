@@ -3,6 +3,10 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_PAGES = ["/", "/beranda-masyarakat", "/tentang", "/hubungi-kami"];
 const AUTH_PAGES = ["/masuk", "/daftar"];
+// Prefix halaman publik tanpa session: lupa password (form + link reset dari email),
+// verifikasi email pendaftaran (link dari email). Wajib bisa diakses user belum login
+// dan dari Referer email client (bukan dari situs sendiri).
+const PUBLIC_PREFIXES = ["/lupa-password", "/verifikasi"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -19,7 +23,10 @@ export function middleware(req: NextRequest) {
   }
 
   // ===== 2. Halaman dalam: wajib cookie session =====
-  const isPublic = PUBLIC_PAGES.includes(pathname);
+  // Halaman publik = PUBLIC_PAGES exact match ATAU PUBLIC_PREFIXES (root + sub-path /id).
+  const isPublic =
+    PUBLIC_PAGES.includes(pathname) ||
+    PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
   const isAuthPage = AUTH_PAGES.includes(pathname);
   if (!isPublic && !isAuthPage) {
     const sessionCookie = req.cookies.get("session");
