@@ -20,7 +20,13 @@ export async function updateBansosAction(payload: unknown) {
 
     const warga = await prisma.dataWarga.findUnique({ where: { dataWargaId: String(d.id) } });
     if (!warga) throw new ApiError(status.NOT_FOUND, "Data warga tidak ditemukan.");
-    if (!isStaff(session.user.role) && warga.userId !== session.user.userId) {
+    // Izin kelola: staff, pembuat data, atau Ketua RT atas data wilayah RT-nya sendiri
+    const me = await prisma.user.findUnique({ where: { userId: session.user.userId }, select: { noRt: true, noRw: true } });
+    const bolehKelola =
+      isStaff(session.user.role) ||
+      warga.userId === session.user.userId ||
+      (!!me?.noRt && !!me?.noRw && warga.noRt === me.noRt && warga.noRw === me.noRw);
+    if (!bolehKelola) {
       throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
     }
 

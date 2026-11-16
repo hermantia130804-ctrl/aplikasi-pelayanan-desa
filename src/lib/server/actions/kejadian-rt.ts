@@ -25,13 +25,43 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
   try {
     const session = await getSession();
     const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
-    const whereUser = isStaff ? {} : { userId: session.user.userId };
     const me = await prisma.user.findUnique({ where: { userId: session.user.userId } });
+    // ADMIN/PETUGAS: bebas ({}). Role lain (Ketua RT): TERKUNCI di level server ke wilayah RT-nya.
+    // Tabel kejadian tidak punya kolom RT, jadi wilayah dipetakan lewat userId pembuat + No. KK milik RT (DataWarga & PendudukSementara).
+    const kunciWilayah = async (): Promise<Record<string, unknown>> => {
+      if (isStaff) return {};
+      if (me?.noRt && me?.noRw) {
+        const [tetap, sem] = await Promise.all([
+          prisma.dataWarga.findMany({ where: { noRt: me.noRt, noRw: me.noRw }, select: { noKk: true }, distinct: ["noKk"] }),
+          prisma.pendudukSementara.findMany({ where: { noRt: me.noRt, noRw: me.noRw }, select: { noKk: true }, distinct: ["noKk"] }),
+        ]);
+        const kkWilayah = new Set<string>();
+        for (const k of [...tetap, ...sem]) if (k.noKk) kkWilayah.add(k.noKk);
+        return { OR: [{ userId: session.user.userId }, { noKk: { in: Array.from(kkWilayah) } }] };
+      }
+      return { userId: session.user.userId };
+    };
+    const filterWilayahStaff = async (filterRt?: string, filterRw?: string): Promise<Record<string, unknown>> => {
+      const cond: Record<string, unknown> = {};
+      if (filterRt && filterRt !== "SEMUA") cond.noRt = String(filterRt);
+      if (filterRw && filterRw !== "SEMUA") cond.noRw = String(filterRw);
+      if (!cond.noRt && !cond.noRw) return {};
+      const [tetap, sem] = await Promise.all([
+        prisma.dataWarga.findMany({ where: cond, select: { noKk: true }, distinct: ["noKk"] }),
+        prisma.pendudukSementara.findMany({ where: cond, select: { noKk: true }, distinct: ["noKk"] }),
+      ]);
+      const kkWilayah = new Set<string>();
+      for (const k of [...tetap, ...sem]) if (k.noKk) kkWilayah.add(k.noKk);
+      return { noKk: { in: Array.from(kkWilayah) } };
+    };
 
-    // ===== LIST (per jenis + bulan/tahun) =====
+    // ===== LIST =====
     if (operation === "list") {
-      const { jenis, bulan, tahun } = (payload ?? {}) as { jenis?: string; bulan?: string; tahun?: string };
-      const where: Record<string, unknown> = { ...whereUser };
+      const { jenis, bulan, tahun, filterRt, filterRw } = (payload ?? {}) as { jenis?: string; bulan?: string; tahun?: string; filterRt?: string; filterRw?: string };
+      const where: Record<string, unknown> = {
+        ...(await kunciWilayah()),
+        ...(isStaff ? await filterWilayahStaff(filterRt, filterRw) : {}),
+      };
       if (jenis) where.jenisKejadian = jenis;
       if (bulan && tahun) {
         const startDate = new Date(parseInt(tahun), parseInt(bulan) - 1, 1);

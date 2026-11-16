@@ -16,11 +16,24 @@ export async function sembakoRTAction(operation: string, payload?: unknown) {
   try {
     const session = await getSession();
     const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
+    const me = await prisma.user.findUnique({ where: { userId: session.user.userId }, select: { noRt: true, noRw: true } });
     const whereUser = isStaff ? {} : { userId: session.user.userId };
 
     // ===== LIST =====
     if (operation === "list") {
-      const data = await prisma.penerimaSembako.findMany({ where: whereUser, orderBy: { namaLengkap: "asc" } });
+      const { filterRt, filterRw } = (payload ?? {}) as { filterRt?: string; filterRw?: string };
+      // ADMIN/PETUGAS: bebas memilih wilayah (kosong = Semua RT/RW). Role lain: TERKUNCI di level server ke wilayah RT-nya.
+      const where: Record<string, unknown> =
+        isStaff
+          ? {}
+          : me?.noRt && me?.noRw
+            ? { noRt: me.noRt, noRw: me.noRw }
+            : { userId: session.user.userId };
+      if (isStaff) {
+        if (filterRt && filterRt !== "SEMUA") where.noRt = String(filterRt);
+        if (filterRw && filterRw !== "SEMUA") where.noRw = String(filterRw);
+      }
+      const data = await prisma.penerimaSembako.findMany({ where, orderBy: { namaLengkap: "asc" } });
       return { status: 200, data };
     }
 
@@ -59,7 +72,8 @@ export async function sembakoRTAction(operation: string, payload?: unknown) {
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
       const existing = await prisma.penerimaSembako.findUnique({ where: { penerimaSembakoId: Number(id) } });
       if (!existing) throw new ApiError(status.NOT_FOUND, "Data tidak ditemukan.");
-      if (!isStaff && existing.userId !== session.user.userId) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+      const bolehKelola = isStaff || existing.userId === session.user.userId || (!!me?.noRt && !!me?.noRw && existing.noRt === me.noRt && existing.noRw === me.noRw);
+      if (!bolehKelola) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
       await prisma.penerimaSembako.delete({ where: { penerimaSembakoId: Number(id) } });
       revalidatePath("/data-warga");
       return { status: 200, message: "Data penerima sembako berhasil dihapus" };

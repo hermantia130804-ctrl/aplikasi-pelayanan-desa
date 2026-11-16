@@ -180,11 +180,11 @@ export default async function DataWargaPage() {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="penduduk"><PendudukRT /></TabsContent>
+                    <TabsContent value="penduduk"><PendudukRT isAdmin={isStaff} /></TabsContent>
 
-                    <TabsContent value="sementara"><PendudukSementaraRT /></TabsContent>
-                    <TabsContent value="kejadian"><PendudukKejadianRT isAdmin /></TabsContent>
-                    <TabsContent value="bantuan"><PendudukBansosRT /></TabsContent>
+                    <TabsContent value="sementara"><PendudukSementaraRT isAdmin={isStaff} /></TabsContent>
+                    <TabsContent value="kejadian"><PendudukKejadianRT isAdmin={isStaff} /></TabsContent>
+                    <TabsContent value="bantuan"><PendudukBansosRT isAdmin={isStaff} /></TabsContent>
                     <TabsContent value="laporan"><TabLaporan /></TabsContent>
                     <TabsContent value="dokumen"><TabDokumenRT isAdmin rtInfo={rtInfo} /></TabsContent>
                 </Tabs>

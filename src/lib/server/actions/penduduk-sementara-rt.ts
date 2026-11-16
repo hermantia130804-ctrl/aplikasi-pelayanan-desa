@@ -34,8 +34,18 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
     const isRT = session.user.role === "RT";
 
     if (operation === "list") {
-      const { search, statusKet } = (payload ?? {}) as { search?: string; statusKet?: string };
-      const where: Record<string, unknown> = isStaff ? {} : { userId: session.user.userId };
+      const { search, statusKet, filterRt, filterRw } = (payload ?? {}) as { search?: string; statusKet?: string; filterRt?: string; filterRw?: string };
+      // ADMIN/PETUGAS: bebas memilih wilayah (kosong = Semua RT/RW). Role lain: TERKUNCI di level server ke wilayah RT-nya.
+      const where: Record<string, unknown> =
+        isStaff
+          ? {}
+          : me?.noRt && me?.noRw
+            ? { noRt: me.noRt, noRw: me.noRw }
+            : { userId: session.user.userId };
+      if (isStaff) {
+        if (filterRt && filterRt !== "SEMUA") where.noRt = String(filterRt);
+        if (filterRw && filterRw !== "SEMUA") where.noRw = String(filterRw);
+      }
       if (statusKet) where.statusKeterangan = statusKet;
       if (search) where.OR = [
         { namaLengkap: { contains: search, mode: "insensitive" } },
@@ -91,7 +101,8 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
       const existing = await prisma.pendudukSementara.findUnique({ where: { pendudukSementaraId: String(id) } });
       if (!existing) throw new ApiError(status.NOT_FOUND, "Data tidak ditemukan.");
-      if (!isStaff && existing.userId !== session.user.userId) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+      const bolehKelola = isStaff || existing.userId === session.user.userId || (!!me?.noRt && !!me?.noRw && existing.noRt === me.noRt && existing.noRw === me.noRw);
+      if (!bolehKelola) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
       if (d.nik && !validateNIK(String(d.nik))) throw new ApiError(status.BAD_REQUEST, "NIK harus 16 digit angka");
       if (d.noKk && !validateNoKK(String(d.noKk))) throw new ApiError(status.BAD_REQUEST, "No. KK harus 16 digit angka");
 
@@ -123,7 +134,8 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
       const existing = await prisma.pendudukSementara.findUnique({ where: { pendudukSementaraId: String(id) } });
       if (!existing) throw new ApiError(status.NOT_FOUND, "Data tidak ditemukan.");
-      if (!isStaff && existing.userId !== session.user.userId) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+      const bolehKelola = isStaff || existing.userId === session.user.userId || (!!me?.noRt && !!me?.noRw && existing.noRt === me.noRt && existing.noRw === me.noRw);
+      if (!bolehKelola) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
       await prisma.pendudukSementara.delete({ where: { pendudukSementaraId: String(id) } });
       revalidatePath("/data-warga");
       return { status: 200, message: "Data berhasil dihapus" };
@@ -170,6 +182,7 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
         nik: findColS(head1, head2, "NIK"),
         jk: findColS(head1, head2, "JK", "JENIS KELAMIN"),
         statusKeluarga: findColS(head1, head2, "STATUS KK", "STATUS KELUARGA"),
+        tempat: findColS(head1, head2, "TEMPAT LAHIR", "TEMPAT", "TMPT LAHIR"),
         tglLahir: findColS(head1, head2, "TGL LAHIR", "TANGGAL LAHIR"),
         agama: findColS(head1, head2, "AGAMA"),
         pendidikan: findColS(head1, head2, "PENDIDIKAN"),

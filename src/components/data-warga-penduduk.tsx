@@ -35,6 +35,7 @@ import {
 import { Plus, Search, FileUp, FileDown, Pencil, Trash2, ChevronDown, ChevronRight, ChevronUp, Users, X, Filter, SlidersHorizontal, Printer, Camera, Loader2, RotateCw, RotateCcw, FlipHorizontal, FlipVertical, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { pendudukRTAction } from "@/lib/server/actions/penduduk-rt";
+import { FilterWilayah, useOpsiWilayah, pecahFilterWilayah } from '@/components/filter-wilayah';
 import { scanKKAction } from "@/lib/server/actions/scan-kk";
 import {
   AGAMA, PENDIDIKAN, PEKERJAAN, STATUS_PERKAWINAN, BANTUAN_OPTIONS,
@@ -74,8 +75,10 @@ async function apiFetch(path: string, init?: { method?: string; body?: any; head
     const r = await pendudukRTAction("create", body ? normalize(body) : undefined);
     return mk(r.status ?? 500, r);
   }
-  const search = new URL(path, "http://x").searchParams.get("search") ?? "";
-  const r = await pendudukRTAction("list", { search });
+  const uList = new URL(path, "http://x");
+  const search = uList.searchParams.get("search") ?? "";
+  const fw = pecahFilterWilayah(uList.searchParams.get("wil") ?? "");
+  const r = await pendudukRTAction("list", { search, filterRt: fw.filterRt, filterRw: fw.filterRw });
   return mk(r.status ?? 500, "data" in r ? r.data : { error: r.error });
 }
 
@@ -130,6 +133,8 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
   const [penduduk, setPenduduk] = useState<Penduduk[]>([]);
   const [kkGroups, setKKGroups] = useState<KKGroup[]>([]);
   const [search, setSearch] = useState('');
+  const [filterWilayah, setFilterWilayah] = useState('SEMUA');
+  const { opsi: opsiWilayah } = useOpsiWilayah(isAdmin);
   const [loading, setLoading] = useState(true);
   const [expandedKK, setExpandedKK] = useState<Set<string>>(new Set());
 
@@ -199,7 +204,10 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
 
   const fetchPenduduk = useCallback(async () => {
     try {
-      const params = search ? `?search=${encodeURIComponent(search)}` : '';
+      const qs = new URLSearchParams();
+      if (search) qs.set('search', search);
+      if (filterWilayah !== 'SEMUA') qs.set('wil', filterWilayah);
+      const params = qs.toString() ? `?${qs.toString()}` : '';
       const res = await apiFetch(`/api/penduduk${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -211,7 +219,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, filterWilayah]);
 
   const groupByKK = (data: Penduduk[]) => {
     const map = new Map<string, KKGroup>();
@@ -1113,8 +1121,11 @@ export default function TabPenduduk({ isAdmin = true, isActive = false }: TabPen
         </div>
       </div>
 
-      {/* Search */}
+      {/* Search + Filter Wilayah */}
       <div className="flex gap-2 items-center">
+        {isAdmin && (
+          <FilterWilayah opsi={opsiWilayah} value={filterWilayah} onChange={setFilterWilayah} />
+        )}
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

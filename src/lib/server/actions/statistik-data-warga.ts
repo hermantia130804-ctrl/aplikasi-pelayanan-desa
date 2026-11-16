@@ -11,9 +11,13 @@ export async function getStatistikDataWarga() {
   const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
   const whereUser = isStaff ? {} : { userId: session.user.userId };
 
-  const allPenduduk = await prisma.dataWarga.findMany({ where: whereUser });
+  // Role RT: statistik terkunci ke wilayah RT-nya (kolom no_rt/no_rw), bukan hanya data yang ia buat sendiri
+  const me = await prisma.user.findUnique({ where: { userId: session.user.userId }, select: { noRt: true, noRw: true } });
+  const wilayahWhere = !isStaff && me?.noRt && me?.noRw ? { noRt: me.noRt, noRw: me.noRw } : whereUser;
+
+  const allPenduduk = await prisma.dataWarga.findMany({ where: wilayahWhere });
   const allSementara = await prisma.pendudukSementara.findMany({
-    where: { ...whereUser, tanggalKeluar: null },
+    where: { ...wilayahWhere, tanggalKeluar: null },
   });
 
   const kkMap = new Set(allPenduduk.map(p => p.noKk));

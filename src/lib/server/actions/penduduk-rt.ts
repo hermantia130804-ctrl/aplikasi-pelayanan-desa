@@ -34,8 +34,19 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
 
     // ===== LIST =====
     if (operation === "list") {
-      const { search } = (payload ?? {}) as { search?: string };
-      const where: Record<string, unknown> = isStaff ? {} : { userId: session.user.userId };
+      const { search, filterRt, filterRw } = (payload ?? {}) as { search?: string; filterRt?: string; filterRw?: string };
+      // ADMIN/PETUGAS: bebas memilih wilayah (kosong = Semua RT/RW, tampil tergabung).
+      // Role lain (Ketua RT): TERKUNCI di level server ke wilayah RT-nya (kolom no_rt/no_rw tabel users) - tidak bisa dibobol dari client.
+      const where: Record<string, unknown> =
+        isStaff
+          ? {}
+          : me?.noRt && me?.noRw
+            ? { noRt: me.noRt, noRw: me.noRw }
+            : { userId: session.user.userId };
+      if (isStaff) {
+        if (filterRt && filterRt !== "SEMUA") where.noRt = String(filterRt);
+        if (filterRw && filterRw !== "SEMUA") where.noRw = String(filterRw);
+      }
       if (search) {
         where.OR = [
           { namaLengkap: { contains: search, mode: "insensitive" } },
@@ -44,6 +55,23 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
         ];
       }
       const data = await prisma.dataWarga.findMany({ where, orderBy: [{ noKk: "asc" }, { createdAt: "asc" }] });
+      return { status: 200, data };
+    }
+
+    // ===== LIST OPSI WILAYAH (untuk dropdown filter ADMIN/PETUGAS) =====
+    if (operation === "listRT") {
+      if (!isStaff) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+      const [warga, sem, akun] = await Promise.all([
+        prisma.dataWarga.findMany({ distinct: ["noRt", "noRw"], select: { noRt: true, noRw: true } }),
+        prisma.pendudukSementara.findMany({ distinct: ["noRt", "noRw"], select: { noRt: true, noRw: true } }),
+        prisma.user.findMany({ where: { role: "RT" }, select: { noRt: true, noRw: true } }),
+      ]);
+      const map = new Map<string, { noRt: string; noRw: string }>();
+      for (const x of [...warga, ...sem, ...akun]) {
+        const rt = x.noRt; const rw = x.noRw;
+        if (rt && rw) map.set(`${rt}-${rw}`, { noRt: rt, noRw: rw });
+      }
+      const data = Array.from(map.values()).sort((a, b) => a.noRt.localeCompare(b.noRt) || a.noRw.localeCompare(b.noRw));
       return { status: 200, data };
     }
 
@@ -103,7 +131,9 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
       const existing = await prisma.dataWarga.findUnique({ where: { dataWargaId: String(id) } });
       if (!existing) throw new ApiError(status.NOT_FOUND, "Data tidak ditemukan.");
-      if (!isStaff && existing.userId !== session.user.userId) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+      // Izin kelola: staff, pembuat data, atau Ketua RT atas data wilayah RT-nya sendiri
+      const bolehKelola = isStaff || existing.userId === session.user.userId || (!!me?.noRt && !!me?.noRw && existing.noRt === me.noRt && existing.noRw === me.noRw);
+      if (!bolehKelola) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
 
       const u: Record<string, unknown> = {};
       const str = (k: string, upper = true) => {
@@ -134,7 +164,8 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
       const existing = await prisma.dataWarga.findUnique({ where: { dataWargaId: id } });
       if (!existing) throw new ApiError(status.NOT_FOUND, "Data tidak ditemukan.");
-      if (!isStaff && existing.userId !== session.user.userId) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+      const bolehKelola = isStaff || existing.userId === session.user.userId || (!!me?.noRt && !!me?.noRw && existing.noRt === me.noRt && existing.noRw === me.noRw);
+      if (!bolehKelola) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
       await prisma.dataWarga.delete({ where: { dataWargaId: id } });
       revalidatePath("/data-warga");
       return { status: 200, message: "Data berhasil dihapus" };
@@ -296,7 +327,6 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
       return { status: 200, message: "Impor selesai: " + created + " tersimpan, " + skipped + " dilewati", created, skipped, dateParseFails, noKkFails, errors };
     }
 
-    return { status: 400, error: "Operasi tidak dikenal" };
     return { status: 400, error: "Operasi tidak dikenal" };
   } catch (error) {
     if (error instanceof ApiError) return { status: error.statusCode, error: error.message };

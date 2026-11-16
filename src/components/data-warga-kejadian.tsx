@@ -1,6 +1,7 @@
 'use client';
 
 import { kejadianRTAction } from "@/lib/server/actions/kejadian-rt";
+import { FilterWilayah, useOpsiWilayah, pecahFilterWilayah } from '@/components/filter-wilayah';
 import { pendudukRTAction } from "@/lib/server/actions/penduduk-rt";
 
 // Shim: apiFetch diadaptasi ke Server Action kejadian
@@ -15,7 +16,8 @@ async function apiFetch(path: string, init?: { method?: string; body?: any; head
   }
   if (method === "GET") {
     const jenis = urlObj.searchParams.get("jenis") ?? "";
-    const res = await kejadianRTAction("list", { jenis });
+    const fwK = pecahFilterWilayah(urlObj.searchParams.get("wil") ?? "");
+    const res = await kejadianRTAction("list", { jenis, filterRt: fwK.filterRt, filterRw: fwK.filterRw });
     return mk(res.status ?? 200, "data" in res ? res.data : { error: res.error });
   }
   const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
@@ -128,6 +130,8 @@ const emptyAnggotaBaru = (): AnggotaBaru => ({
 export default function PendudukKejadianRT({ isAdmin = true, isActive = false }: PendudukKejadianRTProps) {
   const [kejadian, setKejadian] = useState<Kejadian[]>([]);
   const [activeTab, setActiveTab] = useState<string>('LAHIR');
+  const [filterWilayah, setFilterWilayah] = useState('SEMUA');
+  const { opsi: opsiWilayah } = useOpsiWilayah(isAdmin);
   const [loading, setLoading] = useState(true);
   const [kkOptions, setKKOptions] = useState<KKOption[]>([]);
   const [anggotaKK, setAnggotaKK] = useState<AnggotaKK[]>([]);
@@ -181,11 +185,14 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false }:
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await apiFetch(`/api/kejadian?jenis=${activeTab}`);
+      const qsK = new URLSearchParams();
+      qsK.set('jenis', activeTab);
+      if (filterWilayah !== 'SEMUA') qsK.set('wil', filterWilayah);
+      const res = await apiFetch(`/api/kejadian?${qsK.toString()}`);
       if (res.ok) setKejadian(await res.json());
     } catch (error) { console.error(error); }
     finally { setLoading(false); }
-  }, [activeTab]);
+  }, [activeTab, filterWilayah]);
 
   useEffect(() => { fetchKKOptions(); }, [fetchKKOptions]);
   useEffect(() => { setLoading(true); fetchData(); }, [fetchData]);
@@ -773,6 +780,11 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false }:
         )}
       </div>
 
+      {isAdmin && (
+        <div className="mb-2">
+          <FilterWilayah opsi={opsiWilayah} value={filterWilayah} onChange={setFilterWilayah} />
+        </div>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {JENIS_KEJADIAN.map(type => (
           <button
