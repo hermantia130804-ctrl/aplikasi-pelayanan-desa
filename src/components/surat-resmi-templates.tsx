@@ -234,7 +234,7 @@ export function SuratSKDDocument({ data }: { data: any }) {
           { label: "Tempat/Tanggal Lahir", value: `${data.tempatLahir}, ${tgl(data.tanggalLahir)}` },
           { label: "Jenis Kelamin", value: data.jenisKelamin },
           { label: "Agama", value: data.agama },
-          { label: "Kewarganegaraan", value: data.wargaNegara },
+          { label: "Kewarganegaraan", value: data.wargaNegara ?? "WNI" },
           { label: "Alamat Sesuai KTP", value: data.alamatKTP },
           { label: "Alamat Domisili", value: data.alamatDomisili },
         ],
