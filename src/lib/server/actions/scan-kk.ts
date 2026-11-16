@@ -1,5 +1,8 @@
 "use server";
 
+import { findCurrentSessionService } from "../services/session";
+import { rateLimit } from "../utils/rate-limit";
+
 const SYSTEM_PROMPT = `Kamu adalah AI OCR spesialis untuk membaca Kartu Keluarga (KK) Indonesia.
 
 Baca gambar KK Indonesia dan kembalikan data JSON EXACTLY sesuai schema.
@@ -19,15 +22,46 @@ KEMBALIKAN HANYA JSON.`;
 
 const MODELS_FALLBACK = ["gemini-flash-lite-latest", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-2.5-flash"];
 
+// (#12) Batas ukuran gambar: 5 MB setelah decode (base64 ~6.7M char).
+// Cegah upload gambar raksasa yang burn Gemini quota / DoS billing.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+// Base64 memakai ~4/3 x ukuran biner.
+const MAX_BASE64_LEN = Math.ceil(MAX_IMAGE_BYTES * 4 / 3);
+// Rate limit per user: 10 scan / jam. Cegah spam panggilan Gemini.
+const SCAN_LIMIT = 10;
+const SCAN_WINDOW_MS = 60 * 60 * 1000;
+
 export async function scanKKAction(imageDataUrl: string) {
   try {
+    // (#12) Auth: wajib login. Sebelumnya siapapun (bahkan tanpa sesi) bisa
+    // panggil endpoint ini dan burn Gemini API quota.
+    const session = await findCurrentSessionService();
+    if (!session?.user) {
+      return { ok: false, error: "Anda harus login untuk menggunakan fitur scan KK." };
+    }
+
+    // (#12) Rate limit per user.
+    const rlKey = `scan-kk:user:${session.user.userId}`;
+    const rl = rateLimit(rlKey, SCAN_LIMIT, SCAN_WINDOW_MS);
+    if (!rl.allowed) {
+      const retryMin = Math.max(1, Math.ceil(rl.retryAfterMs / 60000));
+      return { ok: false, error: `Batas scan KK tercapai (${SCAN_LIMIT}/jam). Coba lagi dalam ${retryMin} menit.` };
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return { ok: false, error: "GEMINI_API_KEY belum diset di server." };
     if (!imageDataUrl?.startsWith("data:image/")) {
       return { ok: false, error: "Gambar tidak valid." };
     }
 
-    const [meta, base64] = imageDataUrl.split(",");
+    // (#12) Size limit: tolak gambar melebihi MAX_IMAGE_BYTES.
+    const commaIdx = imageDataUrl.indexOf(",");
+    const base64 = commaIdx >= 0 ? imageDataUrl.slice(commaIdx + 1) : "";
+    if (base64.length > MAX_BASE64_LEN) {
+      return { ok: false, error: `Ukuran gambar melebihi ${Math.round(MAX_IMAGE_BYTES / 1024 / 1024)} MB. Kompres dulu lalu coba lagi.` };
+    }
+
+    const meta = imageDataUrl.slice(0, commaIdx);
     const mimeType = meta.match(/data:(image\/[\w.]+);/)?.[1] ?? "image/jpeg";
 
     let lastErrText = "";
