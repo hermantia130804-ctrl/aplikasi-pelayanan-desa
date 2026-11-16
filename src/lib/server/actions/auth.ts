@@ -38,10 +38,22 @@ export const signUpAction = async (payload: TCreateUserSchema) => {
         const message = MESSAGE.AUTH;
         const { data } = await findUserByEmailService(payload.email);
         if (data) throw new ApiError(status.BAD_REQUEST, message.SIGN_UP_ALREADY_EXISTS);
-        // Keamanan: pendaftaran publik hanya USER/PETUGAS (tanpa jabatan - diisi admin kemudian); ADMIN tidak boleh lewat pendaftaran publik
-        const { jabatan: _jabatan, ...safePayload } = payload;
-        const roleAman = safePayload.role === "PETUGAS" ? "PETUGAS" : "USER";
-        const user = await createUserService({ ...safePayload, role: roleAman } as TCreateUserSchema);
+        // ===== Keamanan (#2) =====
+        // Pendaftaran publik WAJIB role=USER. PETUGAS / ADMIN / RT hanya boleh
+        // di-assign oleh admin lewat halaman pengguna (updateUserRoleService).
+        // Whitelist field yang boleh lewat; abaikan field lain (role, jabatan,
+        // noRt, noRw, namaKetua, alamatRt, status, verifiedAt) yang mungkin
+        // di-inject klien via cast `as` di form (sign-up-form.tsx). Pertahanan
+        // berlapis di sisi server — tidak peduli apa yang dikirim form.
+        const user = await createUserService({
+            email: payload.email,
+            nik: payload.nik,
+            name: payload.name,
+            password: payload.password,
+            address: payload.address,
+            phone: payload.phone,
+            role: "USER",
+        } as TCreateUserSchema);
         await createEmailVerificationService(user.data.userId);
         return { status: status.OK, message: message.SIGN_UP_OK };
     } catch (error) {
