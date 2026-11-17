@@ -25,12 +25,24 @@ export async function laporanRTAction(operation: string, payload?: unknown) {
     const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
     const me = await prisma.user.findUnique({ where: { userId: session.user.userId }, select: { noRt: true, noRw: true } });
     const rtLabel = `RT ${me?.noRt || "001"} RW ${me?.noRw || "002"}`;
-    // FIX multi-RT: turunkan rtId dari nomor RT user (RT 001 -> rtId=1, RT 002 -> rtId=2, ...).
-    // Sebelumnya rtId selalu 1 -> laporan antar-RT saling overwrite di unique [rtId, bulan, tahun].
-    // Tidak ada perubahan schema: kolom rtId tetap Int @default(1), unique constraint tetap [rtId, bulan, tahun].
-    // Hanya cara kita mengisi rtId yang berubah: dari hardcode 1 jadi turunan noRt user.
-    // Backward-compatible: data lama rtId=1 tetap milik RT 001 (parseInt("001")=1).
-    const rtId = me?.noRt ? (parseInt(me.noRt, 10) || 1) : 1;
+    // FIX multi-RT Skema B (noRt bisa berulang per RW): turunkan rtId dari GABUNGAN
+    // noRt + noRw supaya unik per kombinasi RT/RW.
+    //   RT.001/RW.001 -> 1*100 + 1 = 101
+    //   RT.001/RW.002 -> 1*100 + 2 = 102  (unik, tidak collide walau noRt sama)
+    //   RT.002/RW.001 -> 2*100 + 1 = 201
+    //   RT.003/RW.009 -> 3*100 + 9 = 309
+    //   RT.027/RW.009 -> 27*100 + 9 = 2709 (masih dalam Int range)
+    // Tidak ada perubahan schema: kolom rtId tetap Int @default(1), unique constraint
+    // tetap [rtId, bulan, tahun]. Hanya cara kita mengisi rtId yang berubah.
+    // Backward-compatible: admin/petugas dengan noRt null -> fallback rtId=1 (safe default).
+    // Data lama rtId=1 (kalau ada) tetap utuh, tidak diubah.
+    const parseNum = (v: string | null | undefined): number => {
+      const n = parseInt(String(v ?? "").replace(/\D/g, ""), 10);
+      return isNaN(n) ? 0 : n;
+    };
+    const rtNum = parseNum(me?.noRt);
+    const rwNum = parseNum(me?.noRw);
+    const rtId = (rtNum * 100 + rwNum) || 1;
 
     // Filter wilayah global (dari dropdown di page shell). Hanya staff yang boleh memilih.
     const p = (payload ?? {}) as { filterRt?: string; filterRw?: string; [k: string]: unknown };
