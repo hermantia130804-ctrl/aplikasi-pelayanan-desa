@@ -44,9 +44,17 @@ export async function suratPengantarRTAction(operation: string, payload?: unknow
         throw new ApiError(status.BAD_REQUEST, "Nomor surat, nama pemohon, NIK, dan tujuan wajib diisi");
       }
 
+      // FIX multi-RT: turunkan rtId dari nomor RT user (RT 001 -> rtId=1, RT 002 -> rtId=2, ...).
+      // Sebelumnya rtId default 1 untuk semua RT. Tidak ada perubahan schema; hanya cara isi rtId yang berubah.
+      const session = await getSession();
+      const me = await prisma.user.findUnique({ where: { userId: session.user.userId }, select: { noRt: true, noRw: true } });
+      const rtIdEfektif = typeof rtId === "number" && rtId > 0
+        ? rtId
+        : (me?.noRt ? (parseInt(me.noRt, 10) || 1) : 1);
+
       const surat = await prisma.suratPengantar.create({
         data: {
-          rtId: typeof rtId === "number" ? rtId : 1,
+          rtId: rtIdEfektif,
           nomorSurat: String(nomorSurat).trim().toUpperCase(),
           namaPemohon: String(namaPemohon).trim().toUpperCase(),
           nik: String(nik).trim(),
