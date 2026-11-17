@@ -84,6 +84,9 @@ export default function DataWargaShell({ isStaff, isAdmin = false, canAdd = fals
   const { opsi: opsiWilayah } = useOpsiWilayah(isStaff);
   const [statistik, setStatistik] = useState<StatistikBeranda | null>(initialStatistik);
   const [statLoading, setStatLoading] = useState(false);
+  // Refresh nonce: increment untuk trigger refresh statistik setelah mutasi di tab manapun
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const triggerRefresh = useCallback(() => setRefreshNonce(n => n + 1), []);
 
   // Reset Data state
   const [showResetModal, setShowResetModal] = useState(false);
@@ -145,6 +148,13 @@ export default function DataWargaShell({ isStaff, isAdmin = false, canAdd = fals
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterWilayah, isStaff]);
+
+  // Refresh statistik setiap kali ada mutasi data di tab manapun (delete/create/update).
+  // Tab panggil onDataChanged() -> triggerRefresh() -> increment refreshNonce -> effect ini jalan.
+  useEffect(() => {
+    if (refreshNonce > 0) refreshStatistik();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshNonce]);
 
   const ageData: { age: string; l: number; p: number }[] = [];
   if (statistik) {
@@ -328,10 +338,10 @@ export default function DataWargaShell({ isStaff, isAdmin = false, canAdd = fals
             )}
           </TabsContent>
 
-          <TabsContent value='penduduk'><PendudukRT isAdmin={canAdd} wilayah={filterWilayah} /></TabsContent>
-          <TabsContent value='sementara'><PendudukSementaraRT isAdmin={canAdd} wilayah={filterWilayah} /></TabsContent>
-          <TabsContent value='kejadian'><PendudukKejadianRT isAdmin={canAdd} wilayah={filterWilayah} /></TabsContent>
-          <TabsContent value='bantuan'><PendudukBansosRT isAdmin={canAdd} wilayah={filterWilayah} /></TabsContent>
+          <TabsContent value='penduduk'><PendudukRT isAdmin={canAdd} wilayah={filterWilayah} onDataChanged={triggerRefresh} /></TabsContent>
+          <TabsContent value='sementara'><PendudukSementaraRT isAdmin={canAdd} wilayah={filterWilayah} onDataChanged={triggerRefresh} /></TabsContent>
+          <TabsContent value='kejadian'><PendudukKejadianRT isAdmin={canAdd} wilayah={filterWilayah} onDataChanged={triggerRefresh} /></TabsContent>
+          <TabsContent value='bantuan'><PendudukBansosRT isAdmin={canAdd} wilayah={filterWilayah} onDataChanged={triggerRefresh} /></TabsContent>
           <TabsContent value='laporan'><TabLaporan wilayah={filterWilayah} /></TabsContent>
           <TabsContent value='dokumen'><TabDokumenRT isAdmin rtInfo={rtInfo} wilayah={filterWilayah} /></TabsContent>
         </Tabs>

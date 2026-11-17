@@ -43,7 +43,8 @@ const r = await pendudukRTAction("list", { search: u.searchParams.get("search") 
     if (method === "PUT") { const r = await pendudukRTAction("update", body); return mk(r.status ?? 500, r); }
     if (method === "DELETE") {
       if (u.searchParams.get("all") === "true") {
-        const r = await pendudukRTAction("deleteAll", { konfirmasi: "HAPUS" });
+        const fwDel = pecahFilterWilayah(u.searchParams.get("wil") ?? "");
+        const r = await pendudukRTAction("deleteAll", { konfirmasi: "HAPUS", filterRt: fwDel.filterRt, filterRw: fwDel.filterRw });
         return mk(r.status ?? 500, { message: r.message, error: r.error });
       }
       const id = u.searchParams.get("id") ?? "";
@@ -84,7 +85,8 @@ const r = await pendudukRTAction("list", { search: u.searchParams.get("search") 
     if (method === "POST") { const r = await sembakoRTAction("add", body); return mk(r.status ?? 500, { message: r.message, id: (r.data as unknown as { penerimaSembakoId?: string } | undefined)?.penerimaSembakoId }); }
     if (method === "DELETE") {
       if (u.searchParams.get("all") === "true") {
-        const r = await sembakoRTAction("deleteAll", { konfirmasi: "HAPUS" });
+        const fwSmb = pecahFilterWilayah(u.searchParams.get("wil") ?? "");
+        const r = await sembakoRTAction("deleteAll", { konfirmasi: "HAPUS", filterRt: fwSmb.filterRt, filterRw: fwSmb.filterRw });
         return mk(r.status ?? 500, { message: r.message });
       }
       const id = u.searchParams.get("id") ?? "";
@@ -213,9 +215,10 @@ interface PendudukBansosRTProps {
   isAdmin?: boolean;
   isActive?: boolean;
   wilayah?: string;
+  onDataChanged?: () => void;
 }
 
-export default function PendudukBansosRT({ isAdmin = true, isActive = false, wilayah: filterWilayah = 'SEMUA' }: PendudukBansosRTProps) {
+export default function PendudukBansosRT({ isAdmin = true, isActive = false, wilayah: filterWilayah = 'SEMUA', onDataChanged }: PendudukBansosRTProps) {
   // ==================== VIEW TOGGLE ====================
   const [activeView, setActiveView] = useState<'bansos' | 'sembako'>('bansos');
 
@@ -736,13 +739,15 @@ const data: PenerimaSembako[] = rawSem.map((x) => { const o = x as Record<string
   // Delete all sembako recipients
   const handleDeleteAllSembako = async () => {
     try {
-      const res = await apiFetch('/api/sembako?all=true', { method: 'DELETE' });
+      const qsAll = filterWilayah !== 'SEMUA' ? `&wil=${encodeURIComponent(filterWilayah)}` : '';
+      const res = await apiFetch(`/api/sembako?all=true${qsAll}`, { method: 'DELETE' });
       if (res.ok) {
         const data = await res.json();
         toast.success(data.message || 'Semua data berhasil dihapus');
         fetchSembako();
         // Kembalikan semua KK ke dropdown
         fetchKKList();
+        onDataChanged?.();
       } else {
         toast.error('Gagal menghapus semua data');
       }

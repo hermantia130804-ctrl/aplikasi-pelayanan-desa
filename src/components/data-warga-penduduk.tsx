@@ -129,9 +129,10 @@ interface TabPendudukProps {
   isAdmin?: boolean;
   isActive?: boolean;
   wilayah?: string;
+  onDataChanged?: () => void;
 }
 
-export default function TabPenduduk({ isAdmin = true, canEdit, isActive = false, wilayah: filterWilayah = 'SEMUA' }: TabPendudukProps) {
+export default function TabPenduduk({ isAdmin = true, canEdit, isActive = false, wilayah: filterWilayah = 'SEMUA', onDataChanged }: TabPendudukProps) {
   const bolehEdit = canEdit ?? isAdmin;
   const [penduduk, setPenduduk] = useState<Penduduk[]>([]);
   const [kkGroups, setKKGroups] = useState<KKGroup[]>([]);
@@ -897,12 +898,14 @@ export default function TabPenduduk({ isAdmin = true, canEdit, isActive = false,
     if (deleteAllText !== "HAPUS") return;
     setDeletingAll(true);
     try {
-      const res = await pendudukRTAction("deleteAll", { konfirmasi: "HAPUS" });
+      const fw = pecahFilterWilayah(filterWilayah);
+      const res = await pendudukRTAction("deleteAll", { konfirmasi: "HAPUS", filterRt: fw.filterRt, filterRw: fw.filterRw });
       if (res.status === 200) {
         toast.success(res.message);
         setShowDeleteAll(false);
         setDeleteAllText("");
         fetchPenduduk();
+        onDataChanged?.();
       } else toast.error(res.error || res.message || "Gagal menghapus");
     } catch { toast.error("Gagal menghapus data"); }
     finally { setDeletingAll(false); }

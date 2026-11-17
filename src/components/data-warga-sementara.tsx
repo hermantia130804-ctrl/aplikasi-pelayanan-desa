@@ -137,6 +137,7 @@ interface TabPendudukProps {
   isAdmin?: boolean;
   isActive?: boolean;
   wilayah?: string;
+  onDataChanged?: () => void;
 }
 
 const tanggalValid = (v: unknown, fallback: string): string => {
@@ -144,7 +145,7 @@ const tanggalValid = (v: unknown, fallback: string): string => {
   return isNaN(d.getTime()) ? fallback : d.toISOString().slice(0, 10);
 };
 
-export default function TabPenduduk({ isAdmin = true, isActive = false, wilayah: filterWilayah = 'SEMUA' }: TabPendudukProps) {
+export default function TabPenduduk({ isAdmin = true, isActive = false, wilayah: filterWilayah = 'SEMUA', onDataChanged }: TabPendudukProps) {
   const [penduduk, setPenduduk] = useState<Penduduk[]>([]);
   const [kkGroups, setKKGroups] = useState<KKGroup[]>([]);
   const [search, setSearch] = useState('');
@@ -925,12 +926,14 @@ export default function TabPenduduk({ isAdmin = true, isActive = false, wilayah:
     if (deleteAllText !== "HAPUS") return;
     setDeletingAll(true);
     try {
-      const res = await sementaraRTAction("deleteAll", { konfirmasi: "HAPUS" });
+      const fw = pecahFilterWilayah(filterWilayah);
+      const res = await sementaraRTAction("deleteAll", { konfirmasi: "HAPUS", filterRt: fw.filterRt, filterRw: fw.filterRw });
       if (res.status === 200) {
         toast.success(res.message);
         setShowDeleteAll(false);
         setDeleteAllText("");
         fetchPenduduk();
+        onDataChanged?.();
       } else toast.error(res.error || res.message || "Gagal menghapus");
     } catch { toast.error("Gagal menghapus data"); }
     finally { setDeletingAll(false); }
