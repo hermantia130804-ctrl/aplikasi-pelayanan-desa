@@ -73,10 +73,16 @@ export const signUpAction = async (payload: TCreateUserSchema) => {
         // ===== Keamanan (#2) =====
         // Pendaftaran publik WAJIB role=USER. PETUGAS / ADMIN / RT hanya boleh
         // di-assign oleh admin lewat halaman pengguna (updateUserRoleService).
-        // Whitelist field yang boleh lewat; abaikan field lain (role, jabatan,
-        // noRt, noRw, namaKetua, alamatRt, status, verifiedAt) yang mungkin
-        // di-inject klien via cast `as` di form (sign-up-form.tsx). Pertahanan
-        // berlapis di sisi server — tidak peduli apa yang dikirim form.
+        //
+        // Data ekstra (foto, jabatan, noRt, noRw, namaKetua, alamatRt) disimpan
+        // supaya admin bisa lihat saat review di Kelola Pengguna:
+        //   - foto: URL selfie (untuk Petugas/RT) -> admin verifikasi visual
+        //   - jabatan: jabatan petugas yang diminta
+        //   - noRt/noRw/namaKetua/alamatRt: RT mana yang diminta user ini kelola
+        // Admin kemudian update role ke PETUGAS/RT setelah verifikasi.
+        //
+        // Whitelist field lain (role, status, verifiedAt) tetap diabaikan —
+        // tidak peduli apa yang dikirim form. Pertahanan berlapis di sisi server.
         const user = await createUserService({
             email: payload.email,
             nik: payload.nik,
@@ -85,6 +91,12 @@ export const signUpAction = async (payload: TCreateUserSchema) => {
             address: payload.address,
             phone: payload.phone,
             role: "USER",
+            foto: payload.foto,
+            jabatan: payload.jabatan,
+            noRt: payload.noRt,
+            noRw: payload.noRw,
+            namaKetua: payload.namaKetua,
+            alamatRt: payload.alamatRt,
         } as TCreateUserSchema);
         await createEmailVerificationService(user.data.userId);
         return { status: status.OK, message: message.SIGN_UP_OK };
