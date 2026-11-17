@@ -13,8 +13,13 @@ export const signUpSchema = z.object({
   password: z.string().min(8, VALIDATION_MESSAGE.INVALID_PASSWORD),
   address: z.string().min(3, VALIDATION_MESSAGE.INVALID_ADDRESS).optional(),
   phone: z.string().min(10, VALIDATION_MESSAGE.INVALID_PHONE).optional(),
-  daftarSebagai: z.enum(["USER", "PETUGAS"]).optional(),
+  daftarSebagai: z.enum(["USER", "PETUGAS", "RT"]).optional(),
   jabatan: z.string().optional(),
+  noRt: z.string().optional(),
+  noRw: z.string().optional(),
+  namaKetua: z.string().optional(),
+  alamatRt: z.string().optional(),
+  foto: z.string().optional(),
 });
 
 export const forgotPasswordSchema = z.object({

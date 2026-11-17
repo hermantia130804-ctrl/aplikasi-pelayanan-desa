@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { findCurrentSessionService } from "@/lib/server/services/session";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,20 @@ export default async function EditDataWargaPage({ params }: { params: Promise<{ 
     const res = await findDataWargaByIdAction(id);
     if (!("data" in res)) notFound();
     const d = res.data;
+
+    const session = await findCurrentSessionService();
+    const role = session?.user.role ?? "USER";
+    let canPickWilayah = false;
+    if (role === "ADMIN") {
+        canPickWilayah = true;
+    } else if (role === "PETUGAS") {
+        const me = await prisma.user.findUnique({
+            where: { userId: session!.user.userId },
+            select: { jabatan: true },
+        });
+        canPickWilayah = me?.jabatan === "Kasi Pemerintahan";
+    }
+
     return (
         <div className="flex flex-1 flex-col">
             <div className="@container/main flex flex-1 flex-col gap-2">
@@ -20,6 +36,7 @@ export default async function EditDataWargaPage({ params }: { params: Promise<{ 
                     <h1 className="text-2xl font-bold">Edit: {d.namaLengkap}</h1>
                     <DataWargaForm
                         dataWargaId={d.dataWargaId}
+                        canPickWilayah={canPickWilayah}
                         defaultValues={{
                             namaLengkap: d.namaLengkap,
                             nik: d.nik,
@@ -41,6 +58,8 @@ export default async function EditDataWargaPage({ params }: { params: Promise<{ 
                             desil: d.desil ?? "DESIL 1",
                             alamat: d.alamat,
                             keterangan: d.keterangan ?? "",
+                            noRt: d.noRt,
+                            noRw: d.noRw,
                         }}
                     />
                 </div>

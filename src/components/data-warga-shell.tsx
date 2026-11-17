@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { LayoutDashboard, Users, UserRound, CalendarDays, Shield, FileSpreadsheet, FileText, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
+import { LayoutDashboard, Users, UserRound, CalendarDays, Shield, FileSpreadsheet, FileText, Trash2, AlertTriangle, Loader2, PlusCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Link from 'next/link';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +61,10 @@ export interface StatistikBeranda {
 
 interface ShellProps {
   isStaff: boolean;
+  // ADMIN saja: berhak hapus semua data (tombol Reset Data).
+  isAdmin?: boolean;
+  // ADMIN / RT / Kasi Pemerintahan: boleh tambah data warga (tombol Tambah Warga).
+  canAdd?: boolean;
   initialStatistik: StatistikBeranda | null;
   user: { name: string; noRt: string | null; noRw: string | null; namaKetua: string | null };
   rtInfo: {
@@ -75,7 +80,7 @@ interface ShellProps {
 
 const tabTrigger = 'flex flex-col items-center gap-0.5 py-2 px-1 data-[state=active]:bg-emerald-600 data-[state=active]:text-white rounded-md text-[10px] sm:text-xs';
 
-export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo }: ShellProps) {
+export default function DataWargaShell({ isStaff, isAdmin = false, canAdd = false, initialStatistik, user, rtInfo }: ShellProps) {
   const [filterWilayah, setFilterWilayah] = useState('SEMUA');
   const { opsi: opsiWilayah } = useOpsiWilayah(isStaff);
   const [statistik, setStatistik] = useState<StatistikBeranda | null>(initialStatistik);
@@ -94,14 +99,12 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
       const s = await getStatistikDataWarga(fw.filterRt, fw.filterRw);
       if (s) setStatistik(s as StatistikBeranda);
     } catch (e) {
-      // diamkan; statistik lama tetap dipakai
       console.error('refreshStatistik error', e);
     } finally {
       setStatLoading(false);
     }
   }, [fw.filterRt, fw.filterRw]);
 
-  // Handler Reset Data: panggil action agregat -> toast -> reload page
   const handleResetData = async () => {
     if (resetKonfirmasi !== 'HAPUS') {
       toast.error('Ketik "HAPUS" (huruf kapital) untuk konfirmasi.');
@@ -122,7 +125,6 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
         }
         setShowResetModal(false);
         setResetKonfirmasi('');
-        // Reload halaman untuk refresh data semua tab
         setTimeout(() => window.location.reload(), 800);
       } else {
         const errMsg = ('error' in r && typeof r.error === 'string') ? r.error : ('message' in r ? r.message : 'Gagal reset data');
@@ -136,12 +138,10 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
     }
   };
 
-  // Saat filter berubah (hanya admin/petugas), re-fetch statistik Beranda
   useEffect(() => {
     if (isStaff && filterWilayah !== 'SEMUA') {
       refreshStatistik();
     } else if (isStaff && filterWilayah === 'SEMUA' && statistik !== initialStatistik) {
-      // kembali ke SEMUA -> refresh juga supaya angka kembali ke total
       refreshStatistik();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,7 +176,16 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
           </p>
         </div>
 
-        {/* FILTER GLOBAL + RESET DATA: 1 dropdown untuk SEMUA tab (admin & petugas saja) */}
+        {/* Tombol Tambah Warga: ADMIN / RT / Kasi Pemerintahan */}
+        {canAdd && (
+          <div className='flex justify-end'>
+            <Button asChild size='sm' className='gap-1.5'>
+              <Link href='/data-warga/tambah'><PlusCircle className='h-4 w-4' /> Tambah Warga</Link>
+            </Button>
+          </div>
+        )}
+
+        {/* FILTER GLOBAL + RESET DATA: filter untuk ADMIN/PETUGAS; Reset hanya ADMIN */}
         {isStaff && (
           <div className='flex flex-wrap items-center gap-2 bg-white border rounded-lg p-2 shadow-sm'>
             <span className='text-xs font-semibold text-emerald-700 mr-1'>Filter Wilayah:</span>
@@ -188,22 +197,20 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
             )}
             {statLoading && <span className='text-[11px] text-muted-foreground animate-pulse'>Memuat ulang statistik…</span>}
 
-            {/* Tombol Reset Data: hapus SEMUA data di 5 tab sesuai filter */}
-            <div className='ml-auto'>
-              <Button
-                type='button'
-                variant='destructive'
-                size='sm'
-                onClick={() => {
-                  setResetKonfirmasi('');
-                  setShowResetModal(true);
-                }}
-                className='gap-1.5'
-              >
-                <Trash2 className='h-4 w-4' />
-                Reset Data {filterWilayah !== 'SEMUA' ? `RT.${fw.filterRt}/RW.${fw.filterRw}` : 'Semua'}
-              </Button>
-            </div>
+            {isAdmin && (
+              <div className='ml-auto'>
+                <Button
+                  type='button'
+                  variant='destructive'
+                  size='sm'
+                  onClick={() => { setResetKonfirmasi(''); setShowResetModal(true); }}
+                  className='gap-1.5'
+                >
+                  <Trash2 className='h-4 w-4' />
+                  Reset Data {filterWilayah !== 'SEMUA' ? `RT.${fw.filterRt}/RW.${fw.filterRw}` : 'Semua'}
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -328,7 +335,7 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
             )}
           </TabsContent>
 
-          <TabsContent value='penduduk'><PendudukRT isAdmin={isStaff} wilayah={filterWilayah} /></TabsContent>
+          <TabsContent value='penduduk'><PendudukRT isAdmin={isAdmin} canEdit={canAdd} wilayah={filterWilayah} /></TabsContent>
           <TabsContent value='sementara'><PendudukSementaraRT isAdmin={isStaff} wilayah={filterWilayah} /></TabsContent>
           <TabsContent value='kejadian'><PendudukKejadianRT isAdmin={isStaff} wilayah={filterWilayah} /></TabsContent>
           <TabsContent value='bantuan'><PendudukBansosRT isAdmin={isStaff} wilayah={filterWilayah} /></TabsContent>
@@ -336,7 +343,6 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
           <TabsContent value='dokumen'><TabDokumenRT isAdmin rtInfo={rtInfo} wilayah={filterWilayah} /></TabsContent>
         </Tabs>
 
-        {/* DIALOG KONFIRMASI RESET DATA */}
         <AlertDialog open={showResetModal} onOpenChange={(o) => { setShowResetModal(o); if (!o) setResetKonfirmasi(''); }}>
           <AlertDialogContent className='max-w-md'>
             <AlertDialogHeader>
@@ -351,9 +357,7 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
                       ? 'PERHATIAN: Anda akan menghapus SEMUA data di SEMUA RT/RW.'
                       : `PERHATIAN: Anda akan menghapus data milik RT.${fw.filterRt} RW.${fw.filterRw}.`}
                   </p>
-                  <p>
-                    Operasi ini akan menghapus <b>permanen</b> data di 5 tab berikut:
-                  </p>
+                  <p>Operasi ini akan menghapus <b>permanen</b> data di 5 tab berikut:</p>
                   <ul className='list-disc pl-5 space-y-0.5 text-xs'>
                     <li>Penduduk tetap (tabel DataWarga)</li>
                     <li>Penduduk sementara</li>
@@ -391,15 +395,9 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
                 className='bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 disabled:cursor-not-allowed'
               >
                 {resetLoading ? (
-                  <>
-                    <Loader2 className='h-4 w-4 mr-1 animate-spin' />
-                    Memproses…
-                  </>
+                  <><Loader2 className='h-4 w-4 mr-1 animate-spin' /> Memproses…</>
                 ) : (
-                  <>
-                    <Trash2 className='h-4 w-4 mr-1' />
-                    Hapus Sekarang
-                  </>
+                  <><Trash2 className='h-4 w-4 mr-1' /> Hapus Sekarang</>
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -410,5 +408,4 @@ export default function DataWargaShell({ isStaff, initialStatistik, user, rtInfo
   );
 }
 
-// Re-export agar konsisten dengan lama (kalau dipakai di tempat lain)
 export type { OpsiWilayah };

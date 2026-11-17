@@ -1,6 +1,7 @@
 export const ROLE_LABEL: Record<string, string> = {
     ADMIN: "Admin Full Control",
     PETUGAS: "Petugas",
+    RT: "Ketua RT",
     USER: "Masyarakat",
 };
 

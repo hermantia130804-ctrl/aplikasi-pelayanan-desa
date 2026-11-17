@@ -8,14 +8,20 @@ export const dynamic = "force-dynamic";
 
 export default async function DataWargaPendudukPage() {
     const session = await findCurrentSessionService();
-    const isStaff = session?.user.role === "ADMIN" || session?.user.role === "PETUGAS";
+    const role = session?.user.role ?? "USER";
+    const isStaff = role === "ADMIN" || role === "PETUGAS";
+    // Boleh tambah: RT, ADMIN, atau PETUGAS (Kasi Pemerintahan).
+    const bolehTambah =
+        role === "RT" ||
+        role === "ADMIN" ||
+        (role === "PETUGAS" && session?.user.jabatan === "Kasi Pemerintahan");
     const res = await findManyDataWargaAction();
     const daftar = "data" in res ? res.data : [];
 
     return (
         <div className="space-y-3">
             <div className="flex justify-end">
-                {session?.user.role === "RT" && (
+                {bolehTambah && (
                     <Button asChild><Link href="/data-warga/tambah"><PlusCircle className="size-4 mr-1" /> Tambah Warga</Link></Button>
                 )}
             </div>

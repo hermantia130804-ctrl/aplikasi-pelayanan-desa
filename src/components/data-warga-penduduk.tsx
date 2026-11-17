@@ -131,7 +131,8 @@ interface TabPendudukProps {
   wilayah?: string;
 }
 
-export default function TabPenduduk({ isAdmin = true, isActive = false, wilayah: filterWilayah = 'SEMUA' }: TabPendudukProps) {
+export default function TabPenduduk({ isAdmin = true, canEdit, isActive = false, wilayah: filterWilayah = 'SEMUA' }: TabPendudukProps) {
+  const bolehEdit = canEdit ?? isAdmin;
   const [penduduk, setPenduduk] = useState<Penduduk[]>([]);
   const [kkGroups, setKKGroups] = useState<KKGroup[]>([]);
   const [search, setSearch] = useState('');
@@ -1199,7 +1200,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false, wilayah:
                       <PendudukRow
                         penduduk={p}
                         isKK={p.statusKeluarga === 'KEPALA KELUARGA'}
-                        isAdmin={isAdmin}
+                        isAdmin={bolehEdit}
                         onEdit={openEditForm}
                         onDelete={setDeleteTarget}
                         onAddMember={p.statusKeluarga === 'KEPALA KELUARGA' ? () => openAddForm(p.noKk, true) : undefined}
@@ -1251,7 +1252,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false, wilayah:
                           <PendudukRow
                             penduduk={group.kepala}
                             isKK
-                            isAdmin={isAdmin}
+                            isAdmin={bolehEdit}
                             onEdit={openEditForm}
                             onDelete={setDeleteTarget}
                             onAddMember={() => openAddForm(group.noKk, true)}
@@ -1263,7 +1264,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false, wilayah:
                             key={a.dataWargaId}
                             penduduk={a}
                             isKK={false}
-                            isAdmin={isAdmin}
+                            isAdmin={bolehEdit}
                             onEdit={openEditForm}
                             onDelete={setDeleteTarget}
                             _refreshKey={lastRefresh}
@@ -1279,7 +1280,7 @@ export default function TabPenduduk({ isAdmin = true, isActive = false, wilayah:
           {kkGroups.length === 0 && !isFlatFilter && (
             <div className="text-center py-8 text-muted-foreground">
               <p>Tidak ada data penduduk</p>
-              {isAdmin && <p className="text-xs mt-1">Klik &quot;Tambah&quot; untuk menambahkan data baru</p>}
+              {bolehEdit && <p className="text-xs mt-1">Klik &quot;Tambah&quot; untuk menambahkan data baru</p>}
             </div>
           )}
         </div>

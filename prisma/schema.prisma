@@ -109,6 +109,7 @@ model User {
   role       Role      @default(USER)
   address    String?
   phone      String?
+  foto       String?  @map("foto")
   jabatan    String?   @map("jabatan")
   noRt         String?  @map("no_rt")
   noRw         String?  @map("no_rw")

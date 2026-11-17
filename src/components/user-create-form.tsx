@@ -23,6 +23,7 @@ import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { JABATAN_PETUGAS } from "@/constants/jabatan";
 import { Textarea } from "./ui/textarea";
+import { GambarUploadField } from "@/components/gambar-upload-field";
 
 export const UserCreateForm = ({
     className,
@@ -40,6 +41,7 @@ export const UserCreateForm = ({
             nik: "",
             role: "USER",
             jabatan: "",
+            foto: "",
         },
     });
 
@@ -66,6 +68,20 @@ export const UserCreateForm = ({
                 <Form {...form}>
                     <form onSubmit={onSubmit}>
                         <div className="flex flex-col gap-6">
+                            {/* Foto profil (opsional) */}
+                            <FormField
+                                control={form.control}
+                                name="foto"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Foto Profil (Opsional)</FormLabel>
+                                        <FormControl>
+                                            <GambarUploadField value={field.value ?? ""} onChange={field.onChange} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                             <FormField
                                 control={form.control}
                                 name="name"

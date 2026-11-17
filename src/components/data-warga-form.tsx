@@ -11,7 +11,13 @@ import { ArrowLeftIcon, Loader2, Save } from "lucide-react";
 import { ComboInput } from "@/components/ui/combo-input";
 import Link from "next/link";
 
-type Props = { dataWargaId?: string; defaultValues: Record<string, string | Date> };
+type Props = {
+  dataWargaId?: string;
+  defaultValues: Record<string, string | Date>;
+  // true untuk ADMIN / Kasi Pemerintahan: tampilkan input RT/RW (bisa input warga RT mana pun).
+  // false untuk RT: noRt/noRw otomatis dari profil ( disembunyikan).
+  canPickWilayah?: boolean;
+};
 
 function Sel({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: readonly string[] }) {
   return (
@@ -32,7 +38,7 @@ function Txt({ label, value, onChange, type = "text" }: { label: string; value: 
   );
 }
 
-export function DataWargaForm({ dataWargaId, defaultValues }: Props) {
+export function DataWargaForm({ dataWargaId, defaultValues, canPickWilayah = false }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [f, setF] = useState<Record<string, string>>(defaultValues as Record<string, string>);
@@ -41,7 +47,12 @@ export function DataWargaForm({ dataWargaId, defaultValues }: Props) {
   const onSimpan = async () => {
     try {
       setLoading(true);
-      const payload = { ...f, bantuan: [] };
+      const payload: Record<string, unknown> = { ...f, bantuan: [] };
+      // Untuk admin/kasi, sertakan RT/RW dari input. Untuk RT, action auto-fill dari profil.
+      if (canPickWilayah) {
+        payload.noRt = f.noRt ?? "";
+        payload.noRw = f.noRw ?? "";
+      }
       const res = dataWargaId ? await updateDataWargaAction(dataWargaId, payload) : await createDataWargaAction(payload);
       if (res.status === 200) { toast.success(res.message); router.push("/data-warga"); router.refresh(); }
       else toast.error(res.message || "Gagal menyimpan");
@@ -73,6 +84,15 @@ export function DataWargaForm({ dataWargaId, defaultValues }: Props) {
         <Txt label="No. HP" value={f.noHp ?? ""} onChange={sel("noHp")} />
         <Sel label="BPJS" value={f.bpjs ?? "TIDAK"} onChange={sel("bpjs")} options={BPJS_OPTIONS} />
         <Sel label="Desil" value={f.desil ?? "DESIL 1"} onChange={sel("desil")} options={DESIL_OPTIONS} />
+
+        {/* RT/RW: hanya untuk ADMIN / Kasi Pemerintahan. RT tidak lihat (auto dari profil). */}
+        {canPickWilayah && (
+          <>
+            <Txt label="Nomor RT *" value={f.noRt ?? ""} onChange={sel("noRt")} />
+            <Txt label="Nomor RW *" value={f.noRw ?? ""} onChange={sel("noRw")} />
+          </>
+        )}
+
         <div className="sm:col-span-2 lg:col-span-3"><Txt label="Alamat *" value={f.alamat ?? ALAMAT_DEFAULT} onChange={sel("alamat")} /></div>
         <Txt label="Keterangan" value={f.keterangan ?? ""} onChange={sel("keterangan")} />
       </div>

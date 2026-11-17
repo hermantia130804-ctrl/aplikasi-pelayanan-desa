@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Textarea } from "./ui/textarea";
+import { JABATAN_PETUGAS } from "@/constants/jabatan";
 type UserDetailFormProps = {
     data: Omit<User, "password" | "createdAt" | "updatedAt">;
 } & React.HTMLAttributes<HTMLDivElement>;
@@ -30,6 +31,12 @@ export const UserDetailForm = ({ data: initialData, className, ...props }: UserD
             name: initialData.name,
             nik: initialData.nik,
             role: initialData.role,
+            jabatan: initialData.jabatan ?? "",
+            noRt: initialData.noRt ?? "",
+            noRw: initialData.noRw ?? "",
+            namaKetua: initialData.namaKetua ?? "",
+            alamatRt: initialData.alamatRt ?? "",
+            foto: initialData.foto ?? "",
         },
     });
 
@@ -57,6 +64,26 @@ export const UserDetailForm = ({ data: initialData, className, ...props }: UserD
                 </CardHeader>
                 <CardContent>
                     <div className={cn("flex flex-col gap-6", className)} {...props}>
+                        {/* Foto profil (hasil selfie pendaftaran petugas/RT) */}
+                        <div className="flex items-center gap-4">
+                            {initialData.foto ? (
+                                <img
+                                    src={initialData.foto}
+                                    alt="Foto profil"
+                                    className="h-20 w-20 rounded-full border object-cover"
+                                />
+                            ) : (
+                                <div className="flex h-20 w-20 items-center justify-center rounded-full border bg-muted text-muted-foreground">
+                                    <UserIcon className="h-8 w-8" />
+                                </div>
+                            )}
+                            <div className="text-sm text-muted-foreground">
+                                <p className="font-medium text-foreground">{initialData.name}</p>
+                                <p>Peran: {initialData.role}</p>
+                                {initialData.jabatan && <p>Jabatan: {initialData.jabatan}</p>}
+                            </div>
+                        </div>
+
                         <Form {...form}>
                             <form onSubmit={onSubmit}>
                                 <div className="flex flex-col gap-6">
@@ -139,6 +166,29 @@ export const UserDetailForm = ({ data: initialData, className, ...props }: UserD
                                             )}
                                         />
                                     </div>
+                                    {initialData.role === "PETUGAS" && initialData.jabatan && (
+                                        <FormField
+                                            control={form.control}
+                                            name="jabatan"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Jabatan Petugas</FormLabel>
+                                                    <Input disabled value={field.value ?? ""} onChange={field.onChange} />
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    )}
+                                    {initialData.role === "RT" && (
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                            <FormField control={form.control} name="noRt" render={({ field }) => (
+                                                <FormItem><FormLabel>Nomor RT</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="noRw" render={({ field }) => (
+                                                <FormItem><FormLabel>Nomor RW</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                        </div>
+                                    )}
                                     <FormField
                                         control={form.control}
                                         name="address"

@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { JABATAN_PETUGAS } from "@/constants/jabatan";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
+import { GambarUploadField } from "@/components/gambar-upload-field";
 type UserUpdateFormProps = {
     data: Omit<User, "password" | "createdAt" | "updatedAt">;
 } & React.HTMLAttributes<HTMLDivElement>;
@@ -39,6 +40,7 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
             noRw: initialData.noRw ?? "",
             namaKetua: initialData.namaKetua ?? "",
             alamatRt: initialData.alamatRt ?? "",
+            foto: initialData.foto ?? "",
         },
     });
 
@@ -65,6 +67,20 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
                     <Form {...form}>
                         <form onSubmit={onSubmit}>
                             <div className="flex flex-col gap-6">
+                                {/* Foto profil: tampilkan + bisa ganti (hasil selfie petugas/RT) */}
+                                <FormField
+                                    control={form.control}
+                                    name="foto"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Foto Profil</FormLabel>
+                                            <FormControl>
+                                                <GambarUploadField value={field.value ?? ""} onChange={field.onChange} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                 <FormField
                                     control={form.control}
                                     name="name"
@@ -189,21 +205,21 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
                                 )}
 
                                                                     <FormField
-                                    control={form.control}
-                                    name="password"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Password Baru (Opsional)</FormLabel>
-                                            <FormControl>
-                                                <PasswordInput
-                                                    placeholder="Kosongkan jika tidak ingin mengubah"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                                        control={form.control}
+                                        name="password"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Password Baru (Opsional)</FormLabel>
+                                                <FormControl>
+                                                    <PasswordInput
+                                                        placeholder="Kosongkan jika tidak ingin mengubah"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                     <FormField
                                         control={form.control}
                                         name="phone"

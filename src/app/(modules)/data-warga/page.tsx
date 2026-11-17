@@ -12,10 +12,15 @@ export default async function DataWargaPage() {
 
     const meDoc = await prisma.user.findUnique({
       where: { userId: session.user.userId },
-      select: { noRt: true, noRw: true, namaKetua: true },
+      select: { noRt: true, noRw: true, namaKetua: true, jabatan: true },
     });
     const rtInfo = { namaRT: meDoc?.noRt || "001", rw: meDoc?.noRw || "002", kelurahan: "SUKAMAJU", kecamatan: "CIBUNGBULANG", kabupaten: "BOGOR", provinsi: "JAWA BARAT", ketuaRT: meDoc?.namaKetua || null };
-    const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
+    const role = session.user.role;
+    const isStaff = role === "ADMIN" || role === "PETUGAS";
+    // ADMIN saja: berhak hapus semua data (tombol Reset Data).
+    const isAdmin = role === "ADMIN";
+    // ADMIN / RT / Kasi Pemerintahan: boleh tambah data warga.
+    const canAdd = role === "ADMIN" || role === "RT" || (role === "PETUGAS" && meDoc?.jabatan === "Kasi Pemerintahan");
 
     // Statistik awal (tanpa filter). Shell akan re-fetch saat admin memilih RT/RW tertentu.
     const statistik = await getStatistikDataWarga();
@@ -31,6 +36,8 @@ export default async function DataWargaPage() {
     return (
         <DataWargaShell
             isStaff={isStaff}
+            isAdmin={isAdmin}
+            canAdd={canAdd}
             initialStatistik={statistik as StatistikBeranda}
             user={user}
             rtInfo={rtInfo}
