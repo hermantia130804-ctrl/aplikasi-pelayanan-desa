@@ -335,10 +335,10 @@ export default function DataWargaShell({ isStaff, isAdmin = false, canAdd = fals
             )}
           </TabsContent>
 
-          <TabsContent value='penduduk'><PendudukRT isAdmin={isAdmin} canEdit={canAdd} wilayah={filterWilayah} /></TabsContent>
-          <TabsContent value='sementara'><PendudukSementaraRT isAdmin={isStaff} wilayah={filterWilayah} /></TabsContent>
-          <TabsContent value='kejadian'><PendudukKejadianRT isAdmin={isStaff} wilayah={filterWilayah} /></TabsContent>
-          <TabsContent value='bantuan'><PendudukBansosRT isAdmin={isStaff} wilayah={filterWilayah} /></TabsContent>
+          <TabsContent value='penduduk'><PendudukRT isAdmin={canAdd} wilayah={filterWilayah} /></TabsContent>
+          <TabsContent value='sementara'><PendudukSementaraRT isAdmin={canAdd} wilayah={filterWilayah} /></TabsContent>
+          <TabsContent value='kejadian'><PendudukKejadianRT isAdmin={canAdd} wilayah={filterWilayah} /></TabsContent>
+          <TabsContent value='bantuan'><PendudukBansosRT isAdmin={canAdd} wilayah={filterWilayah} /></TabsContent>
           <TabsContent value='laporan'><TabLaporan wilayah={filterWilayah} /></TabsContent>
           <TabsContent value='dokumen'><TabDokumenRT isAdmin rtInfo={rtInfo} wilayah={filterWilayah} /></TabsContent>
         </Tabs>

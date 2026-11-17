@@ -19,8 +19,10 @@ export default async function DataWargaPage() {
     const isStaff = role === "ADMIN" || role === "PETUGAS";
     // ADMIN saja: berhak hapus semua data (tombol Reset Data).
     const isAdmin = role === "ADMIN";
-    // ADMIN / RT / Kasi Pemerintahan: boleh tambah data warga.
-    const canAdd = role === "ADMIN" || role === "RT" || (role === "PETUGAS" && meDoc?.jabatan === "Kasi Pemerintahan");
+    // ADMIN & RT: boleh kelola data warga — fitur SAMA PERSIS dengan admin.
+    //   Bedanya hanya: (1) filter wilayah tidak tampil utk RT (auto-scoped), (2) RT hanya lihat/kelola RT sendiri (di-lock server).
+    //   Petugas lain (termasuk Kasi) saat ini read-only (lihat data saja) — demi keamanan tombol Hapus Semua.
+    const canAdd = role === "ADMIN" || role === "RT";
 
     // Statistik awal (tanpa filter). Shell akan re-fetch saat admin memilih RT/RW tertentu.
     const statistik = await getStatistikDataWarga();
