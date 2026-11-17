@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { LayoutDashboard, Users, UserRound, CalendarDays, Shield, FileSpreadsheet, FileText, Trash2, AlertTriangle, Loader2, PlusCircle } from 'lucide-react';
+import { LayoutDashboard, Users, UserRound, CalendarDays, Shield, FileSpreadsheet, FileText, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Link from 'next/link';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,7 +62,7 @@ interface ShellProps {
   isStaff: boolean;
   // ADMIN saja: berhak hapus semua data (tombol Reset Data).
   isAdmin?: boolean;
-  // ADMIN / RT / Kasi Pemerintahan: boleh tambah data warga (tombol Tambah Warga).
+  // ADMIN & RT: boleh kelola data warga — mengaktifkan tombol Tambah/Edit/Hapus di dalam tiap tab.
   canAdd?: boolean;
   initialStatistik: StatistikBeranda | null;
   user: { name: string; noRt: string | null; noRw: string | null; namaKetua: string | null };
@@ -157,14 +156,14 @@ export default function DataWargaShell({ isStaff, isAdmin = false, canAdd = fals
   }
 
   return (
-    <div className='min-h-[80vh] bg-gray-50/50 -mx-4 sm:-mx-6 px-2 sm:px-4 py-4'>
+    <div className='min-h-[80vh] bg-gray-50/50 w-full px-3 sm:px-4 py-4'>
       <div className='max-w-4xl mx-auto space-y-3'>
         <div className='text-center space-y-1 text-white p-4 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-700'>
           <h1 className='text-lg md:text-xl font-bold tracking-wide'>SISTEM DATA KEPENDUDUKAN</h1>
           <h2 className='text-base md:text-lg font-semibold'>RT.{user.noRt ?? '-'} RW.{user.noRw ?? '-'}</h2>
-          <div className='flex items-center justify-between mt-1'>
-            <p className='text-xs opacity-90'>Ketua RT: {user.namaKetua ?? user.name}</p>
-            <span className='text-[10px] opacity-75 bg-white/20 px-2 py-0.5 rounded-full'>
+          <div className='flex flex-wrap items-center justify-between gap-1 mt-1'>
+            <p className='text-xs opacity-90 min-w-0 break-words'>Ketua RT: {user.namaKetua ?? user.name}</p>
+            <span className='text-[10px] opacity-75 bg-white/20 px-2 py-0.5 rounded-full whitespace-nowrap'>
               {user.name}{isStaff ? ' (Admin)' : ' (RT)'}
             </span>
           </div>
@@ -176,14 +175,8 @@ export default function DataWargaShell({ isStaff, isAdmin = false, canAdd = fals
           </p>
         </div>
 
-        {/* Tombol Tambah Warga: ADMIN / RT / Kasi Pemerintahan */}
-        {canAdd && (
-          <div className='flex justify-end'>
-            <Button asChild size='sm' className='gap-1.5'>
-              <Link href='/data-warga/tambah'><PlusCircle className='h-4 w-4' /> Tambah Warga</Link>
-            </Button>
-          </div>
-        )}
+        {/* Tombol "Tambah Warga" di header DIHAPUS — tombol Tambah sudah ada di tiap tab (lebih rapi, tidak redundan).
+            canAdd tetap dipakai untuk mengaktifkan tombol Tambah/Edit/Hapus di dalam tiap tab (Penduduk/Sementara/Kejadian/Bantuan). */}
 
         {/* FILTER GLOBAL + RESET DATA: filter untuk ADMIN/PETUGAS; Reset hanya ADMIN */}
         {isStaff && (
