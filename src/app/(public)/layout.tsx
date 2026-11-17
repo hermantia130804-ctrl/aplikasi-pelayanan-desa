@@ -12,6 +12,7 @@ export default async function PublicLayout({ children }: { children: React.React
     const menu = [
         { label: "Beranda", url: "/" },
         { label: "Beranda Masyarakat", url: "/beranda-masyarakat" },
+        { label: "Layanan Masyarakat", url: "/layanan-masyarakat" },
         { label: "Tentang", url: "/tentang" },
         { label: "Hubungi Kami", url: "/hubungi-kami" },
     ];
