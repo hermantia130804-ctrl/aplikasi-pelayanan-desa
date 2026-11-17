@@ -15,6 +15,9 @@ type LayananItem = {
   label: string;
   href: string;
   icon: LucideIcon;
+  // true = buka tab baru (hanya BPJS Kesehatan -> WhatsApp app/tab baru).
+  // false = buka di tab yang sama (navigasi ke situs layanan).
+  newTab: boolean;
 };
 
 export const layanan: LayananItem[] = [
@@ -23,26 +26,31 @@ export const layanan: LayananItem[] = [
     // 08118165165 -> internasional: 62 + 8118165165 = 628118165165
     href: "https://wa.me/628118165165?text=Info%20%26%20Pengaduan",
     icon: HeartPulse,
+    newTab: true,
   },
   {
     label: "Cek Bantuan dan Desil",
     href: "https://cekbansos.kemensos.go.id",
     icon: HandCoins,
+    newTab: false,
   },
   {
     label: "BPJS Tenaga Kerja",
     href: "https://www.bpjsketenagakerjaan.go.id",
     icon: Briefcase,
+    newTab: false,
   },
   {
     label: "Cek BSU Tenaga Kerja",
     href: "https://bsu.kemnaker.go.id",
     icon: Banknote,
+    newTab: false,
   },
   {
     label: "Perlinsos",
-    href: "https://perlinsos.kemensos.go.id",
+    href: "https://perlinsos.kemensos.go.id/login-ikd",
     icon: ShieldCheck,
+    newTab: false,
   },
 ];
 
@@ -93,8 +101,8 @@ export function LayananDropdown() {
               <a
                 key={item.label}
                 href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
+                target={item.newTab ? "_blank" : undefined}
+                rel={item.newTab ? "noopener noreferrer" : undefined}
                 role="menuitem"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"

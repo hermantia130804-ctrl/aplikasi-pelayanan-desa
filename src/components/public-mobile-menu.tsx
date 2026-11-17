@@ -54,8 +54,8 @@ export function PublicMobileMenu({ menu, isLoggedIn }: { menu: MenuItem[]; isLog
                                                 <a
                                                     key={item.label}
                                                     href={item.href}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                    target={item.newTab ? "_blank" : undefined}
+                                                    rel={item.newTab ? "noopener noreferrer" : undefined}
                                                     onClick={() => setOpen(false)}
                                                     className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                                                 >
