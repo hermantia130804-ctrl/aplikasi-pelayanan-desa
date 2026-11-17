@@ -5,6 +5,7 @@ import { findCurrentSessionService } from "@/lib/server/services/session";
 import { PublicMobileMenu } from "@/components/public-mobile-menu";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { IdleGuard } from "@/components/idle-guard";
+import { LayananDropdown } from "@/components/layanan-dropdown";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
     const session = await findCurrentSessionService();
@@ -42,15 +43,19 @@ export default async function PublicLayout({ children }: { children: React.React
 
                     {/* Menu desktop */}
                     <nav className="hidden items-center gap-0.5 lg:flex">
-                        {menu.map((m) => (
-                            <Link
-                                key={m.url}
-                                href={m.url}
-                                className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                            >
-                                {m.label}
-                            </Link>
-                        ))}
+                        {menu.map((m) =>
+                            m.label === "Layanan Masyarakat" ? (
+                                <LayananDropdown key="layanan-masyarakat" />
+                            ) : (
+                                <Link
+                                    key={m.url}
+                                    href={m.url}
+                                    className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                >
+                                    {m.label}
+                                </Link>
+                            )
+                        )}
                     </nav>
 
                     {/* Kanan: mode + auth (desktop) atau hamburger (mobile) */}
