@@ -2,16 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { Menu, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { layanan } from "@/components/layanan-dropdown";
 
 type MenuItem = { label: string; url: string };
 
 export function PublicMobileMenu({ menu, isLoggedIn }: { menu: MenuItem[]; isLoggedIn: boolean }) {
     const [open, setOpen] = useState(false);
+    const [layananOpen, setLayananOpen] = useState(false);
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
@@ -30,16 +32,52 @@ export function PublicMobileMenu({ menu, isLoggedIn }: { menu: MenuItem[]; isLog
                 </SheetHeader>
 
                 <nav className="flex flex-col gap-1 px-4">
-                    {menu.map((m) => (
-                        <Link
-                            key={m.url}
-                            href={m.url}
-                            onClick={() => setOpen(false)}
-                            className="rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
-                        >
-                            {m.label}
-                        </Link>
-                    ))}
+                    {menu.map((m) =>
+                        m.label === "Layanan Masyarakat" ? (
+                            <div key="layanan-masyarakat" className="flex flex-col">
+                                <button
+                                    type="button"
+                                    onClick={() => setLayananOpen((v) => !v)}
+                                    aria-expanded={layananOpen}
+                                    className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+                                >
+                                    Layanan Masyarakat
+                                    <ChevronDown
+                                        className={layananOpen ? "h-4 w-4 transition-transform rotate-180" : "h-4 w-4 transition-transform"}
+                                    />
+                                </button>
+                                {layananOpen && (
+                                    <div className="ml-2 flex flex-col gap-0.5 border-l pl-2">
+                                        {layanan.map((item) => {
+                                            const Icon = item.icon;
+                                            return (
+                                                <a
+                                                    key={item.label}
+                                                    href={item.href}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    onClick={() => setOpen(false)}
+                                                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                                >
+                                                    <Icon className="h-4 w-4 text-primary" />
+                                                    {item.label}
+                                                </a>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <Link
+                                key={m.url}
+                                href={m.url}
+                                onClick={() => setOpen(false)}
+                                className="rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+                            >
+                                {m.label}
+                            </Link>
+                        )
+                    )}
                 </nav>
 
                 <div className="mt-4 flex flex-col gap-2 border-t px-4 pt-4">

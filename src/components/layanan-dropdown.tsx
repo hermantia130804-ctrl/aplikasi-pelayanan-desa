@@ -17,7 +17,7 @@ type LayananItem = {
   icon: LucideIcon;
 };
 
-const layanan: LayananItem[] = [
+export const layanan: LayananItem[] = [
   {
     label: "Cek BPJS Kesehatan",
     // 08118165165 -> internasional: 62 + 8118165165 = 628118165165
