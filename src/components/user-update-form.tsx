@@ -108,7 +108,12 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
                                         <FormItem>
                                             <FormLabel>Foto Profil</FormLabel>
                                             <FormControl>
-                                                <GambarUploadField value={field.value ?? ""} onChange={field.onChange} />
+                                                <GambarUploadField
+                                                    value={field.value ?? ""}
+                                                    onChange={field.onChange}
+                                                    variant="avatar"
+                                                    altText="Foto profil"
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>

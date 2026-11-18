@@ -76,7 +76,12 @@ export const UserCreateForm = ({
                                     <FormItem>
                                         <FormLabel>Foto Profil (Opsional)</FormLabel>
                                         <FormControl>
-                                            <GambarUploadField value={field.value ?? ""} onChange={field.onChange} />
+                                            <GambarUploadField
+                                                value={field.value ?? ""}
+                                                onChange={field.onChange}
+                                                variant="avatar"
+                                                altText="Foto profil"
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

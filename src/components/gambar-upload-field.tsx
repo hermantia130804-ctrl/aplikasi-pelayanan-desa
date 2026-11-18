@@ -10,10 +10,19 @@ interface GambarUploadFieldProps {
     onChange: (url: string) => void;
     disabled?: boolean;
     className?: string;
+    /**
+     * Mode tampilan pratinjau gambar.
+     * - "banner" (default): lebar penuh 160px, object-cover — untuk gambar berita/kegiatan.
+     * - "avatar": persegi 128px (h-32 w-32), object-contain — untuk foto profil supaya
+     *   seluruh wajah terlihat utuh tanpa terpotong meski rasio foto beda.
+     */
+    variant?: "banner" | "avatar";
+    /** Alt text untuk <img>. Default "Pratinjau gambar". */
+    altText?: string;
 }
 
 export const GambarUploadField = React.forwardRef<HTMLInputElement, GambarUploadFieldProps>(
-    ({ value, onChange, disabled = false, className }, ref) => {
+    ({ value, onChange, disabled = false, className, variant = "banner", altText = "Pratinjau gambar" }, ref) => {
         const [uploading, setUploading] = React.useState(false);
 
         const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,14 +50,31 @@ export const GambarUploadField = React.forwardRef<HTMLInputElement, GambarUpload
             }
         };
 
+        // styling pratinjau berdasarkan variant
+        const previewWrapperClass =
+            variant === "avatar"
+                ? // Avatar: square kecil, object-contain supaya foto utuh (tidak terpotong),
+                  // background muted untuk area kosong jika rasio foto berbeda dari 1:1.
+                  "h-32 w-32 rounded-lg border bg-muted overflow-hidden flex items-center justify-center"
+                : // Banner (default untuk gambar berita): lebar penuh, object-cover.
+                  "h-40 w-full rounded-lg border overflow-hidden";
+
+        const previewImgClass =
+            variant === "avatar"
+                ? // object-contain = seluruh foto terlihat, tidak ada bagian yang di-crop.
+                  "max-h-full max-w-full object-contain"
+                : "h-40 w-full object-cover";
+
         return (
             <div className={cn("flex flex-col gap-2", className)}>
                 {value && (
-                    <img
-                        src={value}
-                        alt="Pratinjau gambar berita"
-                        className="h-40 w-full rounded-lg border object-cover"
-                    />
+                    <div className={previewWrapperClass}>
+                        <img
+                            src={value}
+                            alt={altText}
+                            className={previewImgClass}
+                        />
+                    </div>
                 )}
                 <div className="relative border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors cursor-pointer">
                     <input
