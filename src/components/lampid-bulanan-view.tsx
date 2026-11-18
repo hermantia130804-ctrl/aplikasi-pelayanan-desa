@@ -247,18 +247,15 @@ export default function LampidBulananView() {
           <Card>
             <CardContent className="p-4">
               <div id="print-area" className="overflow-x-auto">
-                {/* Header */}
-                <div className="flex items-center justify-center gap-4 mb-3">
-                  <img src={logoKabBogorBase64} alt="Logo Kab. Bogor" className="h-16 w-16 object-contain" />
-                  <div className="text-center">
-                    <p className="font-bold text-sm">PEMERINTAH KABUPATEN BOGOR</p>
-                    <p className="font-bold text-sm">KECAMATAN CIBUNGBULANG</p>
-                    <p className="font-bold text-sm">DESA SUKAMAJU</p>
+                {/* Header: logo kiri + LAPORAN PENDUDUK/BULAN/TAHUN rata kiri (kop dihapus) */}
+                <div className="flex items-start gap-4 mb-3">
+                  <img src={logoKabBogorBase64} alt="Logo Kab. Bogor" className="h-20 w-20 object-contain flex-shrink-0" />
+                  <div className="text-left">
+                    <p className="font-bold text-base">LAPORAN PENDUDUK</p>
+                    <p className="text-sm">BULAN : {data.bulanLabel}</p>
+                    <p className="text-sm">TAHUN : {data.tahun}</p>
                   </div>
                 </div>
-                <p className="text-center font-bold text-base mb-1">LAPORAN PENDUDUK</p>
-                <p className="text-center text-sm mb-1">BULAN : {data.bulanLabel}</p>
-                <p className="text-center text-sm mb-3">TAHUN : {data.tahun}</p>
 
                 {/* Tabel utama */}
                 <table className="w-full text-[10px] border-collapse">

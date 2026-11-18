@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { ApiError } from "next/dist/server/api-utils";
 import status from "http-status";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { findCurrentSessionService } from "../services/session";
 
@@ -98,67 +98,111 @@ async function generateLampidUsiaData(bulan: number, tahun: number): Promise<Lam
   };
 }
 
-// ===== EXPORT EXCEL — format PERSIS sheet "LAPORAN BERDASARKAN USIA" =====
-function buildExcelUsia(data: LampidUsiaData): string {
-  const wb = XLSX.utils.book_new();
-  const ws: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet([[]]);
+// ===== EXPORT EXCEL — format PERSIS sheet "LAPORAN BERDASARKAN USIA" (pakai exceljs) =====
+async function buildExcelUsia(data: LampidUsiaData): Promise<string> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Laporan Usia", {
+    views: [{ showGridLines: false }],
+  });
 
-  const LAST_COL = "G"; // 7 cols: No, Kelompok Umur, L, P, Jml, Keterangan (6 data + 1 margin)
-  const setCell = (ref: string, val: string | number) => {
-    ws[ref] = { v: val, t: typeof val === "number" ? "n" : "s" };
-  };
-  const addMerge = (startRef: string, endRef: string) => {
-    if (!ws["!merges"]) ws["!merges"] = [];
-    ws["!merges"]!.push({ s: XLSX.utils.decode_cell(startRef), e: XLSX.utils.decode_cell(endRef) });
+  const COLOR_HEADER = "FF4472C4";
+  const COLOR_HEADER_TEXT = "FFFFFFFF";
+  const COLOR_TOTAL = "FFB4C7E7";
+  const COLOR_BORDER = "FF000000";
+  const thinBorder = {
+    top: { style: "thin" as const, color: { argb: COLOR_BORDER } },
+    left: { style: "thin" as const, color: { argb: COLOR_BORDER } },
+    right: { style: "thin" as const, color: { argb: COLOR_BORDER } },
+    bottom: { style: "thin" as const, color: { argb: COLOR_BORDER } },
   };
 
-  // Headers
-  setCell("A1", "PEMERINTAH KABUPATEN BOGOR"); addMerge("A1", `${LAST_COL}1`);
-  setCell("A2", "KECAMATAN CIBUNGBULANG"); addMerge("A2", `${LAST_COL}2`);
-  setCell("A3", "DESA SUKAMAJU"); addMerge("A3", `${LAST_COL}3`);
-  setCell("A4", `Alamat : ${ALAMAT_DESA}`); addMerge("A4", `${LAST_COL}4`);
-  setCell("A5", "LAPORAN PENDUDUK BERDASARKAN USIA"); addMerge("A5", `${LAST_COL}5`);
-  setCell("A6", "DESA : SUKAMAJU"); addMerge("A6", `${LAST_COL}6`);
-  setCell("A7", `BULAN : ${data.bulanLabel}`); addMerge("A7", `${LAST_COL}7`);
-  setCell("A8", `TAHUN : ${data.tahun}`); addMerge("A8", `${LAST_COL}8`);
+  // Set lebar kolom
+  ws.columns = [
+    { width: 5, key: "A" },   // No
+    { width: 24, key: "B" },  // Kelompok Umur
+    { width: 14, key: "C" },  // Laki-laki
+    { width: 14, key: "D" },  // Perempuan
+    { width: 12, key: "E" },  // Jumlah
+    { width: 14, key: "F" },  // Keterangan
+    { width: 3, key: "G" },   // margin
+  ];
+
+  const setCell = (row: number, col: number, val: string | number, opts?: {
+    bold?: boolean; align?: "left" | "center" | "right"; fill?: string;
+    fontColor?: string; border?: boolean; fontSize?: number;
+  }) => {
+    const cell = ws.getCell(row, col);
+    cell.value = val;
+    cell.alignment = { horizontal: opts?.align ?? "center", vertical: "middle" };
+    cell.font = {
+      bold: opts?.bold ?? false,
+      color: { argb: opts?.fontColor ?? "FF000000" },
+      size: opts?.fontSize ?? 10,
+    };
+    if (opts?.fill) {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: opts.fill } };
+    }
+    if (opts?.border !== false) {
+      cell.border = thinBorder;
+    }
+  };
+
+  const merge = (r1: number, c1: number, r2: number, c2: number) => ws.mergeCells(r1, c1, r2, c2);
+
+  // ===== HEADER (rata kiri sesuai sheet) =====
+  merge(1, 1, 1, 6);
+  setCell(1, 1, "PEMERINTAH KABUPATEN BOGOR", { bold: true, align: "left", border: false, fontSize: 11 });
+  merge(2, 1, 2, 6);
+  setCell(2, 1, "KECAMATAN CIBUNGBULANG", { bold: true, align: "left", border: false, fontSize: 11 });
+  merge(3, 1, 3, 6);
+  setCell(3, 1, "DESA SUKAMAJU", { bold: true, align: "left", border: false, fontSize: 11 });
+  merge(4, 1, 4, 6);
+  setCell(4, 1, `Alamat : ${ALAMAT_DESA}`, { align: "left", border: false, fontSize: 9 });
+  merge(5, 1, 5, 6);
+  setCell(5, 1, "LAPORAN PENDUDUK BERDASARKAN USIA", { bold: true, align: "left", border: false, fontSize: 11 });
+  // DESA, BULAN, TAHUN rata kiri (sesuai sheet)
+  setCell(6, 1, "DESA : SUKAMAJU", { align: "left", border: false });
+  setCell(7, 1, `BULAN : ${data.bulanLabel}`, { align: "left", border: false });
+  setCell(8, 1, `TAHUN : ${data.tahun}`, { align: "left", border: false });
 
   // Table header row 9
-  setCell("A9", "No.");
-  setCell("B9", "Kelompok Umur");
-  setCell("C9", "Laki-laki");
-  setCell("D9", "Perempuan");
-  setCell("E9", "Jumlah");
-  setCell("F9", "Keterangan");
+  const HDR = 9;
+  setCell(HDR, 1, "No.", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HDR, 2, "Kelompok Umur", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT, align: "left" });
+  setCell(HDR, 3, "Laki-laki", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HDR, 4, "Perempuan", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HDR, 5, "Jumlah", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HDR, 6, "Keterangan", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
 
-  // Data rows starting row 10
-  let r = 10;
+  // Data rows
+  let r = HDR + 1;
   for (const row of data.rows) {
-    setCell(`A${r}`, row.no);
-    setCell(`B${r}`, row.label);
-    setCell(`C${r}`, row.lk);
-    setCell(`D${r}`, row.pr);
-    setCell(`E${r}`, row.jml);
-    setCell(`F${r}`, row.keterangan);
+    setCell(r, 1, row.no);
+    setCell(r, 2, row.label, { align: "left" });
+    setCell(r, 3, row.lk);
+    setCell(r, 4, row.pr);
+    setCell(r, 5, row.jml);
+    setCell(r, 6, row.keterangan);
     r++;
   }
-  // Jumlah row
-  setCell(`A${r}`, "Jumlah");
-  setCell(`C${r}`, data.total.lk);
-  setCell(`D${r}`, data.total.pr);
-  setCell(`E${r}`, data.total.jml);
+  // Jumlah row (bold + colored)
+  merge(r, 1, r, 2);
+  setCell(r, 1, "Jumlah", { bold: true, fill: COLOR_TOTAL, align: "center" });
+  setCell(r, 3, data.total.lk, { bold: true, fill: COLOR_TOTAL });
+  setCell(r, 4, data.total.pr, { bold: true, fill: COLOR_TOTAL });
+  setCell(r, 5, data.total.jml, { bold: true, fill: COLOR_TOTAL });
+  setCell(r, 6, "100%", { bold: true, fill: COLOR_TOTAL });
 
-  // Signature
-  setCell(`F${r + 2}`, `Sukamaju, ${data.tanggalCetak}`);
-  setCell(`F${r + 3}`, "Kepala Desa Sukamaju");
-  setCell(`F${r + 5}`, NAMA_KEPALA_DESA);
+  // Signature (right side, col E=5 F=6)
+  setCell(r + 2, 5, `Sukamaju, ${data.tanggalCetak}`, { align: "center", border: false });
+  setCell(r + 3, 5, "Kepala Desa Sukamaju", { align: "center", border: false });
+  setCell(r + 5, 5, NAMA_KEPALA_DESA, { align: "center", bold: true, border: false });
 
-  ws["!cols"] = [
-    { wch: 5 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 2 },
-  ];
-  ws["!ref"] = `A1:${LAST_COL}${r + 6}`;
+  // Row heights
+  ws.getRow(HDR).height = 20;
 
-  XLSX.utils.book_append_sheet(wb, ws, "Laporan Usia");
-  return XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+  const buffer = await wb.xlsx.writeBuffer();
+  return Buffer.from(buffer).toString("base64");
 }
 
 // ===== SERVER ACTION EXPORTS =====
@@ -229,7 +273,7 @@ export async function lampidUsiaAction(operation: string, payload?: unknown) {
       const b = bulan ?? now.getMonth() + 1;
       const t = tahun ?? now.getFullYear();
       const data = await generateLampidUsiaData(b, t);
-      const base64 = buildExcelUsia(data);
+      const base64 = await buildExcelUsia(data);
       return {
         status: 200,
         data: base64,

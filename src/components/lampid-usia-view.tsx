@@ -239,10 +239,10 @@ export default function LampidUsiaView() {
                     <p className="text-xs">Alamat : {ALAMAT_DESA}</p>
                   </div>
                 </div>
-                <p className="text-center font-bold text-base mb-1">LAPORAN PENDUDUK BERDASARKAN USIA</p>
-                <p className="text-center text-sm mb-1">DESA : SUKAMAJU</p>
-                <p className="text-center text-sm mb-1">BULAN : {data.bulanLabel}</p>
-                <p className="text-center text-sm mb-3">TAHUN : {data.tahun}</p>
+                <p className="text-left font-bold text-base mb-1">LAPORAN PENDUDUK BERDASARKAN USIA</p>
+                <p className="text-left text-sm mb-1">DESA : SUKAMAJU</p>
+                <p className="text-left text-sm mb-1">BULAN : {data.bulanLabel}</p>
+                <p className="text-left text-sm mb-3">TAHUN : {data.tahun}</p>
 
                 {/* Tabel */}
                 <table className="w-full text-xs border-collapse">

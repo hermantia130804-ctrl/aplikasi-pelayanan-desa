@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { ApiError } from "next/dist/server/api-utils";
 import status from "http-status";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { findCurrentSessionService } from "../services/session";
 
@@ -238,140 +238,181 @@ async function generateLampidBulananData(bulan: number, tahun: number): Promise<
   };
 }
 
-// ===== EXPORT EXCEL — format PERSIS sheet JULI 2026 =====
-function buildExcelBulanan(data: LampidBulananData): string {
-  const wb = XLSX.utils.book_new();
-  const ws: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet([[]]);
-
-  // 26 columns: A..Z (RW, RT, then 8 groups x 3 cols, then 2 groups x 3 cols)
-  // A:RW, B:RT, C-E:JmlPddkBlnLalu, F-H:Lahir, I-K:Mati, L-N:Datang, O-Q:Pindah, R-T:JmlPddkBlnIni, U-W:KK, X-Z:KTP
-  const LAST_COL = "Z";
-  const setCell = (ref: string, val: string | number) => {
-    ws[ref] = { v: val, t: typeof val === "number" ? "n" : "s" };
-  };
-  const addMerge = (startRef: string, endRef: string) => {
-    if (!ws["!merges"]) ws["!merges"] = [];
-    ws["!merges"]!.push({ s: XLSX.utils.decode_cell(startRef), e: XLSX.utils.decode_cell(endRef) });
-  };
-
-  // Row 1: PEMERINTAH KABUPATEN BOGOR (merged across A1:Z1, centered)
-  setCell("A1", "PEMERINTAH KABUPATEN BOGOR");
-  addMerge("A1", `${LAST_COL}1`);
-  // Row 2: KECAMATAN CIBUNGBULANG
-  setCell("A2", "KECAMATAN CIBUNGBULANG");
-  addMerge("A2", `${LAST_COL}2`);
-  // Row 3: DESA SUKAMAJU
-  setCell("A3", "DESA SUKAMAJU");
-  addMerge("A3", `${LAST_COL}3`);
-  // Row 4: LAPORAN PENDUDUK
-  setCell("A4", "LAPORAN PENDUDUK");
-  addMerge("A4", `${LAST_COL}4`);
-  // Row 5: BULAN
-  setCell("A5", `BULAN : ${data.bulanLabel}`);
-  addMerge("A5", `${LAST_COL}5`);
-  // Row 6: TAHUN
-  setCell("A6", `TAHUN : ${data.tahun}`);
-  addMerge("A6", `${LAST_COL}6`);
-
-  // Row 7: Header row 1 (group names)
-  setCell("A7", "RW"); addMerge("A7", "A8");
-  setCell("B7", "RT"); addMerge("B7", "B8");
-  setCell("C7", "Jml Pddk Bln Lalu"); addMerge("C7", "E7");
-  setCell("F7", "Lahir"); addMerge("F7", "H7");
-  setCell("I7", "Mati"); addMerge("I7", "K7");
-  setCell("L7", "Datang"); addMerge("L7", "N7");
-  setCell("O7", "Pindah"); addMerge("O7", "Q7");
-  setCell("R7", "Jml.Pddk Bln ini"); addMerge("R7", "T7");
-  setCell("U7", "Kartu Keluarga"); addMerge("U7", "W7");
-  setCell("X7", "Kartu Tanda Penduduk"); addMerge("X7", "Z7");
-
-  // Row 8: Header row 2 (sub-columns)
-  const subHeaders = ["Lk", "Pr", "Jml"];
-  const subPositions = ["C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"];
-  subPositions.forEach((col, i) => {
-    setCell(`${col}8`, subHeaders[i % 3]);
-  });
-  ["U", "V", "W", "X", "Y", "Z"].forEach((col, i) => {
-    const labels = ["Wajib", "Memiliki", "Belum"];
-    setCell(`${col}8`, labels[i % 3]);
+// ===== EXPORT EXCEL — format PERSIS sheet JULI 2026 (pakai exceljs untuk styling) =====
+async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Laporan Penduduk", {
+    views: [{ showGridLines: false }],
   });
 
-  // Data rows starting from row 9
-  let rowIdx = 9;
+  // Definisi warna
+  const COLOR_HEADER = "FF4472C4";      // biru header
+  const COLOR_HEADER_TEXT = "FFFFFFFF"; // putih
+  const COLOR_SUBTOTAL = "FFD6E4F0";    // biru muda subtotal
+  const COLOR_GRANDTOTAL = "FFB4C7E7";  // biru medium grand total
+  const COLOR_AGAMA_HEADER = "FFFFF2CC"; // kuning muda
+  const COLOR_BORDER = "FF000000";      // hitam
+  const thinBorder = {
+    top: { style: "thin" as const, color: { argb: COLOR_BORDER } },
+    left: { style: "thin" as const, color: { argb: COLOR_BORDER } },
+    right: { style: "thin" as const, color: { argb: COLOR_BORDER } },
+    bottom: { style: "thin" as const, color: { argb: COLOR_BORDER } },
+  };
+
+  // Set lebar kolom: A=RW(6), B=RT(8), C-Z=7 each
+  ws.columns = [
+    { width: 6, key: "A" },   // RW
+    { width: 8, key: "B" },   // RT
+    ...Array(24).fill(0).map(() => ({ width: 7 })), // C-Z (24 cols)
+  ];
+
+  // Helper: set cell value + style
+  const setCell = (row: number, col: number, val: string | number, opts?: {
+    bold?: boolean; align?: "left" | "center" | "right"; fill?: string;
+    fontColor?: string; border?: boolean; fontSize?: number;
+  }) => {
+    const cell = ws.getCell(row, col);
+    cell.value = val;
+    cell.alignment = { horizontal: opts?.align ?? "center", vertical: "middle" };
+    cell.font = {
+      bold: opts?.bold ?? false,
+      color: { argb: opts?.fontColor ?? "FF000000" },
+      size: opts?.fontSize ?? 9,
+    };
+    if (opts?.fill) {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: opts.fill } };
+    }
+    if (opts?.border !== false) {
+      cell.border = thinBorder;
+    }
+  };
+
+  // Merge helper
+  const merge = (r1: number, c1: number, r2: number, c2: number) => {
+    ws.mergeCells(r1, c1, r2, c2);
+  };
+
+  // ===== HEADER (kop dihapus, hanya LAPORAN PENDUDUK rata kiri) =====
+  // Row 1: LAPORAN PENDUDUK (left-aligned, bold)
+  merge(1, 1, 1, 5);
+  setCell(1, 1, "LAPORAN PENDUDUK", { bold: true, align: "left", fontSize: 12, border: false });
+  // Row 2: BULAN
+  merge(2, 1, 2, 5);
+  setCell(2, 1, `BULAN : ${data.bulanLabel}`, { align: "left", border: false });
+  // Row 3: TAHUN
+  merge(3, 1, 3, 5);
+  setCell(3, 1, `TAHUN : ${data.tahun}`, { align: "left", border: false });
+
+  // Row 5-6: Table header (2 rows)
+  const HEADER_ROW1 = 5;
+  const HEADER_ROW2 = 6;
+
+  // Header row 1: group names (merged vertically with row 2 for RW & RT)
+  setCell(HEADER_ROW1, 1, "RW", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  merge(HEADER_ROW1, 1, HEADER_ROW2, 1);
+  setCell(HEADER_ROW1, 2, "RT", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  merge(HEADER_ROW1, 2, HEADER_ROW2, 2);
+
+  // 6 groups x 3 cols (C-T): Jml Pddk Bln Lalu, Lahir, Mati, Datang, Pindah, Jml.Pddk Bln ini
+  const groupNames = ["Jml Pddk Bln Lalu", "Lahir", "Mati", "Datang", "Pindah", "Jml.Pddk Bln ini"];
+  let col = 3;
+  for (const name of groupNames) {
+    merge(HEADER_ROW1, col, HEADER_ROW1, col + 2);
+    setCell(HEADER_ROW1, col, name, { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+    // Sub-headers di row 2
+    setCell(HEADER_ROW2, col, "Lk", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+    setCell(HEADER_ROW2, col + 1, "Pr", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+    setCell(HEADER_ROW2, col + 2, "Jml", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+    col += 3;
+  }
+
+  // KK (U-W): Wajib, Memiliki, Belum
+  merge(HEADER_ROW1, col, HEADER_ROW1, col + 2);
+  setCell(HEADER_ROW1, col, "Kartu Keluarga", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HEADER_ROW2, col, "Wajib", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HEADER_ROW2, col + 1, "Memiliki", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HEADER_ROW2, col + 2, "Belum", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  col += 3;
+
+  // KTP (X-Z): Wajib, Memiliki, Belum
+  merge(HEADER_ROW1, col, HEADER_ROW1, col + 2);
+  setCell(HEADER_ROW1, col, "Kartu Tanda Penduduk", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HEADER_ROW2, col, "Wajib", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HEADER_ROW2, col + 1, "Memiliki", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HEADER_ROW2, col + 2, "Belum", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+
+  // ===== DATA ROWS =====
+  let rowIdx = HEADER_ROW2 + 1; // row 7
   for (const row of data.rows) {
-    const r = rowIdx;
-    if (row.isGrandTotal) {
-      setCell(`A${r}`, ""); setCell(`B${r}`, "Jml.Ttl");
-    } else if (row.isSubtotal) {
-      setCell(`A${r}`, row.rw); setCell(`B${r}`, "Jumlah");
-    } else {
-      setCell(`A${r}`, row.rw); setCell(`B${r}`, row.rt);
-    }
+    const fill = row.isGrandTotal ? COLOR_GRANDTOTAL : row.isSubtotal ? COLOR_SUBTOTAL : undefined;
+    const bold = row.isGrandTotal || row.isSubtotal;
+    const rtLabel = row.isGrandTotal ? "Jml.Ttl" : row.isSubtotal ? "Jumlah" : row.rt;
+
+    setCell(rowIdx, 1, row.rw, { bold, fill });
+    setCell(rowIdx, 2, rtLabel, { bold, fill });
+
     const groups = [row.jmlPddkBlnLalu, row.lahir, row.mati, row.datang, row.pindah, row.jmlPddkBlnIni];
-    let colIdx = 2; // C
+    let c = 3;
     for (const g of groups) {
-      setCell(`${XLSX.utils.encode_cell({ r: r - 1, c: colIdx })}`, g.lk);
-      setCell(`${XLSX.utils.encode_cell({ r: r - 1, c: colIdx + 1 })}`, g.pr);
-      setCell(`${XLSX.utils.encode_cell({ r: r - 1, c: colIdx + 2 })}`, g.jml);
-      colIdx += 3;
+      setCell(rowIdx, c, g.lk, { bold, fill });
+      setCell(rowIdx, c + 1, g.pr, { bold, fill });
+      setCell(rowIdx, c + 2, g.jml, { bold, fill });
+      c += 3;
     }
-    setCell(`${XLSX.utils.encode_cell({ r: r - 1, c: 20 })}`, row.kk.wajib);
-    setCell(`${XLSX.utils.encode_cell({ r: r - 1, c: 21 })}`, row.kk.memiliki);
-    setCell(`${XLSX.utils.encode_cell({ r: r - 1, c: 22 })}`, row.kk.belum);
-    setCell(`${XLSX.utils.encode_cell({ r: r - 1, c: 23 })}`, row.ktp.wajib);
-    setCell(`${XLSX.utils.encode_cell({ r: r - 1, c: 24 })}`, row.ktp.memiliki);
-    setCell(`${XLSX.utils.encode_cell({ r: r - 1, c: 25 })}`, row.ktp.belum);
+    setCell(rowIdx, c, row.kk.wajib, { bold, fill });
+    setCell(rowIdx, c + 1, row.kk.memiliki, { bold, fill });
+    setCell(rowIdx, c + 2, row.kk.belum, { bold, fill });
+    c += 3;
+    setCell(rowIdx, c, row.ktp.wajib, { bold, fill });
+    setCell(rowIdx, c + 1, row.ktp.memiliki, { bold, fill });
+    setCell(rowIdx, c + 2, row.ktp.belum, { bold, fill });
     rowIdx++;
   }
 
-  // Signature row (right side)
+  // ===== SIGNATURE (right side, col U=21) =====
   const sigRow = rowIdx + 1;
-  setCell(`U${sigRow}`, `SUKAMAJU, ${data.tanggalCetak}`);
-  setCell(`U${sigRow + 1}`, "KEPALA DESA SUKAMAJU");
-  setCell(`U${sigRow + 3}`, NAMA_KEPALA_DESA);
+  setCell(sigRow, 21, `SUKAMAJU, ${data.tanggalCetak}`, { align: "center", border: false });
+  setCell(sigRow + 1, 21, "KEPALA DESA SUKAMAJU", { align: "center", border: false });
+  setCell(sigRow + 3, 21, NAMA_KEPALA_DESA, { align: "center", bold: true, border: false });
 
-  // Penganut agama (left side)
-  const agamaStartRow = sigRow;
-  setCell(`C${agamaStartRow}`, "PENGANUT GOLONGAN AGAMA");
-  // Header agama: dinamis per agama yang ada di DB, max 4 kolom group (3 cols each)
-  const agamaToShow = data.agamaRows.slice(0, 4); // maks 4 agama untuk fit header
-  // Tambah kolom JUMLAH di akhir
+  // ===== PENGANUT GOLONGAN AGAMA (left side) =====
+  const agRow = sigRow;
+  merge(agRow, 3, agRow, 5);
+  setCell(agRow, 3, "PENGANUT GOLONGAN AGAMA", { bold: true, fill: COLOR_AGAMA_HEADER, align: "left" });
+
+  const agamaToShow = data.agamaRows.slice(0, 4);
   const agamaHeader = [...agamaToShow.map(a => a.label), "JUMLAH"];
-  let agCol = 2; // start at C
+  let agCol = 3;
+  // Header row
   for (let i = 0; i < agamaHeader.length; i++) {
-    const colStart = XLSX.utils.encode_cell({ r: agamaStartRow, c: agCol });
-    const colEnd = XLSX.utils.encode_cell({ r: agamaStartRow, c: agCol + 2 });
-    setCell(colStart, agamaHeader[i]);
-    addMerge(colStart, colEnd);
-    // Sub-header L/P/JML
-    setCell(XLSX.utils.encode_cell({ r: agamaStartRow + 1, c: agCol }), "L");
-    setCell(XLSX.utils.encode_cell({ r: agamaStartRow + 1, c: agCol + 1 }), "P");
-    setCell(XLSX.utils.encode_cell({ r: agamaStartRow + 1, c: agCol + 2 }), "JML");
+    merge(agRow + 1, agCol, agRow + 1, agCol + 2);
+    setCell(agRow + 1, agCol, agamaHeader[i], { bold: true, fill: COLOR_AGAMA_HEADER });
+    setCell(agRow + 2, agCol, "L", { bold: true, fill: COLOR_AGAMA_HEADER });
+    setCell(agRow + 2, agCol + 1, "P", { bold: true, fill: COLOR_AGAMA_HEADER });
+    setCell(agRow + 2, agCol + 2, "JML", { bold: true, fill: COLOR_AGAMA_HEADER });
     agCol += 3;
   }
-  // Data agama row
-  agCol = 2;
+  // Data row
+  agCol = 3;
   for (let i = 0; i < agamaToShow.length; i++) {
     const a = agamaToShow[i];
-    setCell(XLSX.utils.encode_cell({ r: agamaStartRow + 2, c: agCol }), a.lk);
-    setCell(XLSX.utils.encode_cell({ r: agamaStartRow + 2, c: agCol + 1 }), a.pr);
-    setCell(XLSX.utils.encode_cell({ r: agamaStartRow + 2, c: agCol + 2 }), a.jml);
+    setCell(agRow + 3, agCol, a.lk);
+    setCell(agRow + 3, agCol + 1, a.pr);
+    setCell(agRow + 3, agCol + 2, a.jml);
     agCol += 3;
   }
   // JUMLAH total
-  setCell(XLSX.utils.encode_cell({ r: agamaStartRow + 2, c: agCol }), data.agamaTotal.lk);
-  setCell(XLSX.utils.encode_cell({ r: agamaStartRow + 2, c: agCol + 1 }), data.agamaTotal.pr);
-  setCell(XLSX.utils.encode_cell({ r: agamaStartRow + 2, c: agCol + 2 }), data.agamaTotal.jml);
+  setCell(agRow + 3, agCol, data.agamaTotal.lk, { bold: true });
+  setCell(agRow + 3, agCol + 1, data.agamaTotal.pr, { bold: true });
+  setCell(agRow + 3, agCol + 2, data.agamaTotal.jml, { bold: true });
 
-  // Set column widths
-  ws["!cols"] = [
-    { wch: 6 }, { wch: 8 }, // RW, RT
-    ...Array(24).fill({ wch: 6 }), // C-Z
-  ];
-  ws["!ref"] = `A1:${LAST_COL}${agamaStartRow + 4}`;
+  // Set row heights for header
+  ws.getRow(HEADER_ROW1).height = 20;
+  ws.getRow(HEADER_ROW2).height = 18;
 
-  XLSX.utils.book_append_sheet(wb, ws, "Laporan Penduduk");
-  return XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+  // Write to base64
+  const buffer = await wb.xlsx.writeBuffer();
+  return Buffer.from(buffer).toString("base64");
 }
 
 // ===== SERVER ACTION EXPORTS =====
@@ -442,7 +483,7 @@ export async function lampidBulananAction(operation: string, payload?: unknown) 
       const b = bulan ?? now.getMonth() + 1;
       const t = tahun ?? now.getFullYear();
       const data = await generateLampidBulananData(b, t);
-      const base64 = buildExcelBulanan(data);
+      const base64 = await buildExcelBulanan(data);
       return {
         status: 200,
         data: base64,
