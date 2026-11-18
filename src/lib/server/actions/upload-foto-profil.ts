@@ -13,7 +13,7 @@ import { randomUUID } from "crypto";
  *   - batas ukuran (3 MB),
  *   - pathname acak (randomUUID) supaya tidak bisa ditebak/dikolisi.
  *
- * Token: BLOB_READ_WRITE_TOKEN (sama seperti upload foto struktur).
+ * Token: BLOB_PUBLIC_READ_WRITE_TOKEN (fallback: BLOB_READ_WRITE_TOKEN) (sama seperti upload foto struktur).
  */
 export const uploadFotoProfilAction = async (formData: FormData) => {
   try {
@@ -33,7 +33,7 @@ export const uploadFotoProfilAction = async (formData: FormData) => {
     const blob = await put(pathname, file, {
       access: "public",
       contentType: file.type,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      token: process.env.BLOB_PUBLIC_READ_WRITE_TOKEN ?? process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     return { url: blob.url };
