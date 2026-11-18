@@ -117,16 +117,14 @@ async function buildExcelUsia(data: LampidUsiaData): Promise<string> {
     bottom: { style: "thin" as const, color: { argb: COLOR_BORDER } },
   };
 
-  // Set lebar kolom
-  ws.columns = [
-    { width: 5, key: "A" },   // No
-    { width: 24, key: "B" },  // Kelompok Umur
-    { width: 14, key: "C" },  // Laki-laki
-    { width: 14, key: "D" },  // Perempuan
-    { width: 12, key: "E" },  // Jumlah
-    { width: 14, key: "F" },  // Keterangan
-    { width: 3, key: "G" },   // margin
-  ];
+  // Set lebar kolom individually (match Excel: col A kosong, B=No, C=Kelompok Umur, D-G=data)
+  ws.getColumn(1).width = 3;   // A: margin (kosong di Excel)
+  ws.getColumn(2).width = 5;   // B: No.
+  ws.getColumn(3).width = 24;  // C: Kelompok Umur
+  ws.getColumn(4).width = 14;  // D: Laki-laki
+  ws.getColumn(5).width = 14;  // E: Perempuan
+  ws.getColumn(6).width = 12;  // F: Jumlah
+  ws.getColumn(7).width = 14;  // G: Keterangan
 
   const setCell = (row: number, col: number, val: string | number, opts?: {
     bold?: boolean; align?: "left" | "center" | "right"; fill?: string;
@@ -178,37 +176,40 @@ async function buildExcelUsia(data: LampidUsiaData): Promise<string> {
   setCell(7, 2, `BULAN : ${data.bulanLabel}`, { align: "left", border: false });
   setCell(8, 2, `TAHUN : ${data.tahun}`, { align: "left", border: false });
 
-  // Table header row 9
+  // Table header row 9 — mulai col 2 (B) supaya col A kosong (match Excel sheet)
   const HDR = 9;
-  setCell(HDR, 1, "No.", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
-  setCell(HDR, 2, "Kelompok Umur", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT, align: "left" });
-  setCell(HDR, 3, "Laki-laki", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
-  setCell(HDR, 4, "Perempuan", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
-  setCell(HDR, 5, "Jumlah", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
-  setCell(HDR, 6, "Keterangan", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HDR, 2, "No.", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HDR, 3, "Kelompok Umur", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT, align: "left" });
+  setCell(HDR, 4, "Laki-laki", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HDR, 5, "Perempuan", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HDR, 6, "Jumlah", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
+  setCell(HDR, 7, "Keterangan", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
 
-  // Data rows
+  // Data rows — mulai col 2 (B)
   let r = HDR + 1;
   for (const row of data.rows) {
-    setCell(r, 1, row.no);
-    setCell(r, 2, row.label, { align: "left" });
-    setCell(r, 3, row.lk);
-    setCell(r, 4, row.pr);
-    setCell(r, 5, row.jml);
-    setCell(r, 6, row.keterangan);
+    setCell(r, 2, row.no);
+    setCell(r, 3, row.label, { align: "left" });
+    setCell(r, 4, row.lk);
+    setCell(r, 5, row.pr);
+    setCell(r, 6, row.jml);
+    setCell(r, 7, row.keterangan);
     r++;
   }
-  // Jumlah row (bold + colored)
-  merge(r, 1, r, 2);
-  setCell(r, 1, "Jumlah", { bold: true, fill: COLOR_TOTAL, align: "center" });
-  setCell(r, 3, data.total.lk, { bold: true, fill: COLOR_TOTAL });
-  setCell(r, 4, data.total.pr, { bold: true, fill: COLOR_TOTAL });
-  setCell(r, 5, data.total.jml, { bold: true, fill: COLOR_TOTAL });
-  setCell(r, 6, "100%", { bold: true, fill: COLOR_TOTAL });
+  // Jumlah row — merge cols 2-3 (B-C), data mulai col 4 (D)
+  merge(r, 2, r, 3);
+  setCell(r, 2, "Jumlah", { bold: true, fill: COLOR_TOTAL, align: "center" });
+  setCell(r, 4, data.total.lk, { bold: true, fill: COLOR_TOTAL });
+  setCell(r, 5, data.total.pr, { bold: true, fill: COLOR_TOTAL });
+  setCell(r, 6, data.total.jml, { bold: true, fill: COLOR_TOTAL });
+  setCell(r, 7, "100%", { bold: true, fill: COLOR_TOTAL });
 
-  // Signature (right side, col E=5 F=6)
+  // Signature (merge cols 5-6 supaya text cukup lebar)
+  merge(r + 2, 5, r + 2, 7);
   setCell(r + 2, 5, `Sukamaju, ${data.tanggalCetak}`, { align: "center", border: false });
+  merge(r + 3, 5, r + 3, 7);
   setCell(r + 3, 5, "Kepala Desa Sukamaju", { align: "center", border: false });
+  merge(r + 5, 5, r + 5, 7);
   setCell(r + 5, 5, NAMA_KEPALA_DESA, { align: "center", bold: true, border: false });
 
   // Row heights

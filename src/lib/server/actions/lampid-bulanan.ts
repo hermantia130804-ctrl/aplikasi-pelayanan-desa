@@ -14,6 +14,7 @@ const BULAN_NAMES = [
 ];
 
 const NAMA_KEPALA_DESA = "Hj. CUCUM RATNA SUMINAR";
+const ALAMAT_DESA = "Jl. KH. Abd. Hamid No.36 Cibungbulang Bogor – Kode pos (16630)";
 
 const getSession = async () => {
   const s = await findCurrentSessionService();
