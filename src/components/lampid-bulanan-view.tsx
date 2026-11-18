@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -122,17 +122,24 @@ export default function LampidBulananView() {
     win.document.write(`
       <html><head><title>Laporan Lampid Bulanan ${data.bulanLabel} ${data.tahun}</title>
       <style>
-        @page { size: A4 landscape; margin: 1cm; }
-        body { font-family: Arial, sans-serif; font-size: 9px; color: #000; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #000; padding: 2px 4px; text-align: center; }
-        th { background: #f0f0f0; font-weight: bold; }
-        .text-center { text-align: center; }
-        .header-line { text-align: center; font-weight: bold; }
-        .signature { text-align: center; margin-top: 30px; }
-        .grand-total { font-weight: bold; background: #e0e0e0; }
-        .subtotal { font-weight: bold; background: #f5f5f5; }
-        img.logo { width: 60px; height: 60px; object-fit: contain; }
+        @page { size: A4 landscape; margin: 0.5cm; }
+        body { font-family: Arial, sans-serif; font-size: 8px; color: #000; margin: 8px; }
+        table.lampid { border-collapse: collapse; width: 100%; table-layout: fixed; }
+        table.lampid th, table.lampid td { border: 1px solid #000; padding: 2px; text-align: center; overflow: hidden; }
+        table.lampid th { background: #f0f0f0; font-weight: bold; }
+        table.lampid td.rw-cell, table.lampid td.rt-cell { font-weight: bold; }
+        table.lampid tr.subtotal td { background: #f5f5f5; font-weight: bold; }
+        table.lampid tr.grand-total td { background: #e0e0e0; font-weight: bold; }
+        .header-block { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+        .header-block img { width: 60px; height: 60px; object-fit: contain; }
+        .header-block .header-text { font-size: 11px; text-align: left; }
+        .header-block .header-text .title { font-weight: bold; font-size: 13px; }
+        .signature { text-align: center; font-size: 10px; width: 240px; }
+        .signature .name { font-weight: bold; text-decoration: underline; margin-top: 50px; }
+        .agama-section { font-size: 9px; }
+        .agama-section table { border-collapse: collapse; }
+        .agama-section th, .agama-section td { border: 1px solid #000; padding: 2px 4px; text-align: center; }
+        .agama-section th { background: #fff2cc; font-weight: bold; }
       </style></head><body>${printContents}</body></html>
     `);
     win.document.close();
@@ -247,7 +254,7 @@ export default function LampidBulananView() {
           <Card>
             <CardContent className="p-4">
               <div id="print-area" className="overflow-x-auto">
-                {/* Header: logo kiri + LAPORAN PENDUDUK/BULAN/TAHUN rata kiri (kop dihapus) */}
+                {/* Header: logo kiri + LAPORAN PENDUDUK/BULAN/TAHUN (kop tetap) */}
                 <div className="flex items-start gap-4 mb-3">
                   <img src={logoKabBogorBase64} alt="Logo Kab. Bogor" className="h-20 w-20 object-contain flex-shrink-0" />
                   <div className="text-left">
@@ -257,55 +264,85 @@ export default function LampidBulananView() {
                   </div>
                 </div>
 
-                {/* Tabel utama */}
-                <table className="w-full text-[10px] border-collapse">
+                {/* Tabel utama — layout sama persis dengan sheet Excel JULI 2026
+                    Struktur:
+                      - RW, RT (rowSpan=2)
+                      - 6 grup × 3 sub-kolom (Lk/Pr/Jml): Jml Pddk Bln Lalu, Lahir, Mati, Datang, Pindah, Jml.Pddk Bln ini
+                      - 2 grup × 3 sub-kolom (Wajib/Memiliki/Belum): Kartu Keluarga, Kartu Tanda Penduduk
+                    Total kolom: 2 + (6×3) + (2×3) = 26 */}
+                <table className="lampid w-full text-[10px] border-collapse" style={{ tableLayout: "fixed" }}>
+                  <colgroup>
+                    <col style={{ width: "4%" }} /> {/* RW */}
+                    <col style={{ width: "5%" }} /> {/* RT */}
+                    {/* 6 grup × 3 kolom = 18 kolom @ ~3.5% each */}
+                    {Array.from({ length: 18 }).map((_, i) => (
+                      <col key={`c18-${i}`} style={{ width: "3.5%" }} />
+                    ))}
+                    {/* 2 grup × 3 kolom = 6 kolom @ ~5% each */}
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <col key={`c6-${i}`} style={{ width: "5%" }} />
+                    ))}
+                  </colgroup>
                   <thead>
+                    {/* Baris header 1: nama grup dengan colSpan=3, RW & RT dengan rowSpan=2 */}
                     <tr className="bg-muted">
-                      <th rowSpan={2} className="border p-1">RW</th>
-                      <th rowSpan={2} className="border p-1">RT</th>
-                      <th colSpan={3} className="border p-1">Jml Pddk Bln Lalu</th>
-                      <th colSpan={3} className="border p-1">Lahir</th>
-                      <th colSpan={3} className="border p-1">Mati</th>
-                      <th colSpan={3} className="border p-1">Datang</th>
-                      <th colSpan={3} className="border p-1">Pindah</th>
-                      <th colSpan={3} className="border p-1">Jml.Pddk Bln ini</th>
-                      <th colSpan={3} className="border p-1">Kartu Keluarga</th>
-                      <th colSpan={3} className="border p-1">Kartu Tanda Penduduk</th>
+                      <th rowSpan={2} className="border p-1 text-center font-bold">RW</th>
+                      <th rowSpan={2} className="border p-1 text-center font-bold">RT</th>
+                      <th colSpan={3} className="border p-1 text-center font-bold">Jml Pddk Bln Lalu</th>
+                      <th colSpan={3} className="border p-1 text-center font-bold">Lahir</th>
+                      <th colSpan={3} className="border p-1 text-center font-bold">Mati</th>
+                      <th colSpan={3} className="border p-1 text-center font-bold">Datang</th>
+                      <th colSpan={3} className="border p-1 text-center font-bold">Pindah</th>
+                      <th colSpan={3} className="border p-1 text-center font-bold">Jml.Pddk Bln ini</th>
+                      <th colSpan={3} className="border p-1 text-center font-bold">Kartu Keluarga</th>
+                      <th colSpan={3} className="border p-1 text-center font-bold">Kartu Tanda Penduduk</th>
                     </tr>
+                    {/* Baris header 2: sub-kolom per grup
+                        - 6 grup pertama: Lk, Pr, Jml (total 18 cells)
+                        - 2 grup terakhir: Wajib, Memiliki, Belum (total 6 cells)
+                        Total = 24 cells (sesuai 24 effective kolom setelah RW+RT di rowSpan) */}
                     <tr className="bg-muted">
-                      {Array(8).fill(0).map((_, i) => (
-                        <>
-                          <th key={`l${i}`} className="border p-1">Lk</th>
-                          <th key={`p${i}`} className="border p-1">Pr</th>
-                          <th key={`j${i}`} className="border p-1">Jml</th>
-                        </>
+                      {/* 6 grup × Lk/Pr/Jml = 18 cells */}
+                      {Array.from({ length: 6 }).map((_, gi) => (
+                        <Fragment key={`hdr-grp-${gi}`}>
+                          <th className="border p-1 text-center font-bold">Lk</th>
+                          <th className="border p-1 text-center font-bold">Pr</th>
+                          <th className="border p-1 text-center font-bold">Jml</th>
+                        </Fragment>
                       ))}
-                      <th className="border p-1">Wajib</th>
-                      <th className="border p-1">Memiliki</th>
-                      <th className="border p-1">Belum</th>
-                      <th className="border p-1">Wajib</th>
-                      <th className="border p-1">Memiliki</th>
-                      <th className="border p-1">Belum</th>
+                      {/* KK: Wajib, Memiliki, Belum */}
+                      <th className="border p-1 text-center font-bold">Wajib</th>
+                      <th className="border p-1 text-center font-bold">Memiliki</th>
+                      <th className="border p-1 text-center font-bold">Belum</th>
+                      {/* KTP: Wajib, Memiliki, Belum */}
+                      <th className="border p-1 text-center font-bold">Wajib</th>
+                      <th className="border p-1 text-center font-bold">Memiliki</th>
+                      <th className="border p-1 text-center font-bold">Belum</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.rows.map((row, idx) => {
                       const cls = row.isGrandTotal ? "grand-total" : row.isSubtotal ? "subtotal" : "";
                       const rtLabel = row.isGrandTotal ? "Jml.Ttl" : row.isSubtotal ? "Jumlah" : row.rt;
+                      const groups = [row.jmlPddkBlnLalu, row.lahir, row.mati, row.datang, row.pindah, row.jmlPddkBlnIni];
                       return (
                         <tr key={idx} className={cls}>
-                          <td className="border p-1 text-center">{row.rw}</td>
+                          {/* RW hanya ditampilkan jika row.rw !== "" (sudah di-set backend hanya di baris pertama grup RW) */}
+                          <td className="border p-1 text-center font-bold">{row.rw || ""}</td>
                           <td className="border p-1 text-center font-medium">{rtLabel}</td>
-                          {[row.jmlPddkBlnLalu, row.lahir, row.mati, row.datang, row.pindah, row.jmlPddkBlnIni].map((g, gi) => (
-                            <>
-                              <td key={`lk${gi}`} className="border p-1 text-center">{g.lk}</td>
-                              <td key={`pr${gi}`} className="border p-1 text-center">{g.pr}</td>
-                              <td key={`jm${gi}`} className="border p-1 text-center">{g.jml}</td>
-                            </>
+                          {/* 6 grup × Lk/Pr/Jml */}
+                          {groups.map((g, gi) => (
+                            <Fragment key={`body-grp-${gi}`}>
+                              <td className="border p-1 text-center">{g.lk}</td>
+                              <td className="border p-1 text-center">{g.pr}</td>
+                              <td className="border p-1 text-center">{g.jml}</td>
+                            </Fragment>
                           ))}
+                          {/* KK: Wajib, Memiliki, Belum */}
                           <td className="border p-1 text-center">{row.kk.wajib}</td>
                           <td className="border p-1 text-center">{row.kk.memiliki}</td>
                           <td className="border p-1 text-center">{row.kk.belum}</td>
+                          {/* KTP: Wajib, Memiliki, Belum */}
                           <td className="border p-1 text-center">{row.ktp.wajib}</td>
                           <td className="border p-1 text-center">{row.ktp.memiliki}</td>
                           <td className="border p-1 text-center">{row.ktp.belum}</td>
@@ -315,40 +352,40 @@ export default function LampidBulananView() {
                   </tbody>
                 </table>
 
-                {/* Signature + Agama section */}
-                <div className="flex justify-between mt-6 gap-6">
-                  <div className="flex-1">
+                {/* Signature + Penganut Agama */}
+                <div className="flex justify-between mt-6 gap-6 flex-wrap">
+                  <div className="flex-1 min-w-[400px]">
                     <p className="font-bold text-xs mb-2">PENGANUT GOLONGAN AGAMA</p>
                     <table className="text-[10px] border-collapse">
                       <thead>
                         <tr>
                           {data.agamaRows.slice(0, 4).map(a => (
-                            <th key={a.label} colSpan={3} className="border p-1 text-center">{a.label}</th>
+                            <th key={`ag-${a.label}`} colSpan={3} className="border p-1 text-center bg-muted/50 font-bold">{a.label}</th>
                           ))}
-                          <th colSpan={3} className="border p-1 text-center">JUMLAH</th>
+                          <th colSpan={3} className="border p-1 text-center bg-muted/50 font-bold">JUMLAH</th>
                         </tr>
                         <tr>
                           {Array.from({ length: Math.min(5, data.agamaRows.length + 1) }).map((_, i) => (
-                            <>
-                              <th key={`l${i}`} className="border p-1">L</th>
-                              <th key={`p${i}`} className="border p-1">P</th>
-                              <th key={`j${i}`} className="border p-1">JML</th>
-                            </>
+                            <Fragment key={`ag-sub-${i}`}>
+                              <th className="border p-1 text-center bg-muted/50 font-bold">L</th>
+                              <th className="border p-1 text-center bg-muted/50 font-bold">P</th>
+                              <th className="border p-1 text-center bg-muted/50 font-bold">JML</th>
+                            </Fragment>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
                           {data.agamaRows.slice(0, 4).map(a => (
-                            <>
-                              <td key={`l${a.label}`} className="border p-1 text-center">{a.lk}</td>
-                              <td key={`p${a.label}`} className="border p-1 text-center">{a.pr}</td>
-                              <td key={`j${a.label}`} className="border p-1 text-center">{a.jml}</td>
-                            </>
+                            <Fragment key={`ag-val-${a.label}`}>
+                              <td className="border p-1 text-center">{a.lk}</td>
+                              <td className="border p-1 text-center">{a.pr}</td>
+                              <td className="border p-1 text-center">{a.jml}</td>
+                            </Fragment>
                           ))}
-                          <td className="border p-1 text-center">{data.agamaTotal.lk}</td>
-                          <td className="border p-1 text-center">{data.agamaTotal.pr}</td>
-                          <td className="border p-1 text-center">{data.agamaTotal.jml}</td>
+                          <td className="border p-1 text-center font-bold">{data.agamaTotal.lk}</td>
+                          <td className="border p-1 text-center font-bold">{data.agamaTotal.pr}</td>
+                          <td className="border p-1 text-center font-bold">{data.agamaTotal.jml}</td>
                         </tr>
                       </tbody>
                     </table>

@@ -14,7 +14,6 @@ const BULAN_NAMES = [
 ];
 
 const NAMA_KEPALA_DESA = "Hj. CUCUM RATNA SUMINAR";
-const ALAMAT_DESA = "Jl. KH. Abd. Hamid No.36 Cibungbulang Bogor – Kode pos (16630)";
 
 const getSession = async () => {
   const s = await findCurrentSessionService();
@@ -22,28 +21,28 @@ const getSession = async () => {
   return s;
 };
 
-// Tipe data baris laporan
+// ===== Tipe data =====
+interface Triplet { lk: number; pr: number; jml: number; }
+interface TripleKK { wajib: number; memiliki: number; belum: number; }
+
 interface RowData {
+  // RW hanya diisi pada baris pertama setiap grup RW; baris RT kedua dst. dan baris "Jumlah" dikosongkan
   rw: string;
+  // "Jumlah" untuk subtotal per RW; "Jml.Ttl" untuk grand total; nomor RT untuk baris biasa
   rt: string;
   isSubtotal: boolean;
   isGrandTotal: boolean;
-  jmlPddkBlnLalu: { lk: number; pr: number; jml: number };
-  lahir: { lk: number; pr: number; jml: number };
-  mati: { lk: number; pr: number; jml: number };
-  datang: { lk: number; pr: number; jml: number };
-  pindah: { lk: number; pr: number; jml: number };
-  jmlPddkBlnIni: { lk: number; pr: number; jml: number };
-  kk: { wajib: number; memiliki: number; belum: number };
-  ktp: { wajib: number; memiliki: number; belum: number };
+  jmlPddkBlnLalu: Triplet;
+  lahir: Triplet;
+  mati: Triplet;
+  datang: Triplet;
+  pindah: Triplet;
+  jmlPddkBlnIni: Triplet;
+  kk: TripleKK;
+  ktp: TripleKK;
 }
 
-interface AgamaRow {
-  label: string;
-  lk: number;
-  pr: number;
-  jml: number;
-}
+interface AgamaRow { label: string; lk: number; pr: number; jml: number; }
 
 interface LampidBulananData {
   bulan: number;
@@ -52,7 +51,7 @@ interface LampidBulananData {
   tanggalCetak: string;
   rows: RowData[];
   agamaRows: AgamaRow[];
-  agamaTotal: { lk: number; pr: number; jml: number };
+  agamaTotal: Triplet;
 }
 
 // Hitung umur pada tanggal referensi
@@ -63,20 +62,38 @@ function hitungUmurTahun(tanggalLahir: Date, refDate: Date): number {
   return umur < 0 ? 0 : umur;
 }
 
-// Generate data laporan bulanan dari DB
+// Parse "001"/"01"/"1" ke number untuk sorting numerik ascending
+function parseNo(s: string | null | undefined): number {
+  if (!s) return 0;
+  const n = parseInt(s.replace(/^0+/, "") || "0", 10);
+  return isNaN(n) ? 0 : n;
+}
+
+// Normalisasi jenisKelamin: "LAKI-LAKI"/"L"/"LAKI_LAKI" → true (laki-laki)
+function isLakiLaki(jk: string | null | undefined): boolean {
+  const u = (jk || "").toUpperCase().trim();
+  return u === "LAKI-LAKI" || u === "LAKI_LAKI" || u === "L" || u === "LAKILAKI";
+}
+
+// ===== Generate data laporan bulanan dari DB =====
+// Logika perhitungan sesuai Excel JULI 2026:
+//   - bln_ini  = snapshot populasi pada akhir bulan terpilih (endDate)
+//   - bln_lalu = snapshot populasi pada akhir bulan sebelumnya (prevEndDate)
+//   - lahir/mati/datang/pindah = kejadian yang terjadi di bulan terpilih saja
+//   - urutan: RW ascending numeric, lalu RT ascending numeric
+//   - RW hanya ditampilkan di baris pertama grup RW (baris RT kedua dst. dan "Jumlah" dikosongkan)
 async function generateLampidBulananData(bulan: number, tahun: number): Promise<LampidBulananData> {
-  // Periode bulan terpilih
-  const startDate = new Date(tahun, bulan - 1, 1);
-  const endDate = new Date(tahun, bulan, 0, 23, 59, 59);
-  const refDate = new Date(tahun, bulan - 1, 15); // tengah bulan untuk hitung umur
+  // Periode
+  const startDate = new Date(tahun, bulan - 1, 1);                          // 1 hari pertama bulan terpilih
+  const endDate = new Date(tahun, bulan, 0, 23, 59, 59);                    // akhir hari terakhir bulan terpilih
+  const prevEndDate = new Date(tahun, bulan - 1, 0, 23, 59, 59);            // akhir hari terakhir bulan sebelumnya
+  const refDate = new Date(tahun, bulan - 1, 15);                           // tengah bulan untuk hitung umur KTP
 
-  // Fetch semua DataWarga (akumulasi semua RT)
+  // Fetch data
   const allWarga = await prisma.dataWarga.findMany();
-  const allKejadian = await prisma.kejadian.findMany({
-    where: { tanggal: { gte: startDate, lte: endDate } },
-  });
+  const allKejadian = await prisma.kejadian.findMany();
 
-  // Build map noKk -> (noRt, noRw) untuk atribusi kejadian ke RT
+  // Build lookup noKk -> { noRt, noRw } untuk atribusi kejadian ke RT/RW
   const kkToRtMap = new Map<string, { noRt: string; noRw: string }>();
   for (const w of allWarga) {
     if (w.noKk && w.noRt && w.noRw) {
@@ -84,80 +101,180 @@ async function generateLampidBulananData(bulan: number, tahun: number): Promise<
     }
   }
 
-  // Dapatkan daftar unik (noRt, noRw)
+  // Build lookup NIK -> jenisKelamin (prioritas: DataWarga, fallback Kejadian)
+  const nikToJenisKelamin = new Map<string, string>();
+  for (const w of allWarga) {
+    if (w.nik) nikToJenisKelamin.set(w.nik, w.jenisKelamin);
+  }
+  for (const k of allKejadian) {
+    if (k.nik && k.jenisKelamin && !nikToJenisKelamin.has(k.nik)) {
+      nikToJenisKelamin.set(k.nik, k.jenisKelamin);
+    }
+  }
+
+  // Build lookup kejadian per NIK (sorted asc by tanggal)
+  const kejadianByNik = new Map<string, typeof allKejadian>();
+  for (const k of allKejadian) {
+    if (!k.nik) continue;
+    if (!kejadianByNik.has(k.nik)) kejadianByNik.set(k.nik, []);
+    kejadianByNik.get(k.nik)!.push(k);
+  }
+  for (const arr of kejadianByNik.values()) {
+    arr.sort((a, b) => a.tanggal.getTime() - b.tanggal.getTime());
+  }
+
+  // Set NIK yang ada di DB saat ini (untuk cek "data lama")
+  const nikInCurrentDb = new Set<string>();
+  for (const w of allWarga) {
+    if (w.nik) nikInCurrentDb.add(w.nik);
+  }
+
+  // Helper: tentukan apakah warga (by NIK) ada di snapshot pada snapshotDate
+  // Berdasarkan riwayat kejadian: LAHIR/DATANG = masuk, MATI/PINDAH = keluar
+  function isAliveAt(nik: string, snapshotDate: Date): boolean {
+    const kejs = kejadianByNik.get(nik) || [];
+    let alive = false;
+    let hasLahirDatang = false;
+    for (const k of kejs) {
+      if (k.tanggal > snapshotDate) break;
+      const jk = (k.jenisKejadian || "").toUpperCase();
+      if (jk === "LAHIR" || jk === "DATANG") {
+        alive = true;
+        hasLahirDatang = true;
+      } else if (jk === "MATI" || jk === "PINDAH") {
+        alive = false;
+      }
+    }
+    // Jika warga ada di DB saat ini DAN tidak ada kejadian LAHIR/DATANG sama sekali
+    // → asumsi data lama (sudah ada sebelum snapshotDate)
+    if (nikInCurrentDb.has(nik) && !hasLahirDatang) {
+      const matiPindahSebelumSnapshot = kejs.some(k => {
+        const jk = (k.jenisKejadian || "").toUpperCase();
+        return (jk === "MATI" || jk === "PINDAH") && k.tanggal <= snapshotDate;
+      });
+      if (!matiPindahSebelumSnapshot) alive = true;
+    }
+    return alive;
+  }
+
+  // ===== Dapatkan daftar unik (noRt, noRw) =====
+  // Termasuk RT yang warganya sudah dihapus dari DB (untuk kompatibilitas kejadian lama via kkToRtMap)
   const rtSet = new Set<string>();
   for (const w of allWarga) {
     if (w.noRt && w.noRw) rtSet.add(`${w.noRt}|${w.noRw}`);
   }
+  for (const rt of kkToRtMap.values()) {
+    rtSet.add(`${rt.noRt}|${rt.noRw}`);
+  }
   const rtList = Array.from(rtSet).map(s => {
     const [noRt, noRw] = s.split("|");
     return { noRt, noRw };
-  }).sort((a, b) => a.noRw.localeCompare(b.noRw) || a.noRt.localeCompare(b.noRt));
+  }).sort((a, b) => {
+    // Urutkan RW ascending numeric, lalu RT ascending numeric
+    const rwA = parseNo(a.noRw);
+    const rwB = parseNo(b.noRw);
+    if (rwA !== rwB) return rwA - rwB;
+    return parseNo(a.noRt) - parseNo(b.noRt);
+  });
 
-  // Untuk tiap RT, hitung metrik
+  // ===== Hitung per RT =====
   const rows: RowData[] = [];
-  // Subtotal per RW
   const rwSubtotals = new Map<string, RowData>();
+  let lastRw = "";
 
   for (const { noRt, noRw } of rtList) {
+    // Warga di RT ini (dari DB saat ini)
     const wargaRT = allWarga.filter(w => w.noRt === noRt && w.noRw === noRw);
 
-    // KK milik RT ini (untuk lookup kejadian)
-    const kkSetRT = new Set(wargaRT.map(w => w.noKk).filter(Boolean));
+    // KK set untuk RT ini (dari warga current + dari kkToRtMap)
+    const kkSetRT = new Set<string>();
+    for (const w of wargaRT) {
+      if (w.noKk) kkSetRT.add(w.noKk);
+    }
+    for (const [kk, rt] of kkToRtMap.entries()) {
+      if (rt.noRt === noRt && rt.noRw === noRw) kkSetRT.add(kk);
+    }
 
-    // Kejadian bulan ini untuk RT ini (via KK match)
-    const kejadianRT = allKejadian.filter(k => k.noKk && kkSetRT.has(k.noKk));
+    // NIK yang pernah ada di RT ini (current + historis via Kejadian)
+    const nikHistorisRT = new Set<string>();
+    for (const w of wargaRT) {
+      if (w.nik) nikHistorisRT.add(w.nik);
+    }
+    for (const k of allKejadian) {
+      if (k.nik && k.noKk && kkSetRT.has(k.noKk)) {
+        nikHistorisRT.add(k.nik);
+      }
+    }
 
-    const lahir = { lk: 0, pr: 0, jml: 0 };
-    const mati = { lk: 0, pr: 0, jml: 0 };
-    const datang = { lk: 0, pr: 0, jml: 0 };
-    const pindah = { lk: 0, pr: 0, jml: 0 };
+    // Hitung bln_ini & bln_lalu berdasarkan isAliveAt
+    let lkBlnIni = 0, prBlnIni = 0;
+    let lkBlnLalu = 0, prBlnLalu = 0;
+    for (const nik of nikHistorisRT) {
+      const aliveIni = isAliveAt(nik, endDate);
+      const aliveLalu = isAliveAt(nik, prevEndDate);
+      const isL = isLakiLaki(nikToJenisKelamin.get(nik));
+      if (aliveIni) { if (isL) lkBlnIni++; else prBlnIni++; }
+      if (aliveLalu) { if (isL) lkBlnLalu++; else prBlnLalu++; }
+    }
 
-    for (const k of kejadianRT) {
-      const isL = (k.jenisKelamin || "").toUpperCase() === "LAKI-LAKI";
-      const target = k.jenisKejadian === "LAHIR" ? lahir
-        : k.jenisKejadian === "MATI" ? mati
-        : k.jenisKejadian === "DATANG" ? datang
-        : k.jenisKejadian === "PINDAH" ? pindah
+    const jmlPddkBlnIni: Triplet = { lk: lkBlnIni, pr: prBlnIni, jml: lkBlnIni + prBlnIni };
+    const jmlPddkBlnLalu: Triplet = { lk: lkBlnLalu, pr: prBlnLalu, jml: lkBlnLalu + prBlnLalu };
+
+    // Kejadian dalam bulan terpilih (atribusi via noKk)
+    const lahir: Triplet = { lk: 0, pr: 0, jml: 0 };
+    const mati: Triplet = { lk: 0, pr: 0, jml: 0 };
+    const datang: Triplet = { lk: 0, pr: 0, jml: 0 };
+    const pindah: Triplet = { lk: 0, pr: 0, jml: 0 };
+
+    for (const k of allKejadian) {
+      if (!k.noKk || !kkSetRT.has(k.noKk)) continue;
+      if (k.tanggal < startDate || k.tanggal > endDate) continue;
+      const jkType = (k.jenisKejadian || "").toUpperCase();
+      const target = jkType === "LAHIR" ? lahir
+        : jkType === "MATI" ? mati
+        : jkType === "DATANG" ? datang
+        : jkType === "PINDAH" ? pindah
         : null;
       if (!target) continue;
-      if (isL) target.lk++; else target.pr++;
+      if (isLakiLaki(k.jenisKelamin)) target.lk++; else target.pr++;
       target.jml++;
     }
 
-    // Jml Pddk Bln Ini = current snapshot RT ini
-    const jmlPddkBlnIni = {
-      lk: wargaRT.filter(w => w.jenisKelamin === "LAKI-LAKI").length,
-      pr: wargaRT.filter(w => w.jenisKelamin !== "LAKI-LAKI").length,
-      jml: wargaRT.length,
+    // KK & KTP: hitung dari warga yang alive di endDate
+    const wargaAliveIni = wargaRT.filter(w => isAliveAt(w.nik, endDate));
+    const kkWajib = wargaAliveIni.filter(w =>
+      (w.statusKeluarga || "").toUpperCase() === "KEPALA KELUARGA"
+    ).length;
+    const kk: TripleKK = { wajib: kkWajib, memiliki: kkWajib, belum: 0 };
+
+    const wajibKTP = wargaAliveIni.filter(w =>
+      hitungUmurTahun(w.tanggalLahir, refDate) >= 17
+    ).length;
+    const punyaKTP = wargaAliveIni.filter(w =>
+      (w.punyaKtp || "").toUpperCase() === "PUNYA"
+    ).length;
+    const ktp: TripleKK = {
+      wajib: wajibKTP,
+      memiliki: punyaKTP,
+      belum: Math.max(0, wajibKTP - punyaKTP),
     };
-    // Jml Pddk Bln Lalu = bulan ini - LAHIR + MATI - DATANG + PINDAH
-    const jmlPddkBlnLalu = {
-      lk: jmlPddkBlnIni.lk - lahir.lk + mati.lk - datang.lk + pindah.lk,
-      pr: jmlPddkBlnIni.pr - lahir.pr + mati.pr - datang.pr + pindah.pr,
-      jml: jmlPddkBlnIni.jml - lahir.jml + mati.jml - datang.jml + pindah.jml,
-    };
 
-    // KK: Wajib = count KEPALA KELUARGA; Memiliki = asumsi semua KK punya (since noKk terdaftar); Belum = 0
-    const kkWajib = wargaRT.filter(w => w.statusKeluarga === "KEPALA KELUARGA").length;
-    const kk = { wajib: kkWajib, memiliki: kkWajib, belum: 0 };
-
-    // KTP: Wajib = umur >= 17; Memiliki = punyaKtp="PUNYA"; Belum = wajib - memiliki
-    const wajibKTP = wargaRT.filter(w => hitungUmurTahun(w.tanggalLahir, refDate) >= 17).length;
-    const punyaKTP = wargaRT.filter(w => w.punyaKtp === "PUNYA").length;
-    const ktp = { wajib: wajibKTP, memiliki: punyaKTP, belum: Math.max(0, wajibKTP - punyaKTP) };
-
+    // Set row.rw hanya di baris pertama grup RW
+    const isNewRw = noRw !== lastRw;
     const row: RowData = {
-      rw: noRw, rt: noRt, isSubtotal: false, isGrandTotal: false,
+      rw: isNewRw ? noRw : "",
+      rt: noRt,
+      isSubtotal: false,
+      isGrandTotal: false,
       jmlPddkBlnLalu, lahir, mati, datang, pindah, jmlPddkBlnIni, kk, ktp,
     };
     rows.push(row);
+    lastRw = noRw;
 
     // Akumulasi subtotal per RW
-    const subKey = noRw;
-    if (!rwSubtotals.has(subKey)) {
-      rwSubtotals.set(subKey, {
-        rw: noRw, rt: "", isSubtotal: true, isGrandTotal: false,
+    if (!rwSubtotals.has(noRw)) {
+      rwSubtotals.set(noRw, {
+        rw: "", rt: "Jumlah", isSubtotal: true, isGrandTotal: false,
         jmlPddkBlnLalu: { lk: 0, pr: 0, jml: 0 },
         lahir: { lk: 0, pr: 0, jml: 0 },
         mati: { lk: 0, pr: 0, jml: 0 },
@@ -168,7 +285,7 @@ async function generateLampidBulananData(bulan: number, tahun: number): Promise<
         ktp: { wajib: 0, memiliki: 0, belum: 0 },
       });
     }
-    const sub = rwSubtotals.get(subKey)!;
+    const sub = rwSubtotals.get(noRw)!;
     (["jmlPddkBlnLalu", "lahir", "mati", "datang", "pindah", "jmlPddkBlnIni"] as const).forEach(k => {
       sub[k].lk += row[k].lk; sub[k].pr += row[k].pr; sub[k].jml += row[k].jml;
     });
@@ -176,23 +293,28 @@ async function generateLampidBulananData(bulan: number, tahun: number): Promise<
     sub.ktp.wajib += row.ktp.wajib; sub.ktp.memiliki += row.ktp.memiliki; sub.ktp.belum += row.ktp.belum;
   }
 
-  // Sisipkan baris "Jumlah" per RW setelah RT terakhir RW itu
+  // ===== Sisipkan baris "Jumlah" setelah grup RW selesai =====
   const rowsWithSubtotals: RowData[] = [];
-  let lastRw = "";
+  let currentRw = "";
   for (const row of rows) {
-    if (lastRw && row.rw !== lastRw && rwSubtotals.has(lastRw)) {
-      rowsWithSubtotals.push(rwSubtotals.get(lastRw)!);
+    // row.rw !== "" artinya baris pertama grup RW baru
+    if (row.rw !== "" && currentRw !== "" && row.rw !== currentRw) {
+      // RW berubah → sisipkan subtotal RW sebelumnya
+      if (rwSubtotals.has(currentRw)) {
+        rowsWithSubtotals.push(rwSubtotals.get(currentRw)!);
+      }
     }
     rowsWithSubtotals.push(row);
-    lastRw = row.rw;
+    if (row.rw !== "") currentRw = row.rw;
   }
-  if (lastRw && rwSubtotals.has(lastRw)) {
-    rowsWithSubtotals.push(rwSubtotals.get(lastRw)!);
+  // Sisipkan subtotal untuk RW terakhir
+  if (currentRw !== "" && rwSubtotals.has(currentRw)) {
+    rowsWithSubtotals.push(rwSubtotals.get(currentRw)!);
   }
 
-  // Grand total
+  // ===== Grand total (sum dari subtotal rows saja, hindari double-count) =====
   const grand: RowData = {
-    rw: "", rt: "", isSubtotal: false, isGrandTotal: true,
+    rw: "", rt: "Jml.Ttl", isSubtotal: false, isGrandTotal: true,
     jmlPddkBlnLalu: { lk: 0, pr: 0, jml: 0 },
     lahir: { lk: 0, pr: 0, jml: 0 },
     mati: { lk: 0, pr: 0, jml: 0 },
@@ -203,29 +325,30 @@ async function generateLampidBulananData(bulan: number, tahun: number): Promise<
     ktp: { wajib: 0, memiliki: 0, belum: 0 },
   };
   for (const r of rowsWithSubtotals) {
-    if (r.isGrandTotal) continue;
+    // Hanya sum subtotal rows (sudah merupakan akumulasi RT per RW)
+    if (!r.isSubtotal) continue;
     (["jmlPddkBlnLalu", "lahir", "mati", "datang", "pindah", "jmlPddkBlnIni"] as const).forEach(k => {
       grand[k].lk += r[k].lk; grand[k].pr += r[k].pr; grand[k].jml += r[k].jml;
     });
     grand.kk.wajib += r.kk.wajib; grand.kk.memiliki += r.kk.memiliki; grand.kk.belum += r.kk.belum;
     grand.ktp.wajib += r.ktp.wajib; grand.ktp.memiliki += r.ktp.memiliki; grand.ktp.belum += r.ktp.belum;
   }
-  grand.rw = ""; grand.rt = "";
   rowsWithSubtotals.push(grand);
 
-  // Penganut agama: groupBy agama dari semua warga
-  const agamaMap = new Map<string, { lk: number; pr: number; jml: number }>();
+  // ===== Penganut agama: hanya warga alive di endDate =====
+  const agamaMap = new Map<string, Triplet>();
   for (const w of allWarga) {
+    if (!isAliveAt(w.nik, endDate)) continue;
     const agama = (w.agama || "LAINNYA").toUpperCase();
     if (!agamaMap.has(agama)) agamaMap.set(agama, { lk: 0, pr: 0, jml: 0 });
     const a = agamaMap.get(agama)!;
-    if (w.jenisKelamin === "LAKI-LAKI") a.lk++; else a.pr++;
+    if (isLakiLaki(w.jenisKelamin)) a.lk++; else a.pr++;
     a.jml++;
   }
   const agamaRows: AgamaRow[] = Array.from(agamaMap.entries())
     .map(([label, v]) => ({ label, ...v }))
     .sort((a, b) => b.jml - a.jml);
-  const agamaTotal = agamaRows.reduce((acc, r) => ({
+  const agamaTotal: Triplet = agamaRows.reduce((acc, r) => ({
     lk: acc.lk + r.lk, pr: acc.pr + r.pr, jml: acc.jml + r.jml,
   }), { lk: 0, pr: 0, jml: 0 });
 
@@ -239,20 +362,25 @@ async function generateLampidBulananData(bulan: number, tahun: number): Promise<
   };
 }
 
-// ===== EXPORT EXCEL — format PERSIS sheet JULI 2026 (pakai exceljs untuk styling) =====
+// ===== EXPORT EXCEL =====
+// Layout mengikuti sheet JULI 2026 dari file Excel acuan:
+//   - Kop: logo + LAPORAN PENDUDUK + BULAN + TAHUN (tanpa kop pemerintah)
+//   - Header 2 baris: RW, RT (rowSpan=2) lalu 8 grup × 3 sub-kolom (Lk/Pr/Jml) + 2 grup × 3 (Wajib/Memiliki/Belum)
+//   - Baris "Jumlah" per RW dengan subtotal
+//   - Baris "Jml.Ttl" grand total di paling bawah
+//   - Signature + Penganut Agama di bawah
 async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Laporan Penduduk", {
     views: [{ showGridLines: false }],
   });
 
-  // Definisi warna
-  const COLOR_HEADER = "FF4472C4";      // biru header
-  const COLOR_HEADER_TEXT = "FFFFFFFF"; // putih
-  const COLOR_SUBTOTAL = "FFD6E4F0";    // biru muda subtotal
-  const COLOR_GRANDTOTAL = "FFB4C7E7";  // biru medium grand total
-  const COLOR_AGAMA_HEADER = "FFFFF2CC"; // kuning muda
-  const COLOR_BORDER = "FF000000";      // hitam
+  const COLOR_HEADER = "FF4472C4";
+  const COLOR_HEADER_TEXT = "FFFFFFFF";
+  const COLOR_SUBTOTAL = "FFD6E4F0";
+  const COLOR_GRANDTOTAL = "FFB4C7E7";
+  const COLOR_AGAMA_HEADER = "FFFFF2CC";
+  const COLOR_BORDER = "FF000000";
   const thinBorder = {
     top: { style: "thin" as const, color: { argb: COLOR_BORDER } },
     left: { style: "thin" as const, color: { argb: COLOR_BORDER } },
@@ -260,14 +388,14 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
     bottom: { style: "thin" as const, color: { argb: COLOR_BORDER } },
   };
 
-  // Set lebar kolom: A=RW(6), B=RT(8), C-Z=7 each
+  // Kolom: A=RW (6), B=RT (8), C-Z = 24 kolom Lk/Pr/Jml × 8 grup (masing-masing lebar 7), AA-AC = KK (10), AD-AF = KTP (10)
   ws.columns = [
-    { width: 6, key: "A" },   // RW
-    { width: 8, key: "B" },   // RT
-    ...Array(24).fill(0).map(() => ({ width: 7 })), // C-Z (24 cols)
+    { width: 6, key: "A" },
+    { width: 8, key: "B" },
+    ...Array(24).fill(0).map(() => ({ width: 7 })),
+    ...Array(6).fill(0).map(() => ({ width: 10 })),
   ];
 
-  // Helper: set cell value + style
   const setCell = (row: number, col: number, val: string | number, opts?: {
     bold?: boolean; align?: "left" | "center" | "right"; fill?: string;
     fontColor?: string; border?: boolean; fontSize?: number;
@@ -288,58 +416,51 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
     }
   };
 
-  // Merge helper
   const merge = (r1: number, c1: number, r2: number, c2: number) => {
     ws.mergeCells(r1, c1, r2, c2);
   };
 
-  // ===== HEADER (kop dihapus, logo kiri + LAPORAN PENDUDUK rata kiri) =====
-  // Tambah logo ke workbook
+  // ===== HEADER (logo + LAPORAN PENDUDUK) =====
   const logoBase64Data = LOGO_KAB_BOGOR_BASE64.split(",")[1];
   const imageId = wb.addImage({
     buffer: Buffer.from(logoBase64Data, "base64") as unknown as ArrayBuffer,
     extension: "png",
   });
-  // Posisi logo: A1 (col 0, row 0), ukuran ~70x70 px
   ws.addImage(imageId, {
     tl: { col: 0, row: 0 },
     ext: { width: 70, height: 70 },
   });
 
-  // Row 1: LAPORAN PENDUDUK (mulai col D=4, rata kiri, bold)
   merge(1, 4, 1, 8);
   setCell(1, 4, "LAPORAN PENDUDUK", { bold: true, align: "left", fontSize: 12, border: false });
-  // Row 2: BULAN
   merge(2, 4, 2, 8);
   setCell(2, 4, `BULAN : ${data.bulanLabel}`, { align: "left", border: false });
-  // Row 3: TAHUN
   merge(3, 4, 3, 8);
   setCell(3, 4, `TAHUN : ${data.tahun}`, { align: "left", border: false });
 
-  // Row 5-6: Table header (2 rows)
+  // ===== Tabel header (2 baris) =====
   const HEADER_ROW1 = 5;
   const HEADER_ROW2 = 6;
 
-  // Header row 1: group names (merged vertically with row 2 for RW & RT)
+  // RW & RT (rowSpan=2)
   setCell(HEADER_ROW1, 1, "RW", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
   merge(HEADER_ROW1, 1, HEADER_ROW2, 1);
   setCell(HEADER_ROW1, 2, "RT", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
   merge(HEADER_ROW1, 2, HEADER_ROW2, 2);
 
-  // 6 groups x 3 cols (C-T): Jml Pddk Bln Lalu, Lahir, Mati, Datang, Pindah, Jml.Pddk Bln ini
+  // 6 grup × 3 sub-kolom: Jml Pddk Bln Lalu, Lahir, Mati, Datang, Pindah, Jml.Pddk Bln ini
   const groupNames = ["Jml Pddk Bln Lalu", "Lahir", "Mati", "Datang", "Pindah", "Jml.Pddk Bln ini"];
   let col = 3;
   for (const name of groupNames) {
     merge(HEADER_ROW1, col, HEADER_ROW1, col + 2);
     setCell(HEADER_ROW1, col, name, { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
-    // Sub-headers di row 2
     setCell(HEADER_ROW2, col, "Lk", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
     setCell(HEADER_ROW2, col + 1, "Pr", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
     setCell(HEADER_ROW2, col + 2, "Jml", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
     col += 3;
   }
 
-  // KK (U-W): Wajib, Memiliki, Belum
+  // Kartu Keluarga (Wajib, Memiliki, Belum)
   merge(HEADER_ROW1, col, HEADER_ROW1, col + 2);
   setCell(HEADER_ROW1, col, "Kartu Keluarga", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
   setCell(HEADER_ROW2, col, "Wajib", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
@@ -347,21 +468,22 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
   setCell(HEADER_ROW2, col + 2, "Belum", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
   col += 3;
 
-  // KTP (X-Z): Wajib, Memiliki, Belum
+  // Kartu Tanda Penduduk (Wajib, Memiliki, Belum)
   merge(HEADER_ROW1, col, HEADER_ROW1, col + 2);
   setCell(HEADER_ROW1, col, "Kartu Tanda Penduduk", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
   setCell(HEADER_ROW2, col, "Wajib", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
   setCell(HEADER_ROW2, col + 1, "Memiliki", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
   setCell(HEADER_ROW2, col + 2, "Belum", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
 
-  // ===== DATA ROWS =====
-  let rowIdx = HEADER_ROW2 + 1; // row 7
+  // ===== Data rows =====
+  let rowIdx = HEADER_ROW2 + 1;
   for (const row of data.rows) {
     const fill = row.isGrandTotal ? COLOR_GRANDTOTAL : row.isSubtotal ? COLOR_SUBTOTAL : undefined;
     const bold = row.isGrandTotal || row.isSubtotal;
     const rtLabel = row.isGrandTotal ? "Jml.Ttl" : row.isSubtotal ? "Jumlah" : row.rt;
 
-    setCell(rowIdx, 1, row.rw, { bold, fill });
+    // RW hanya ditampilkan kalau row.rw !== "" (sudah di-set backend hanya di baris pertama grup)
+    setCell(rowIdx, 1, row.rw || "", { bold, fill });
     setCell(rowIdx, 2, rtLabel, { bold, fill });
 
     const groups = [row.jmlPddkBlnLalu, row.lahir, row.mati, row.datang, row.pindah, row.jmlPddkBlnIni];
@@ -382,13 +504,12 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
     rowIdx++;
   }
 
-  // ===== SIGNATURE (right side, col U=21) =====
+  // ===== Signature + Penganut Agama =====
   const sigRow = rowIdx + 1;
   setCell(sigRow, 21, `SUKAMAJU, ${data.tanggalCetak}`, { align: "center", border: false });
   setCell(sigRow + 1, 21, "KEPALA DESA SUKAMAJU", { align: "center", border: false });
   setCell(sigRow + 3, 21, NAMA_KEPALA_DESA, { align: "center", bold: true, border: false });
 
-  // ===== PENGANUT GOLONGAN AGAMA (left side) =====
   const agRow = sigRow;
   merge(agRow, 3, agRow, 5);
   setCell(agRow, 3, "PENGANUT GOLONGAN AGAMA", { bold: true, fill: COLOR_AGAMA_HEADER, align: "left" });
@@ -396,7 +517,6 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
   const agamaToShow = data.agamaRows.slice(0, 4);
   const agamaHeader = [...agamaToShow.map(a => a.label), "JUMLAH"];
   let agCol = 3;
-  // Header row
   for (let i = 0; i < agamaHeader.length; i++) {
     merge(agRow + 1, agCol, agRow + 1, agCol + 2);
     setCell(agRow + 1, agCol, agamaHeader[i], { bold: true, fill: COLOR_AGAMA_HEADER });
@@ -405,7 +525,6 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
     setCell(agRow + 2, agCol + 2, "JML", { bold: true, fill: COLOR_AGAMA_HEADER });
     agCol += 3;
   }
-  // Data row
   agCol = 3;
   for (let i = 0; i < agamaToShow.length; i++) {
     const a = agamaToShow[i];
@@ -414,16 +533,13 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
     setCell(agRow + 3, agCol + 2, a.jml);
     agCol += 3;
   }
-  // JUMLAH total
   setCell(agRow + 3, agCol, data.agamaTotal.lk, { bold: true });
   setCell(agRow + 3, agCol + 1, data.agamaTotal.pr, { bold: true });
   setCell(agRow + 3, agCol + 2, data.agamaTotal.jml, { bold: true });
 
-  // Set row heights for header
   ws.getRow(HEADER_ROW1).height = 20;
   ws.getRow(HEADER_ROW2).height = 18;
 
-  // Write to base64
   const buffer = await wb.xlsx.writeBuffer();
   return Buffer.from(buffer).toString("base64");
 }
