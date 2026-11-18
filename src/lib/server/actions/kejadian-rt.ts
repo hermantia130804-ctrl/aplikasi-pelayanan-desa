@@ -21,13 +21,83 @@ const staffOnly = async () => {
   return s;
 };
 
+// ===== Marker untuk simpan snapshot warga di keterangan (tidak perlu migrasi DB) =====
+// Format keterangan: "<user_text>\n__WARGA_SNAPSHOT__:<json>\n__AUTO_CREATED_WARGA__:true"
+// Saat display ke user, strip marker. Saat delete kejadian, parse marker untuk revert side effects.
+const SNAPSHOT_MARKER = "__WARGA_SNAPSHOT__:";
+const AUTO_CREATED_MARKER = "__AUTO_CREATED_WARGA__:";
+
+type WargaSnapshot = {
+  table: "DataWarga" | "PendudukSementara";
+  data: Record<string, unknown>;
+};
+
+function encodeKeterangan(
+  userKet: string | null,
+  snapshot: WargaSnapshot | null,
+  autoCreated: boolean
+): string | null {
+  let result = (userKet ?? "").trim();
+  if (snapshot) {
+    if (result) result += "\n";
+    result += SNAPSHOT_MARKER + JSON.stringify(snapshot);
+  }
+  if (autoCreated) {
+    if (result) result += "\n";
+    result += AUTO_CREATED_MARKER + "true";
+  }
+  return result || null;
+}
+
+function decodeKeterangan(ket: string | null): {
+  userText: string | null;
+  snapshot: WargaSnapshot | null;
+  autoCreated: boolean;
+} {
+  if (!ket) return { userText: null, snapshot: null, autoCreated: false };
+  const lines = ket.split("\n");
+  const userTextLines: string[] = [];
+  let snapshot: WargaSnapshot | null = null;
+  let autoCreated = false;
+  for (const line of lines) {
+    if (line.startsWith(SNAPSHOT_MARKER)) {
+      try {
+        snapshot = JSON.parse(line.substring(SNAPSHOT_MARKER.length)) as WargaSnapshot;
+      } catch {
+        // ignore parse error
+      }
+    } else if (line.startsWith(AUTO_CREATED_MARKER)) {
+      autoCreated = true;
+    } else {
+      userTextLines.push(line);
+    }
+  }
+  return {
+    userText: userTextLines.join("\n").trim() || null,
+    snapshot,
+    autoCreated,
+  };
+}
+
+// Strip field auto-generated supaya bisa di-restore sebagai record baru
+function stripAutoFields(data: Record<string, unknown>, table: "DataWarga" | "PendudukSementara"): Record<string, unknown> {
+  const cleaned = { ...data };
+  delete cleaned.dataWargaId;
+  delete cleaned.pendudukSementaraId;
+  delete cleaned.createdAt;
+  delete cleaned.updatedAt;
+  // Hapus juga id kalau ada (untuk PendudukSementara)
+  if (table === "PendudukSementara") delete cleaned.id;
+  return cleaned;
+}
+
 export async function kejadianRTAction(operation: string, payload?: unknown) {
   try {
     const session = await getSession();
     const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
     const me = await prisma.user.findUnique({ where: { userId: session.user.userId } });
-    // ADMIN/PETUGAS: bebas ({}). Role lain (Ketua RT): TERKUNCI di level server ke wilayah RT-nya.
-    // Tabel kejadian tidak punya kolom RT, jadi wilayah dipetakan lewat userId pembuat + No. KK milik RT (DataWarga & PendudukSementara).
+
+    // Kunci wilayah untuk Ketua RT (filter berdasarkan noKk milik RT-nya)
     const kunciWilayah = async (): Promise<Record<string, unknown>> => {
       if (isStaff) return {};
       if (me?.noRt && me?.noRw) {
@@ -41,6 +111,7 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
       }
       return { userId: session.user.userId };
     };
+
     const filterWilayahStaff = async (filterRt?: string, filterRw?: string): Promise<Record<string, unknown>> => {
       const cond: Record<string, unknown> = {};
       if (filterRt && filterRt !== "SEMUA") cond.noRt = String(filterRt);
@@ -72,7 +143,7 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
       return { status: 200, data };
     }
 
-    // ===== CREATE (dengan side effects ke penduduk) =====
+    // ===== CREATE (dengan side effects ke penduduk + snapshot di keterangan) =====
     if (operation === "create") {
       const d = (payload ?? {}) as Record<string, unknown>;
       const jenis = toUpperCase(String(d.jenisKejadian ?? ""));
@@ -85,13 +156,42 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
       }
       const tanggal = new Date(tanggalStr);
 
+      let wargaSnapshot: WargaSnapshot | null = null;
+      let autoCreatedWarga = false;
+
       // --- Side effect per jenis ---
+
+      // MATI: simpan snapshot warga sebelum hapus (supaya bisa di-restore saat kejadian dihapus)
       if (jenis === "MATI" && nik) {
-        // deteksi sumber: hapus dari data warga (tetap) atau penduduk sementara
         const tetap = await prisma.dataWarga.findFirst({ where: { nik } });
-        if (tetap) await prisma.dataWarga.deleteMany({ where: { nik } });
-        else await prisma.pendudukSementara.deleteMany({ where: { nik } });
+        if (tetap) {
+          wargaSnapshot = { table: "DataWarga", data: tetap as unknown as Record<string, unknown> };
+          await prisma.dataWarga.deleteMany({ where: { nik } });
+        } else {
+          const sem = await prisma.pendudukSementara.findFirst({ where: { nik } });
+          if (sem) {
+            wargaSnapshot = { table: "PendudukSementara", data: sem as unknown as Record<string, unknown> };
+            await prisma.pendudukSementara.deleteMany({ where: { nik } });
+          }
+        }
       }
+
+      // PINDAH: sama seperti MATI — simpan snapshot sebelum hapus
+      if (jenis === "PINDAH" && nik) {
+        const tetap = await prisma.dataWarga.findFirst({ where: { nik } });
+        if (tetap) {
+          wargaSnapshot = { table: "DataWarga", data: tetap as unknown as Record<string, unknown> };
+          await prisma.dataWarga.deleteMany({ where: { nik } });
+        } else {
+          const sem = await prisma.pendudukSementara.findFirst({ where: { nik } });
+          if (sem) {
+            wargaSnapshot = { table: "PendudukSementara", data: sem as unknown as Record<string, unknown> };
+            await prisma.pendudukSementara.deleteMany({ where: { nik } });
+          }
+        }
+      }
+
+      // LAHIR: auto-create warga baru + set autoCreated flag
       if (jenis === "LAHIR" && nik && namaLengkap) {
         const finalNoKK = String(d.noKKBaru ?? "") || noKK;
         let namaAyah = "-", namaIbu = "-";
@@ -117,16 +217,15 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
               noRt: me?.noRt ?? "001", noRw: me?.noRw ?? "002",
             },
           });
+          autoCreatedWarga = true;
         }
       }
-      if (jenis === "PINDAH" && nik) {
-        const tetap = await prisma.dataWarga.findFirst({ where: { nik } });
-        if (tetap) await prisma.dataWarga.deleteMany({ where: { nik } });
-        else await prisma.pendudukSementara.deleteMany({ where: { nik } });
-      }
+
+      // DATANG: auto-create anggota baru + set autoCreated flag
       if (jenis === "DATANG") {
         const anggotaBaru = (d.anggotaBaru ?? []) as Array<Record<string, unknown>>;
         const finalNoKK = String(d.noKKBaru ?? "") || noKK;
+        let adaYangDiCreate = false;
         for (const a of anggotaBaru) {
           if (!a.nik || !a.namaLengkap) continue;
           const sudahAda = await prisma.dataWarga.findUnique({ where: { nik: String(a.nik) } });
@@ -149,10 +248,18 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
               noRt: me?.noRt ?? "001", noRw: me?.noRw ?? "002",
             },
           });
+          adaYangDiCreate = true;
         }
+        if (adaYangDiCreate) autoCreatedWarga = true;
       }
 
-      // Simpan catatan kejadian
+      // Simpan catatan kejadian dengan keterangan yang berisi snapshot/marker (untuk revert saat delete)
+      const keteranganEncoded = encodeKeterangan(
+        (d.keterangan as string) || null,
+        wargaSnapshot,
+        autoCreatedWarga
+      );
+
       const data = await prisma.kejadian.create({
         data: {
           userId: session.user.userId,
@@ -162,42 +269,130 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
           nik: nik || null,
           jenisKelamin: toUpperCase(String(d.jenisKelamin ?? "")) || "",
           tanggal,
-          keterangan: (d.keterangan as string) || null,
+          keterangan: keteranganEncoded,
         },
       });
       revalidatePath("/data-warga");
       return { status: 200, message: `Kejadian ${jenis} berhasil dicatat`, data };
     }
 
-    // ===== UPDATE (catatan saja) =====
+    // ===== UPDATE (preserve snapshot/marker saat user edit keterangan) =====
     if (operation === "update") {
       const { id, ...d } = (payload ?? {}) as Record<string, unknown>;
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
       const existing = await prisma.kejadian.findUnique({ where: { kejadianId: String(id) } });
       if (!existing) throw new ApiError(status.NOT_FOUND, "Kejadian tidak ditemukan.");
       if (!isStaff && existing.userId !== session.user.userId) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+
+      // Decode keterangan existing untuk preserve snapshot/marker
+      const decoded = decodeKeterangan(existing.keterangan);
+
       const u: Record<string, unknown> = {};
-      if (d.keterangan !== undefined) u.keterangan = (d.keterangan as string) || null;
+      if (d.keterangan !== undefined) {
+        // Ganti hanya user text, preserve snapshot & autoCreated marker
+        u.keterangan = encodeKeterangan(
+          (d.keterangan as string) || null,
+          decoded.snapshot,
+          decoded.autoCreated
+        );
+      }
       if (d.tanggal !== undefined) u.tanggal = new Date(String(d.tanggal));
       const data = await prisma.kejadian.update({ where: { kejadianId: String(id) }, data: u });
       revalidatePath("/data-warga");
       return { status: 200, message: "Kejadian berhasil diupdate", data };
     }
 
-    // ===== DELETE =====
+    // ===== DELETE — REVERT SIDE EFFECTS supaya jumlah penduduk & laporan tidak terpengaruh =====
+    // Logika revert:
+    //   - MATI/PINDAH: restore warga dari snapshot (kalau belum ada di DB)
+    //   - LAHIR/DATANG: hapus warga yang di-create oleh kejadian ini (kalau tidak ada kejadian lain untuk NIK tsb. setelahnya)
+    //   - Kejadian record tetap dihapus
     if (operation === "delete") {
       const { id } = (payload ?? {}) as { id?: string };
       if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
       const existing = await prisma.kejadian.findUnique({ where: { kejadianId: String(id) } });
       if (!existing) throw new ApiError(status.NOT_FOUND, "Kejadian tidak ditemukan.");
       if (!isStaff && existing.userId !== session.user.userId) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+
+      const decoded = decodeKeterangan(existing.keterangan);
+      const jenis = toUpperCase(existing.jenisKejadian);
+      let restoreMsg = "";
+
+      // MATI/PINDAH: restore warga dari snapshot
+      if ((jenis === "MATI" || jenis === "PINDAH") && decoded.snapshot) {
+        const snap = decoded.snapshot;
+        const dataToRestore = stripAutoFields(snap.data, snap.table);
+        const nikToRestore = String(dataToRestore.nik ?? "");
+
+        if (nikToRestore) {
+          if (snap.table === "DataWarga") {
+            const sudahAda = await prisma.dataWarga.findUnique({ where: { nik: nikToRestore } });
+            if (!sudahAda) {
+              await prisma.dataWarga.create({ data: dataToRestore as never });
+              restoreMsg = " (data warga dikembalikan)";
+            } else {
+              restoreMsg = " (warga sudah ada, tidak dikembalikan)";
+            }
+          } else if (snap.table === "PendudukSementara") {
+            // PendudukSementara tidak punya unique constraint nik, jadi cek dulu
+            const sudahAda = await prisma.pendudukSementara.findFirst({ where: { nik: nikToRestore } });
+            if (!sudahAda) {
+              await prisma.pendudukSementara.create({ data: dataToRestore as never });
+              restoreMsg = " (data penduduk sementara dikembalikan)";
+            } else {
+              restoreMsg = " (penduduk sementara sudah ada, tidak dikembalikan)";
+            }
+          }
+        }
+      }
+
+      // LAHIR/DATANG: hapus warga yang di-create oleh kejadian ini
+      // Hanya hapus kalau TIDAK ada kejadian lain (MATI/PINDAH/LAHIR/DATANG) untuk NIK tsb.
+      // setelah kejadian ini dibuat. Ini mencegah hapus warga yang masih dirujuk kejadian lain.
+      if ((jenis === "LAHIR" || jenis === "DATANG") && decoded.autoCreated && existing.nik) {
+        const kejadianLainUntukNik = await prisma.kejadian.findMany({
+          where: {
+            nik: existing.nik,
+            kejadianId: { not: existing.kejadianId },
+            tanggal: { gt: existing.tanggal },
+          },
+          select: { kejadianId: true },
+        });
+
+        if (kejadianLainUntukNik.length === 0) {
+          // Tidak ada kejadian lain setelah ini untuk NIK tsb. → aman untuk hapus warga
+          // Untuk DATANG, mungkin ada beberapa anggota yang di-create. Hapus semua berdasarkan noKk + tanggal kejadian.
+          if (jenis === "DATANG") {
+            // Hapus warga yang noKk-nya sama dengan kejadian ini DAN baru di-create sekitar tanggal kejadian
+            const noKkKejadian = existing.noKk;
+            if (noKkKejadian) {
+              const tanggalKejadian = existing.tanggal;
+              const batasAtas = new Date(tanggalKejadian.getTime() + 60 * 60 * 1000); // +1 jam toleransi
+              await prisma.dataWarga.deleteMany({
+                where: {
+                  noKk: noKkKejadian,
+                  createdAt: { gte: tanggalKejadian, lte: batasAtas },
+                },
+              }).catch(() => {});
+            }
+          } else {
+            // LAHIR: hapus warga by NIK
+            await prisma.dataWarga.deleteMany({ where: { nik: existing.nik } }).catch(() => {});
+          }
+          restoreMsg = " (warga yang di-create otomatis dihapus)";
+        } else {
+          restoreMsg = " (warga tidak dihapus — masih dirujuk kejadian lain)";
+        }
+      }
+
       await prisma.kejadian.delete({ where: { kejadianId: String(id) } });
       revalidatePath("/data-warga");
-      return { status: 200, message: "Kejadian berhasil dihapus" };
+      return { status: 200, message: `Kejadian berhasil dihapus${restoreMsg}` };
     }
 
     // ===== DELETE ALL (konfirmasi ketik HAPUS) =====
-    // Tabel Kejadian tidak punya kolom RT/RW -> kunci wilayah lewat No. KK milik RT (sama seperti list).
+    // Hapus bulk TIDAK revert side effects (terlalu kompleks untuk bulk). Hanya hapus kejadian record.
+    // Untuk restore warga, admin bisa hapus per-kejadian (yang akan trigger revert).
     if (operation === "deleteAll") {
       const { konfirmasi, filterRt, filterRw } = (payload ?? {}) as { konfirmasi?: string; filterRt?: string; filterRw?: string };
       if (konfirmasi !== "HAPUS") throw new ApiError(status.BAD_REQUEST, "Ketik HAPUS untuk konfirmasi.");

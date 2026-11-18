@@ -121,6 +121,25 @@ interface PendudukKejadianRTProps {
   wilayah?: string;
 }
 
+// ===== Helper: strip internal marker dari keterangan untuk display ke user =====
+// Backend nyimpan snapshot warga & flag autoCreated di keterangan dengan marker:
+//   "<user_text>\n__WARGA_SNAPSHOT__:...\n__AUTO_CREATED_WARGA__:true"
+// Saat tampil ke user, marker harus disembunyikan.
+const SNAPSHOT_MARKER = "__WARGA_SNAPSHOT__:";
+const AUTO_CREATED_MARKER = "__AUTO_CREATED_WARGA__:";
+
+function cleanKeteranganDisplay(ket: string | null | undefined): string {
+  if (!ket) return "";
+  const idx1 = ket.indexOf(SNAPSHOT_MARKER);
+  const idx2 = ket.indexOf(AUTO_CREATED_MARKER);
+  let idx = -1;
+  if (idx1 >= 0 && idx2 >= 0) idx = Math.min(idx1, idx2);
+  else if (idx1 >= 0) idx = idx1;
+  else if (idx2 >= 0) idx = idx2;
+  if (idx < 0) return ket;
+  return ket.substring(0, idx).trim();
+}
+
 const emptyAnggotaBaru = (): AnggotaBaru => ({
   nik: '', namaLengkap: '', jenisKelamin: 'LAKI-LAKI', tanggalLahir: '',
   tempatLahir: '', statusKeluarga: 'LAINNYA', agama: 'ISLAM',
@@ -151,15 +170,28 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false, w
     try {
       const res = await apiFetch('/api/penduduk');
       if (res.ok) {
-        const data = await res.json();
-        const seen = new Set<string>();
-        const options: KKOption[] = [];
+        const data = await res.json() as Array<Record<string, unknown>>;
+        // Group by noKk — ambil SEMUA KK unik (tidak hanya yang punya KEPALA KELUARGA).
+        // Untuk label namaKepala, prioritaskan KEPALA KELUARGA; kalau tidak ada, ambil warga pertama di KK itu.
+        // Case-insensitive untuk statusKeluarga.
+        const kkMap = new Map<string, { noKK: string; namaKepala: string; isKepala: boolean }>();
         for (const p of data) {
-          if (p.statusKeluarga === 'KEPALA KELUARGA' && !seen.has(p.noKK)) {
-            seen.add(p.noKK);
-            options.push({ noKK: p.noKk ?? p.noKK, namaKepala: p.namaLengkap });
+          const noKK = String(p.noKk ?? p.noKK ?? "").trim();
+          if (!noKK) continue;
+          const status = String(p.statusKeluarga ?? "").toUpperCase().trim();
+          const nama = String(p.namaLengkap ?? "").trim();
+          const isKepala = status === "KEPALA KELUARGA";
+          const existing = kkMap.get(noKK);
+          if (!existing) {
+            kkMap.set(noKK, { noKK, namaKepala: nama, isKepala });
+          } else if (isKepala && !existing.isKepala) {
+            // Override dengan KEPALA KELUARGA kalau existing bukan kepala
+            kkMap.set(noKK, { noKK, namaKepala: nama, isKepala });
           }
         }
+        const options = Array.from(kkMap.values())
+          .map(({ noKK, namaKepala }) => ({ noKK, namaKepala }))
+          .sort((a, b) => a.noKK.localeCompare(b.noKK));
         setKKOptions(options);
       }
     } catch (error) { console.error(error); }
@@ -258,7 +290,7 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false, w
       nik: k.nik || '',
       jenisKelamin: k.jenisKelamin || '',
       tanggal: k.tanggal.split('T')[0],
-      keterangan: k.keterangan || '',
+      keterangan: cleanKeteranganDisplay(k.keterangan),
       noKKBaru: '',
       tanggalLahir: k.jenisKejadian === 'LAHIR' ? k.tanggal.split('T')[0] : '',
       tempatLahir: '',
@@ -814,7 +846,7 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false, w
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       Tanggal: {formatTanggal(k.tanggal)}
-                      {k.keterangan && ` · ${k.keterangan}`}
+                      {cleanKeteranganDisplay(k.keterangan) && ` · ${cleanKeteranganDisplay(k.keterangan)}`}
                     </p>
                   </div>
                   <div className="flex gap-1 shrink-0">
