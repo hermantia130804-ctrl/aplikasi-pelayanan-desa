@@ -6,6 +6,7 @@ import status from "http-status";
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { findCurrentSessionService } from "../services/session";
+import { LOGO_KAB_BOGOR_BASE64 } from "@/assets/logo-kab-bogor.base64";
 
 const BULAN_NAMES = [
   "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
@@ -292,16 +293,28 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
     ws.mergeCells(r1, c1, r2, c2);
   };
 
-  // ===== HEADER (kop dihapus, hanya LAPORAN PENDUDUK rata kiri) =====
-  // Row 1: LAPORAN PENDUDUK (left-aligned, bold)
-  merge(1, 1, 1, 5);
-  setCell(1, 1, "LAPORAN PENDUDUK", { bold: true, align: "left", fontSize: 12, border: false });
+  // ===== HEADER (kop dihapus, logo kiri + LAPORAN PENDUDUK rata kiri) =====
+  // Tambah logo ke workbook
+  const logoBase64Data = LOGO_KAB_BOGOR_BASE64.split(",")[1];
+  const imageId = wb.addImage({
+    buffer: Buffer.from(logoBase64Data, "base64") as unknown as ArrayBuffer,
+    extension: "png",
+  });
+  // Posisi logo: A1 (col 0, row 0), ukuran ~70x70 px
+  ws.addImage(imageId, {
+    tl: { col: 0, row: 0 },
+    ext: { width: 70, height: 70 },
+  });
+
+  // Row 1: LAPORAN PENDUDUK (mulai col D=4, rata kiri, bold)
+  merge(1, 4, 1, 8);
+  setCell(1, 4, "LAPORAN PENDUDUK", { bold: true, align: "left", fontSize: 12, border: false });
   // Row 2: BULAN
-  merge(2, 1, 2, 5);
-  setCell(2, 1, `BULAN : ${data.bulanLabel}`, { align: "left", border: false });
+  merge(2, 4, 2, 8);
+  setCell(2, 4, `BULAN : ${data.bulanLabel}`, { align: "left", border: false });
   // Row 3: TAHUN
-  merge(3, 1, 3, 5);
-  setCell(3, 1, `TAHUN : ${data.tahun}`, { align: "left", border: false });
+  merge(3, 4, 3, 8);
+  setCell(3, 4, `TAHUN : ${data.tahun}`, { align: "left", border: false });
 
   // Row 5-6: Table header (2 rows)
   const HEADER_ROW1 = 5;

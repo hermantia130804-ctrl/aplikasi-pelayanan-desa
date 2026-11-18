@@ -6,6 +6,7 @@ import status from "http-status";
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { findCurrentSessionService } from "../services/session";
+import { LOGO_KAB_BOGOR_BASE64 } from "@/assets/logo-kab-bogor.base64";
 
 const BULAN_NAMES = [
   "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
@@ -149,21 +150,33 @@ async function buildExcelUsia(data: LampidUsiaData): Promise<string> {
 
   const merge = (r1: number, c1: number, r2: number, c2: number) => ws.mergeCells(r1, c1, r2, c2);
 
-  // ===== HEADER (rata kiri sesuai sheet) =====
-  merge(1, 1, 1, 6);
-  setCell(1, 1, "PEMERINTAH KABUPATEN BOGOR", { bold: true, align: "left", border: false, fontSize: 11 });
-  merge(2, 1, 2, 6);
-  setCell(2, 1, "KECAMATAN CIBUNGBULANG", { bold: true, align: "left", border: false, fontSize: 11 });
-  merge(3, 1, 3, 6);
-  setCell(3, 1, "DESA SUKAMAJU", { bold: true, align: "left", border: false, fontSize: 11 });
-  merge(4, 1, 4, 6);
-  setCell(4, 1, `Alamat : ${ALAMAT_DESA}`, { align: "left", border: false, fontSize: 9 });
-  merge(5, 1, 5, 6);
-  setCell(5, 1, "LAPORAN PENDUDUK BERDASARKAN USIA", { bold: true, align: "left", border: false, fontSize: 11 });
-  // DESA, BULAN, TAHUN rata kiri (sesuai sheet)
-  setCell(6, 1, "DESA : SUKAMAJU", { align: "left", border: false });
-  setCell(7, 1, `BULAN : ${data.bulanLabel}`, { align: "left", border: false });
-  setCell(8, 1, `TAHUN : ${data.tahun}`, { align: "left", border: false });
+  // ===== HEADER (logo kiri + text rata kiri mulai col C=3) =====
+  // Tambah logo ke workbook
+  const logoBase64Data = LOGO_KAB_BOGOR_BASE64.split(",")[1];
+  const imageId = wb.addImage({
+    buffer: Buffer.from(logoBase64Data, "base64") as unknown as ArrayBuffer,
+    extension: "png",
+  });
+  ws.addImage(imageId, {
+    tl: { col: 0, row: 0 },
+    ext: { width: 70, height: 70 },
+  });
+
+  // Header text mulai col C=3 (logo di col A-B)
+  merge(1, 3, 1, 6);
+  setCell(1, 3, "PEMERINTAH KABUPATEN BOGOR", { bold: true, align: "left", border: false, fontSize: 11 });
+  merge(2, 3, 2, 6);
+  setCell(2, 3, "KECAMATAN CIBUNGBULANG", { bold: true, align: "left", border: false, fontSize: 11 });
+  merge(3, 3, 3, 6);
+  setCell(3, 3, "DESA SUKAMAJU", { bold: true, align: "left", border: false, fontSize: 11 });
+  merge(4, 3, 4, 6);
+  setCell(4, 3, `Alamat : ${ALAMAT_DESA}`, { align: "left", border: false, fontSize: 9 });
+  merge(5, 3, 5, 6);
+  setCell(5, 3, "LAPORAN PENDUDUK BERDASARKAN USIA", { bold: true, align: "left", border: false, fontSize: 11 });
+  // DESA, BULAN, TAHUN di col B=2, rata kiri
+  setCell(6, 2, "DESA : SUKAMAJU", { align: "left", border: false });
+  setCell(7, 2, `BULAN : ${data.bulanLabel}`, { align: "left", border: false });
+  setCell(8, 2, `TAHUN : ${data.tahun}`, { align: "left", border: false });
 
   // Table header row 9
   const HDR = 9;
