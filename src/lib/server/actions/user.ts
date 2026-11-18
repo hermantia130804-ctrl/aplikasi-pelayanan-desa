@@ -56,13 +56,34 @@ export const updateUserAction = async (userId: string, payload: TUpdateUserSchem
       if (!isKuat) {
         throw new ApiError(status.BAD_REQUEST, "Password minimal 8 karakter dan tidak termasuk password yang bocor secara umum");
       }
-      // FIX: kirim PLAIN password ke service; service yang hash sekali.
-      // (Sebelumnya di-hash di sini lalu di-hash lagi di service -> double hash -> login gagal.)
       await updateUserPasswordService(userId, password);
     }
 
     const data = await updateUserService(userId, restPayload);
     revalidatePath(PATHS.USER);
+
+    // Kirim email notifikasi tugas ke petugas kalau tugasPetugas diubah
+    if (restPayload.tugasPetugas !== undefined && data.data.role === "PETUGAS") {
+      try {
+        const { sendEmail } = await import("../utils/email");
+        let tugasList: string[] = [];
+        try { tugasList = JSON.parse(restPayload.tugasPetugas); } catch {}
+        const html = `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #eee;border-radius:8px;">
+            <h2>Notifikasi Penugasan</h2>
+            <p>Anda telah ditugaskan oleh Admin untuk mengelola modul-modul berikut di Aplikasi Pelayanan Desa Sukamaju:</p>
+            <ul style="font-size:14px;">
+              ${tugasList.map((t: string) => `<li>${t}</li>`).join("")}
+            </ul>
+            <p style="font-size:12px;color:#888;">Login ke aplikasi untuk mulai mengelola tugas Anda.</p>
+          </div>`;
+        await sendEmail(data.data.email, "Notifikasi Tugas Petugas - Desa Sukamaju", html);
+        console.log(`[TUGAS PETUGAS] Email notifikasi terkirim ke ${data.data.email}`);
+      } catch (e) {
+        console.error("[TUGAS PETUGAS] GAGAL kirim email:", e);
+      }
+    }
+
     return { status: status.OK, message: MESSAGE.USER.UPDATE_OK, data };
   } catch (error) {
     return errorHandler(error);

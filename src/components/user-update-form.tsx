@@ -18,13 +18,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { JABATAN_PETUGAS } from "@/constants/jabatan";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
+import { useState } from "react";
 import { GambarUploadField } from "@/components/gambar-upload-field";
+
+const TUGAS_PETUGAS_OPTIONS = [
+  "Kelola Lampid Bulanan",
+  "Laporan Berdasarkan Usia",
+  "Kelola Permohonan KTP",
+  "Kelola Permohonan KK",
+  "Kelola Permohonan SKL",
+  "Kelola Permohonan SKTM",
+  "Kelola Permohonan SKK",
+  "Kelola Permohonan SKU",
+  "Kelola Permohonan SKD",
+  "Kelola Perbaikan Desil",
+];
+
 type UserUpdateFormProps = {
     data: Omit<User, "password" | "createdAt" | "updatedAt">;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const UserUpdateForm = ({ data: initialData, className, ...props }: UserUpdateFormProps) => {
     const router = useRouter();
+    // State untuk tugas petugas (checkbox list)
+    const [tugasList, setTugasList] = useState<string[]>(() => {
+        try { return JSON.parse(initialData.tugasPetugas ?? "[]"); } catch { return []; }
+    });
     const form = useForm<TUpdateUserSchema>({
         resolver: zodResolver(updateUserSchema),
         defaultValues: {
@@ -41,11 +61,24 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
             namaKetua: initialData.namaKetua ?? "",
             alamatRt: initialData.alamatRt ?? "",
             foto: initialData.foto ?? "",
+            tugasPetugas: initialData.tugasPetugas ?? "[]",
         },
     });
 
+    const toggleTugas = (tugas: string) => {
+        setTugasList(prev => {
+            const next = prev.includes(tugas)
+                ? prev.filter(t => t !== tugas)
+                : [...prev, tugas];
+            form.setValue("tugasPetugas", JSON.stringify(next));
+            return next;
+        });
+    };
+
     const onSubmit = form.handleSubmit(async (data) => {
         try {
+            // Pastikan tugasPetugas ter-serialize dari state terbaru
+            data.tugasPetugas = JSON.stringify(tugasList);
             const response = await updateUserAction(initialData.userId, data);
             if (response.status === 200) {
                 form.reset();
@@ -147,6 +180,7 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
                                         )}
                                     />
                                 {form.watch("role") === "PETUGAS" && (
+                                    <>
                                     <FormField
                                         control={form.control}
                                         name="jabatan"
@@ -169,6 +203,24 @@ export const UserUpdateForm = ({ data: initialData, className, ...props }: UserU
                                             </FormItem>
                                         )}
                                     />
+                                    <div className="space-y-2 col-span-2">
+                                        <FormLabel>Tugas Petugas</FormLabel>
+                                        <p className="text-xs text-muted-foreground">
+                                            Centang modul yang ditugaskan ke petugas ini. Email notifikasi akan dikirim saat disimpan.
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-2 rounded-md border p-3">
+                                            {TUGAS_PETUGAS_OPTIONS.map((tugas) => (
+                                                <label key={tugas} className="flex items-center gap-2 text-sm cursor-pointer">
+                                                    <Checkbox
+                                                        checked={tugasList.includes(tugas)}
+                                                        onCheckedChange={() => toggleTugas(tugas)}
+                                                    />
+                                                    {tugas}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    </>
                                 )}
 
                                 {form.watch("role") === "RT" && (

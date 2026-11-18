@@ -46,6 +46,7 @@ export const updateUserSchema = z.object({
   namaKetua: z.string().optional(),
   alamatRt: z.string().optional(),
   foto: z.string().optional(),
+  tugasPetugas: z.string().optional(), // JSON array string of task names
   role: z.enum(["ADMIN", "PETUGAS", "USER", "RT"]).optional(),
   password: z.union([z.literal(""), z.string().min(8, MESSAGE.INVALID_PASSWORD).max(255)]).optional(),
 });

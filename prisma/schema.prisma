@@ -111,6 +111,7 @@ model User {
   phone      String?
   foto       String?  @map("foto")
   jabatan    String?   @map("jabatan")
+  tugasPetugas String? @map("tugas_petugas")  // JSON array of task names for PETUGAS
   noRt         String?  @map("no_rt")
   noRw         String?  @map("no_rw")
   namaKetua    String?  @map("nama_ketua")
