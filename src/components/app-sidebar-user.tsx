@@ -49,6 +49,10 @@ export const AppSidebarUser = ({
     return name[0][0] + name[name.length - 1][0];
   }
 
+  // Foto profil user dari database (Vercel Blob URL).
+  // Jika user belum upload foto, pakai AvatarFallback (inisial nama).
+  const fotoProfilUrl = user.foto ?? "";
+
   const handleLogout = async () => {
     try {
       const result = await signOutAction();
@@ -74,9 +78,18 @@ export const AppSidebarUser = ({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={"https://ui.shadcn.com/avatars/shadcn.jpg"} alt={user.name} />
-                <AvatarFallback className="rounded-lg">{parseFallback()}</AvatarFallback>
+              {/* Avatar: pakai foto profil user dari DB, bukan URL hardcoded shadcn.
+                  - object-cover dipasang lewat className AvatarImage supaya foto utuh & jelas.
+                  - Class 'grayscale' dihapus agar foto tampil dengan warna asli. */}
+              <Avatar className="h-9 w-9 rounded-lg overflow-hidden ring-1 ring-border/50">
+                <AvatarImage
+                  src={fotoProfilUrl}
+                  alt={user.name}
+                  className="object-cover"
+                />
+                <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-semibold text-sm">
+                  {parseFallback()}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
@@ -95,9 +108,15 @@ export const AppSidebarUser = ({
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={"https://ui.shadcn.com/avatars/shadcn.jpg"} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <Avatar className="h-9 w-9 rounded-lg overflow-hidden ring-1 ring-border/50">
+                  <AvatarImage
+                    src={fotoProfilUrl}
+                    alt={user.name}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-semibold text-sm">
+                    {parseFallback()}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>

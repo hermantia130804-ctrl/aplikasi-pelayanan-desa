@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { PATHS } from "@/constants/paths";
 import { User } from "@/generated/prisma";
@@ -12,7 +13,42 @@ import { UserDeleteModal } from "./user-delete-modal";
 import { UserUpdateRole } from "./user-update-role";
 import { UserUpdateStatus } from "./user-update-status";
 
+// Helper: ambil inisial nama sebagai fallback avatar (contoh: "Herman Gozali" -> "HG")
+const parseNameFallback = (name: string) => {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0 || parts[0] === "") return "?";
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? "?";
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 export const userColumns: ColumnDef<Omit<User, "password">>[] = [
+  // Kolom Foto Profil — tampil paling kiri di tabel "Kelola Data Pengguna".
+  // Pakai Avatar shadcn (object-cover) supaya foto tampil full & jelas.
+  // Jika user.foto kosong/gagal load, tampilkan inisial nama sebagai fallback.
+  {
+    id: "foto",
+    accessorKey: "foto",
+    header: () => <div className="text-center">Foto</div>,
+    cell: ({ row }) => {
+      const user = row.original;
+      return (
+        <div className="flex justify-center">
+          <Avatar className="h-11 w-11 rounded-full overflow-hidden ring-1 ring-border/50">
+            <AvatarImage
+              src={user.foto ?? ""}
+              alt={user.name}
+              className="object-cover"
+            />
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+              {parseNameFallback(user.name)}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+      );
+    },
+    enableSorting: false,
+    enableColumnFilter: false,
+  },
   {
     accessorKey: "nik",
     header: () => UserColumnHeader({ accessorKey: "nik", title: "NIK" }),
