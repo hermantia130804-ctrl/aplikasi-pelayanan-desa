@@ -389,13 +389,12 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
     bottom: { style: "thin" as const, color: { argb: COLOR_BORDER } },
   };
 
-  // Kolom: A=RW (5), B=RT (5), C-T = 18 kolom Lk/Pr/Jml × 6 grup (masing-masing lebar 5), U-Z = 6 kolom Wajib/Memiliki/Belum × 2 grup (lebar 9)
-  ws.columns = [
-    { width: 5, key: "A" },   // RW
-    { width: 5, key: "B" },   // RT
-    ...Array(18).fill(0).map(() => ({ width: 5 })),  // C-T: 6 grup × Lk/Pr/Jml
-    ...Array(6).fill(0).map(() => ({ width: 9 })),   // U-Z: KK + KTP × Wajib/Memiliki/Belum
-  ];
+  // Set lebar kolom individually (lebih reliable daripada ws.columns dengan spread)
+  ws.getColumn(1).width = 5;   // RW
+  ws.getColumn(2).width = 5;   // RT
+  for (let i = 3; i <= 20; i++) ws.getColumn(i).width = 5;   // C-T: 6 grup × Lk/Pr/Jml
+  for (let i = 21; i <= 26; i++) ws.getColumn(i).width = 9;  // U-Z: KK + KTP × Wajib/Memiliki/Belum
+  for (let i = 27; i <= 32; i++) ws.getColumn(i).width = 9;  // extra margin cols
 
   const setCell = (row: number, col: number, val: string | number, opts?: {
     bold?: boolean; align?: "left" | "center" | "right"; fill?: string;

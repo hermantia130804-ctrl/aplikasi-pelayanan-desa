@@ -115,37 +115,124 @@ export default function LampidBulananView() {
 
   const handlePrint = () => {
     if (!data) return;
-    const printContents = document.getElementById("print-area")?.innerHTML;
-    if (!printContents) return;
-    const win = window.open("", "_blank", "width=1200,height=800");
-    if (!win) { toast.error("Popup diblokir browser"); return; }
-    win.document.write(`
+    // Construct print HTML dari scratch (bukan pakai innerHTML) untuk kontrol penuh layout
+    const logoUrl = logoKabBogorBase64;
+    const ALAMAT = "Jl. KH. Abd. Hamid No.36 Cibungbulang Bogor – Kode pos (16630)";
+
+    // Build table rows HTML
+    const tableRowsHtml = data.rows.map((row) => {
+      const cls = row.isGrandTotal ? "grand-total" : row.isSubtotal ? "subtotal" : "";
+      const rtLabel = row.isGrandTotal ? "Jml.Ttl" : row.isSubtotal ? "Jumlah" : row.rt;
+      const groups = [row.jmlPddkBlnLalu, row.lahir, row.mati, row.datang, row.pindah, row.jmlPddkBlnIni];
+      const groupsHtml = groups.map(g => `<td>${g.lk}</td><td>${g.pr}</td><td>${g.jml}</td>`).join("");
+      return `<tr class="${cls}">
+        <td class="rw-cell">${row.rw || ""}</td>
+        <td class="rt-cell">${rtLabel}</td>
+        ${groupsHtml}
+        <td>${row.kk.wajib}</td><td>${row.kk.memiliki}</td><td>${row.kk.belum}</td>
+        <td>${row.ktp.wajib}</td><td>${row.ktp.memiliki}</td><td>${row.ktp.belum}</td>
+      </tr>`;
+    }).join("");
+
+    // Build agama section HTML
+    const agamaToShow = data.agamaRows.slice(0, 4);
+    const agamaHeaders = [...agamaToShow.map(a => a.label), "JUMLAH"];
+    const agamaHeaderHtml = agamaHeaders.map(h => `<th colspan="3">${h}</th>`).join("");
+    const agamaSubHeaderHtml = agamaHeaders.map(() => `<th>L</th><th>P</th><th>JML</th>`).join("");
+    const agamaDataHtml = [...agamaToShow.map(a => `<td>${a.lk}</td><td>${a.pr}</td><td>${a.jml}</td>`), `<td>${data.agamaTotal.lk}</td><td>${data.agamaTotal.pr}</td><td>${data.agamaTotal.jml}</td>`].join("");
+
+    const printHtml = `
       <html><head><title>Laporan Lampid Bulanan ${data.bulanLabel} ${data.tahun}</title>
       <style>
         @page { size: A4 landscape; margin: 0.5cm; }
-        body { font-family: Arial, sans-serif; font-size: 8px; color: #000; margin: 8px; }
-        table.lampid { border-collapse: collapse; width: 100%; table-layout: fixed; }
-        table.lampid th, table.lampid td { border: 1px solid #000; padding: 2px; text-align: center; overflow: hidden; }
-        table.lampid th { background: #4472C4; color: #fff; font-weight: bold; }
-        table.lampid td.rw-cell, table.lampid td.rt-cell { font-weight: bold; }
-        table.lampid tr.subtotal td { background: #D6E4F0; font-weight: bold; }
-        table.lampid tr.grand-total td { background: #B4C7E7; font-weight: bold; }
-        .header-block { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
-        .header-block img { width: 70px; height: 70px; object-fit: contain; }
-        .header-block .header-text { font-size: 11px; text-align: left; }
-        .header-block .header-text .title { font-weight: bold; font-size: 13px; }
-        .header-block .header-text .kop-line { font-weight: bold; font-size: 12px; }
-        .header-block .header-text .kop-alamat { font-size: 9px; }
-        .signature { text-align: center; font-size: 10px; width: 240px; }
-        .signature .name { font-weight: bold; text-decoration: underline; margin-top: 50px; }
-        .agama-section { font-size: 9px; }
-        .agama-section table { border-collapse: collapse; }
-        .agama-section th, .agama-section td { border: 1px solid #000; padding: 2px 4px; text-align: center; }
-        .agama-section th { background: #FFF2CC; font-weight: bold; }
-        /* Show kop pemerintah in print (hidden on screen via inline style) */
-        .kop-pemerintah { display: block !important; }
-      </style></head><body>${printContents}</body></html>
-    `);
+        body { font-family: Arial, sans-serif; font-size: 7px; color: #000; margin: 8px; }
+        .kop { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+        .kop img { width: 70px; height: 70px; object-fit: contain; }
+        .kop .kop-text { font-size: 10px; text-align: left; }
+        .kop .kop-text p { margin: 1px 0; }
+        .kop .kop-text .gov { font-weight: bold; font-size: 11px; }
+        .kop .kop-text .alm { font-size: 8px; }
+        .title-block { margin-bottom: 6px; font-size: 10px; }
+        .title-block p { margin: 1px 0; }
+        .title-block .title { font-weight: bold; font-size: 12px; }
+        table.main { border-collapse: collapse; width: 100%; table-layout: fixed; }
+        table.main th, table.main td { border: 1px solid #000; padding: 1px 2px; text-align: center; overflow: hidden; }
+        table.main th { background: #4472C4; color: #fff; font-weight: bold; }
+        table.main td.rw-cell, table.main td.rt-cell { font-weight: bold; }
+        table.main tr.subtotal td { background: #D6E4F0; font-weight: bold; }
+        table.main tr.grand-total td { background: #B4C7E7; font-weight: bold; }
+        .bottom-section { display: flex; justify-content: space-between; margin-top: 10px; gap: 20px; }
+        .agama { font-size: 8px; }
+        .agama table { border-collapse: collapse; }
+        .agama th, .agama td { border: 1px solid #000; padding: 1px 3px; text-align: center; }
+        .agama th { background: #FFF2CC; font-weight: bold; }
+        .signature { text-align: center; font-size: 9px; width: 220px; }
+        .signature .name { font-weight: bold; text-decoration: underline; margin-top: 40px; }
+      </style></head><body>
+        <div class="kop">
+          <img src="${logoUrl}" alt="Logo" />
+          <div class="kop-text">
+            <p class="gov">PEMERINTAH KABUPATEN BOGOR</p>
+            <p class="gov">KECAMATAN CIBUNGBULANG</p>
+            <p class="gov">DESA SUKAMAJU</p>
+            <p class="alm">Alamat : ${ALAMAT}</p>
+          </div>
+        </div>
+        <div class="title-block">
+          <p class="title">LAPORAN PENDUDUK</p>
+          <p>BULAN : ${data.bulanLabel}</p>
+          <p>TAHUN : ${data.tahun}</p>
+        </div>
+        <table class="main">
+          <thead>
+            <tr>
+              <th rowspan="2">RW</th>
+              <th rowspan="2">RT</th>
+              <th colspan="3">Jml Pddk Bln Lalu</th>
+              <th colspan="3">Lahir</th>
+              <th colspan="3">Mati</th>
+              <th colspan="3">Datang</th>
+              <th colspan="3">Pindah</th>
+              <th colspan="3">Jml.Pddk Bln ini</th>
+              <th colspan="3">Kartu Keluarga</th>
+              <th colspan="3">Kartu Tanda Penduduk</th>
+            </tr>
+            <tr>
+              ${Array(6).fill("<th>Lk</th><th>Pr</th><th>Jml</th>").join("")}
+              <th>Wajib</th><th>Memiliki</th><th>Belum</th>
+              <th>Wajib</th><th>Memiliki</th><th>Belum</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRowsHtml}
+          </tbody>
+        </table>
+        <div class="bottom-section">
+          <div class="agama">
+            <p style="font-weight: bold; margin-bottom: 4px;">PENGANUT GOLONGAN AGAMA</p>
+            <table>
+              <thead>
+                <tr>${agamaHeaderHtml}</tr>
+                <tr>${agamaSubHeaderHtml}</tr>
+              </thead>
+              <tbody>
+                <tr>${agamaDataHtml}</tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="signature">
+            <p>SUKAMAJU, ${data.tanggalCetak}</p>
+            <p>KEPALA DESA SUKAMAJU</p>
+            <div style="height: 40px;"></div>
+            <p class="name">Hj. CUCUM RATNA SUMINAR</p>
+          </div>
+        </div>
+      </body></html>
+    `;
+
+    const win = window.open("", "_blank", "width=1200,height=800");
+    if (!win) { toast.error("Popup diblokir browser"); return; }
+    win.document.write(printHtml);
     win.document.close();
     win.focus();
     setTimeout(() => { win.print(); win.close(); }, 500);
@@ -257,22 +344,11 @@ export default function LampidBulananView() {
 
           <Card>
             <CardContent className="p-4">
-              {/* Style untuk hide kop pemerintah on screen, show in print */}
-              <style>{`.kop-pemerintah { display: none; }`}</style>
               <div id="print-area" className="overflow-x-auto">
-                {/* Header: logo kiri + kop pemerintah + LAPORAN PENDUDUK
-                    Kop pemerintah (PEMERINTAH KAB. BOGOR / KECAMATAN / DESA / Alamat) hidden on screen,
-                    visible in print via .kop-pemerintah class (overridden in print function CSS). */}
+                {/* Header on-screen: logo + LAPORAN PENDUDUK (kop pemerintah hanya di print/Excel, bukan on-screen) */}
                 <div className="flex items-start gap-4 mb-3">
                   <img src={logoKabBogorBase64} alt="Logo Kab. Bogor" className="h-20 w-20 object-contain flex-shrink-0" />
                   <div className="text-left">
-                    {/* Kop pemerintah — hidden on screen, shown in print */}
-                    <div className="kop-pemerintah">
-                      <p className="font-bold text-sm">PEMERINTAH KABUPATEN BOGOR</p>
-                      <p className="font-bold text-sm">KECAMATAN CIBUNGBULANG</p>
-                      <p className="font-bold text-sm">DESA SUKAMAJU</p>
-                      <p className="text-xs mb-1">Alamat : Jl. KH. Abd. Hamid No.36 Cibungbulang Bogor – Kode pos (16630)</p>
-                    </div>
                     <p className="font-bold text-base">LAPORAN PENDUDUK</p>
                     <p className="text-sm">BULAN : {data.bulanLabel}</p>
                     <p className="text-sm">TAHUN : {data.tahun}</p>

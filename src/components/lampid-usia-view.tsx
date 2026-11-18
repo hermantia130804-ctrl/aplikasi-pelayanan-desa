@@ -99,24 +99,93 @@ export default function LampidUsiaView() {
 
   const handlePrint = () => {
     if (!data) return;
-    const printContents = document.getElementById("print-area-usia")?.innerHTML;
-    if (!printContents) return;
-    const win = window.open("", "_blank", "width=900,height=700");
-    if (!win) { toast.error("Popup diblokir browser"); return; }
-    win.document.write(`
+    // Construct print HTML dari scratch (bukan pakai innerHTML) untuk kontrol penuh layout
+    const logoUrl = logoKabBogorBase64;
+    const ALAMAT = "Jl. KH. Abd. Hamid No.36 Cibungbulang Bogor – Kode pos (16630)";
+
+    // Build table rows HTML
+    const tableRowsHtml = data.rows.map(row => `
+      <tr>
+        <td>${row.no}</td>
+        <td class="left">${row.label}</td>
+        <td>${row.lk}</td>
+        <td>${row.pr}</td>
+        <td>${row.jml}</td>
+        <td>${row.keterangan}</td>
+      </tr>
+    `).join("");
+
+    const printHtml = `
       <html><head><title>Laporan Berdasarkan Usia ${data.bulanLabel} ${data.tahun}</title>
       <style>
         @page { size: A4 portrait; margin: 1.5cm; }
         body { font-family: Arial, sans-serif; font-size: 11px; color: #000; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #000; padding: 4px 6px; text-align: center; }
-        th { background: #4472C4; color: #fff; font-weight: bold; }
-        .header-line { text-align: center; font-weight: bold; }
-        .signature { text-align: center; margin-top: 30px; }
-        .total-row { font-weight: bold; background: #B4C7E7; }
-        img.logo { width: 70px; height: 70px; object-fit: contain; }
-      </style></head><body>${printContents}</body></html>
-    `);
+        .kop { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+        .kop img { width: 70px; height: 70px; object-fit: contain; }
+        .kop .kop-text { font-size: 12px; text-align: left; }
+        .kop .kop-text p { margin: 1px 0; }
+        .kop .kop-text .gov { font-weight: bold; font-size: 13px; }
+        .kop .kop-text .alm { font-size: 10px; }
+        .title-block { margin-bottom: 8px; font-size: 12px; }
+        .title-block p { margin: 1px 0; }
+        .title-block .title { font-weight: bold; font-size: 13px; }
+        table.main { border-collapse: collapse; width: 100%; }
+        table.main th, table.main td { border: 1px solid #000; padding: 4px 6px; text-align: center; }
+        table.main th { background: #4472C4; color: #fff; font-weight: bold; }
+        table.main td.left { text-align: left; }
+        table.main tr.total td { background: #B4C7E7; font-weight: bold; }
+        .signature { text-align: center; font-size: 11px; width: 250px; margin-top: 30px; margin-left: auto; }
+        .signature .name { font-weight: bold; text-decoration: underline; margin-top: 50px; }
+      </style></head><body>
+        <div class="kop">
+          <img src="${logoUrl}" alt="Logo" />
+          <div class="kop-text">
+            <p class="gov">PEMERINTAH KABUPATEN BOGOR</p>
+            <p class="gov">KECAMATAN CIBUNGBULANG</p>
+            <p class="gov">DESA SUKAMAJU</p>
+            <p class="alm">Alamat : ${ALAMAT}</p>
+          </div>
+        </div>
+        <div class="title-block">
+          <p class="title">LAPORAN PENDUDUK BERDASARKAN USIA</p>
+          <p>DESA : SUKAMAJU</p>
+          <p>BULAN : ${data.bulanLabel}</p>
+          <p>TAHUN : ${data.tahun}</p>
+        </div>
+        <table class="main">
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>Kelompok Umur</th>
+              <th>Laki-laki</th>
+              <th>Perempuan</th>
+              <th>Jumlah</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRowsHtml}
+            <tr class="total">
+              <td colspan="2">Jumlah</td>
+              <td>${data.total.lk}</td>
+              <td>${data.total.pr}</td>
+              <td>${data.total.jml}</td>
+              <td>100%</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="signature">
+          <p>Sukamaju, ${data.tanggalCetak}</p>
+          <p>Kepala Desa Sukamaju</p>
+          <div style="height: 50px;"></div>
+          <p class="name">Hj. CUCUM RATNA SUMINAR</p>
+        </div>
+      </body></html>
+    `;
+
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (!win) { toast.error("Popup diblokir browser"); return; }
+    win.document.write(printHtml);
     win.document.close();
     win.focus();
     setTimeout(() => { win.print(); win.close(); }, 500);
