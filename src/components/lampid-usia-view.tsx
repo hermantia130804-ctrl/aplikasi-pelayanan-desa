@@ -110,10 +110,10 @@ export default function LampidUsiaView() {
         body { font-family: Arial, sans-serif; font-size: 11px; color: #000; }
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #000; padding: 4px 6px; text-align: center; }
-        th { background: #f0f0f0; font-weight: bold; }
+        th { background: #4472C4; color: #fff; font-weight: bold; }
         .header-line { text-align: center; font-weight: bold; }
         .signature { text-align: center; margin-top: 30px; }
-        .total-row { font-weight: bold; background: #e0e0e0; }
+        .total-row { font-weight: bold; background: #B4C7E7; }
         img.logo { width: 70px; height: 70px; object-fit: contain; }
       </style></head><body>${printContents}</body></html>
     `);
@@ -247,13 +247,13 @@ export default function LampidUsiaView() {
                 {/* Tabel */}
                 <table className="w-full text-xs border-collapse">
                   <thead>
-                    <tr className="bg-muted">
-                      <th className="border p-2">No.</th>
-                      <th className="border p-2 text-left">Kelompok Umur</th>
-                      <th className="border p-2">Laki-laki</th>
-                      <th className="border p-2">Perempuan</th>
-                      <th className="border p-2">Jumlah</th>
-                      <th className="border p-2">Keterangan</th>
+                    <tr style={{ backgroundColor: "#4472C4", color: "#fff" }}>
+                      <th className="border p-2 text-white">No.</th>
+                      <th className="border p-2 text-left text-white">Kelompok Umur</th>
+                      <th className="border p-2 text-white">Laki-laki</th>
+                      <th className="border p-2 text-white">Perempuan</th>
+                      <th className="border p-2 text-white">Jumlah</th>
+                      <th className="border p-2 text-white">Keterangan</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -267,12 +267,12 @@ export default function LampidUsiaView() {
                         <td className="border p-2 text-center">{row.keterangan}</td>
                       </tr>
                     ))}
-                    <tr className="total-row">
-                      <td className="border p-2 text-center" colSpan={2}>Jumlah</td>
-                      <td className="border p-2 text-center">{data.total.lk}</td>
-                      <td className="border p-2 text-center">{data.total.pr}</td>
-                      <td className="border p-2 text-center">{data.total.jml}</td>
-                      <td className="border p-2 text-center">100%</td>
+                    <tr style={{ backgroundColor: "#B4C7E7" }}>
+                      <td className="border p-2 text-center font-bold" colSpan={2}>Jumlah</td>
+                      <td className="border p-2 text-center font-bold">{data.total.lk}</td>
+                      <td className="border p-2 text-center font-bold">{data.total.pr}</td>
+                      <td className="border p-2 text-center font-bold">{data.total.jml}</td>
+                      <td className="border p-2 text-center font-bold">100%</td>
                     </tr>
                   </tbody>
                 </table>

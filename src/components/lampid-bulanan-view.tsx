@@ -126,20 +126,24 @@ export default function LampidBulananView() {
         body { font-family: Arial, sans-serif; font-size: 8px; color: #000; margin: 8px; }
         table.lampid { border-collapse: collapse; width: 100%; table-layout: fixed; }
         table.lampid th, table.lampid td { border: 1px solid #000; padding: 2px; text-align: center; overflow: hidden; }
-        table.lampid th { background: #f0f0f0; font-weight: bold; }
+        table.lampid th { background: #4472C4; color: #fff; font-weight: bold; }
         table.lampid td.rw-cell, table.lampid td.rt-cell { font-weight: bold; }
-        table.lampid tr.subtotal td { background: #f5f5f5; font-weight: bold; }
-        table.lampid tr.grand-total td { background: #e0e0e0; font-weight: bold; }
+        table.lampid tr.subtotal td { background: #D6E4F0; font-weight: bold; }
+        table.lampid tr.grand-total td { background: #B4C7E7; font-weight: bold; }
         .header-block { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
-        .header-block img { width: 60px; height: 60px; object-fit: contain; }
+        .header-block img { width: 70px; height: 70px; object-fit: contain; }
         .header-block .header-text { font-size: 11px; text-align: left; }
         .header-block .header-text .title { font-weight: bold; font-size: 13px; }
+        .header-block .header-text .kop-line { font-weight: bold; font-size: 12px; }
+        .header-block .header-text .kop-alamat { font-size: 9px; }
         .signature { text-align: center; font-size: 10px; width: 240px; }
         .signature .name { font-weight: bold; text-decoration: underline; margin-top: 50px; }
         .agama-section { font-size: 9px; }
         .agama-section table { border-collapse: collapse; }
         .agama-section th, .agama-section td { border: 1px solid #000; padding: 2px 4px; text-align: center; }
-        .agama-section th { background: #fff2cc; font-weight: bold; }
+        .agama-section th { background: #FFF2CC; font-weight: bold; }
+        /* Show kop pemerintah in print (hidden on screen via inline style) */
+        .kop-pemerintah { display: block !important; }
       </style></head><body>${printContents}</body></html>
     `);
     win.document.close();
@@ -253,11 +257,22 @@ export default function LampidBulananView() {
 
           <Card>
             <CardContent className="p-4">
+              {/* Style untuk hide kop pemerintah on screen, show in print */}
+              <style>{`.kop-pemerintah { display: none; }`}</style>
               <div id="print-area" className="overflow-x-auto">
-                {/* Header: logo kiri + LAPORAN PENDUDUK/BULAN/TAHUN (kop tetap) */}
+                {/* Header: logo kiri + kop pemerintah + LAPORAN PENDUDUK
+                    Kop pemerintah (PEMERINTAH KAB. BOGOR / KECAMATAN / DESA / Alamat) hidden on screen,
+                    visible in print via .kop-pemerintah class (overridden in print function CSS). */}
                 <div className="flex items-start gap-4 mb-3">
                   <img src={logoKabBogorBase64} alt="Logo Kab. Bogor" className="h-20 w-20 object-contain flex-shrink-0" />
                   <div className="text-left">
+                    {/* Kop pemerintah — hidden on screen, shown in print */}
+                    <div className="kop-pemerintah">
+                      <p className="font-bold text-sm">PEMERINTAH KABUPATEN BOGOR</p>
+                      <p className="font-bold text-sm">KECAMATAN CIBUNGBULANG</p>
+                      <p className="font-bold text-sm">DESA SUKAMAJU</p>
+                      <p className="text-xs mb-1">Alamat : Jl. KH. Abd. Hamid No.36 Cibungbulang Bogor – Kode pos (16630)</p>
+                    </div>
                     <p className="font-bold text-base">LAPORAN PENDUDUK</p>
                     <p className="text-sm">BULAN : {data.bulanLabel}</p>
                     <p className="text-sm">TAHUN : {data.tahun}</p>

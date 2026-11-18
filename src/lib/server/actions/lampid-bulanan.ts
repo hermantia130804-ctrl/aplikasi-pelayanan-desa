@@ -364,7 +364,8 @@ async function generateLampidBulananData(bulan: number, tahun: number): Promise<
 
 // ===== EXPORT EXCEL =====
 // Layout mengikuti sheet JULI 2026 dari file Excel acuan:
-//   - Kop: logo + LAPORAN PENDUDUK + BULAN + TAHUN (tanpa kop pemerintah)
+//   - Kop lengkap: logo + PEMERINTAH KAB. BOGOR / KECAMATAN CIBUNGBULANG / DESA SUKAMAJU / Alamat
+//   - LAPORAN PENDUDUK + BULAN + TAHUN
 //   - Header 2 baris: RW, RT (rowSpan=2) lalu 8 grup × 3 sub-kolom (Lk/Pr/Jml) + 2 grup × 3 (Wajib/Memiliki/Belum)
 //   - Baris "Jumlah" per RW dengan subtotal
 //   - Baris "Jml.Ttl" grand total di paling bawah
@@ -388,12 +389,12 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
     bottom: { style: "thin" as const, color: { argb: COLOR_BORDER } },
   };
 
-  // Kolom: A=RW (6), B=RT (8), C-Z = 24 kolom Lk/Pr/Jml × 8 grup (masing-masing lebar 7), AA-AC = KK (10), AD-AF = KTP (10)
+  // Kolom: A=RW (5), B=RT (5), C-T = 18 kolom Lk/Pr/Jml × 6 grup (masing-masing lebar 5), U-Z = 6 kolom Wajib/Memiliki/Belum × 2 grup (lebar 9)
   ws.columns = [
-    { width: 6, key: "A" },
-    { width: 8, key: "B" },
-    ...Array(24).fill(0).map(() => ({ width: 7 })),
-    ...Array(6).fill(0).map(() => ({ width: 10 })),
+    { width: 5, key: "A" },   // RW
+    { width: 5, key: "B" },   // RT
+    ...Array(18).fill(0).map(() => ({ width: 5 })),  // C-T: 6 grup × Lk/Pr/Jml
+    ...Array(6).fill(0).map(() => ({ width: 9 })),   // U-Z: KK + KTP × Wajib/Memiliki/Belum
   ];
 
   const setCell = (row: number, col: number, val: string | number, opts?: {
@@ -420,27 +421,40 @@ async function buildExcelBulanan(data: LampidBulananData): Promise<string> {
     ws.mergeCells(r1, c1, r2, c2);
   };
 
-  // ===== HEADER (logo + LAPORAN PENDUDUK) =====
+  // ===== KOP LENGKAP (logo + PEMERINTAH KAB. BOGOR / KECAMATAN / DESA / Alamat) =====
   const logoBase64Data = LOGO_KAB_BOGOR_BASE64.split(",")[1];
   const imageId = wb.addImage({
     buffer: Buffer.from(logoBase64Data, "base64") as unknown as ArrayBuffer,
     extension: "png",
   });
+  // Logo diperbesar supaya sejajar dengan 4 baris kop (height ~100px)
   ws.addImage(imageId, {
     tl: { col: 0, row: 0 },
-    ext: { width: 70, height: 70 },
+    ext: { width: 90, height: 90 },
   });
 
-  merge(1, 4, 1, 8);
-  setCell(1, 4, "LAPORAN PENDUDUK", { bold: true, align: "left", fontSize: 12, border: false });
-  merge(2, 4, 2, 8);
-  setCell(2, 4, `BULAN : ${data.bulanLabel}`, { align: "left", border: false });
-  merge(3, 4, 3, 8);
-  setCell(3, 4, `TAHUN : ${data.tahun}`, { align: "left", border: false });
+  // Kop pemerintah — mulai col D=4, merge sampai col N=14 (cukup lebar untuk text panjang)
+  merge(1, 4, 1, 14);
+  setCell(1, 4, "PEMERINTAH KABUPATEN BOGOR", { bold: true, align: "left", fontSize: 12, border: false });
+  merge(2, 4, 2, 14);
+  setCell(2, 4, "KECAMATAN CIBUNGBULANG", { bold: true, align: "left", fontSize: 12, border: false });
+  merge(3, 4, 3, 14);
+  setCell(3, 4, "DESA SUKAMAJU", { bold: true, align: "left", fontSize: 12, border: false });
+  merge(4, 4, 4, 14);
+  setCell(4, 4, `Alamat : ${ALAMAT_DESA}`, { align: "left", fontSize: 9, border: false });
+
+  // LAPORAN PENDUDUK + BULAN + TAHUN
+  merge(5, 4, 5, 14);
+  setCell(5, 4, "LAPORAN PENDUDUK", { bold: true, align: "left", fontSize: 12, border: false });
+  merge(6, 4, 6, 14);
+  setCell(6, 4, `BULAN : ${data.bulanLabel}`, { align: "left", border: false });
+  merge(7, 4, 7, 14);
+  setCell(7, 4, `TAHUN : ${data.tahun}`, { align: "left", border: false });
 
   // ===== Tabel header (2 baris) =====
-  const HEADER_ROW1 = 5;
-  const HEADER_ROW2 = 6;
+  // Header tabel mulai row 9 (setelah kop 7 baris + 1 baris kosong pemisah)
+  const HEADER_ROW1 = 9;
+  const HEADER_ROW2 = 10;
 
   // RW & RT (rowSpan=2)
   setCell(HEADER_ROW1, 1, "RW", { bold: true, fill: COLOR_HEADER, fontColor: COLOR_HEADER_TEXT });
