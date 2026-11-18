@@ -122,6 +122,9 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
         },
       });
       revalidatePath("/data-warga");
+      // Revalidate beranda (dashboard + public) supaya statistik langsung update tanpa manual refresh
+      revalidatePath("/dashboard");
+      revalidatePath("/");
       return { status: 200, message: "Data berhasil disimpan", data };
     }
 
@@ -155,6 +158,9 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
 
       const data = await prisma.dataWarga.update({ where: { dataWargaId: String(id) }, data: u });
       revalidatePath("/data-warga");
+      // Revalidate beranda (dashboard + public) supaya statistik langsung update tanpa manual refresh
+      revalidatePath("/dashboard");
+      revalidatePath("/");
       return { status: 200, message: "Data berhasil diupdate", data };
     }
 
@@ -168,6 +174,9 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
       if (!bolehKelola) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
       await prisma.dataWarga.delete({ where: { dataWargaId: id } });
       revalidatePath("/data-warga");
+      // Revalidate beranda (dashboard + public) supaya statistik langsung update tanpa manual refresh
+      revalidatePath("/dashboard");
+      revalidatePath("/");
       return { status: 200, message: "Data berhasil dihapus" };
     }
 
@@ -217,6 +226,9 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
       const jumlah = await prisma.dataWarga.count({ where });
       await prisma.dataWarga.deleteMany({ where });
       revalidatePath("/data-warga");
+      // Revalidate beranda (dashboard + public) supaya statistik langsung update tanpa manual refresh
+      revalidatePath("/dashboard");
+      revalidatePath("/");
       revalidatePath("/kelola-data-warga");
       return { status: 200, message: `Seluruh data berhasil dihapus (${jumlah} warga)`, jumlah };
     }
@@ -333,6 +345,9 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
         } catch (e) { errors.push("Baris " + (i + 1) + " (" + nama + "): gagal tersimpan"); }
       }
       revalidatePath("/data-warga");
+      // Revalidate beranda (dashboard + public) supaya statistik langsung update tanpa manual refresh
+      revalidatePath("/dashboard");
+      revalidatePath("/");
       revalidatePath("/kelola-data-warga");
       return { status: 200, message: "Impor selesai: " + created + " tersimpan, " + skipped + " dilewati", created, skipped, dateParseFails, noKkFails, errors };
     }

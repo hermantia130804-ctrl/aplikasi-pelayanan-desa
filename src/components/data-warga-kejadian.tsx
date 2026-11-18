@@ -191,7 +191,12 @@ export default function PendudukKejadianRT({ isAdmin = true, isActive = false, w
         }
         const options = Array.from(kkMap.values())
           .map(({ noKK, namaKepala }) => ({ noKK, namaKepala }))
-          .sort((a, b) => a.noKK.localeCompare(b.noKK));
+          // Sort by namaKepala ascending (A-Z), fallback ke noKK kalau nama sama
+          .sort((a, b) => {
+            const cmp = a.namaKepala.localeCompare(b.namaKepala, "id-ID", { sensitivity: "base" });
+            if (cmp !== 0) return cmp;
+            return a.noKK.localeCompare(b.noKK);
+          });
         setKKOptions(options);
       }
     } catch (error) { console.error(error); }

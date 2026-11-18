@@ -273,6 +273,9 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
         },
       });
       revalidatePath("/data-warga");
+      // Revalidate beranda (dashboard + public) supaya statistik langsung update tanpa manual refresh
+      revalidatePath("/dashboard");
+      revalidatePath("/");
       return { status: 200, message: `Kejadian ${jenis} berhasil dicatat`, data };
     }
 
@@ -299,6 +302,9 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
       if (d.tanggal !== undefined) u.tanggal = new Date(String(d.tanggal));
       const data = await prisma.kejadian.update({ where: { kejadianId: String(id) }, data: u });
       revalidatePath("/data-warga");
+      // Revalidate beranda (dashboard + public) supaya statistik langsung update tanpa manual refresh
+      revalidatePath("/dashboard");
+      revalidatePath("/");
       return { status: 200, message: "Kejadian berhasil diupdate", data };
     }
 
@@ -387,6 +393,9 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
 
       await prisma.kejadian.delete({ where: { kejadianId: String(id) } });
       revalidatePath("/data-warga");
+      // Revalidate beranda (dashboard + public) supaya statistik langsung update tanpa manual refresh
+      revalidatePath("/dashboard");
+      revalidatePath("/");
       return { status: 200, message: `Kejadian berhasil dihapus${restoreMsg}` };
     }
 
@@ -403,6 +412,9 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
       const jumlah = await prisma.kejadian.count({ where });
       await prisma.kejadian.deleteMany({ where });
       revalidatePath("/data-warga");
+      // Revalidate beranda (dashboard + public) supaya statistik langsung update tanpa manual refresh
+      revalidatePath("/dashboard");
+      revalidatePath("/");
       return { status: 200, message: `Data kejadian berhasil dihapus (${jumlah} catatan)`, jumlah };
     }
 
