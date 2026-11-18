@@ -34,24 +34,26 @@ export default async function KelolaPerbaikanDesilPage() {
                     ) : (
                         <div className="flex flex-col gap-3">
                             {daftar.map((d) => (
-                                <Link
+                                <div
                                     key={d.perbaikanDesilId}
-                                    href={`/kelola-perbaikan-desil/${d.perbaikanDesilId}`}
                                     className="flex flex-col gap-2 rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
                                 >
-                                    <div>
-                                        <p className="font-bold">{d.nomorPermohonan}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {d.namaKk} · NIK {d.nikKk} · Pengaju: {d.user?.name ?? "-"} · {moment(d.createdAt).format("DD MMM YYYY")}
-                                        </p>
-                                    </div>
-    <div className="flex items-center gap-2">
+                                    <Link
+                                        href={`/kelola-perbaikan-desil/${d.perbaikanDesilId}`}
+                                        className="flex flex-1 items-center justify-between gap-2"
+                                    >
+                                        <div>
+                                            <p className="font-bold">{d.nomorPermohonan}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {d.namaKk} · NIK {d.nikKk} · Pengaju: {d.user?.name ?? "-"} · {moment(d.createdAt).format("DD MMM YYYY")}
+                                            </p>
+                                        </div>
                                         <Badge variant={badgeVarian[d.statusPermohonan] ?? "outline"}>
                                             {d.statusPermohonan}
                                         </Badge>
-                                        <PerbaikanDesilDeleteModal perbaikanDesilId={d.perbaikanDesilId} />
-                                    </div>
-                                </Link>
+                                    </Link>
+                                    <PerbaikanDesilDeleteModal perbaikanDesilId={d.perbaikanDesilId} />
+                                </div>
                             ))}
                         </div>
                     )}
