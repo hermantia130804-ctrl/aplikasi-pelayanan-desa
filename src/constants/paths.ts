@@ -15,6 +15,8 @@ export const PATHS = {
   ABOUT: "/tentang",
   SETTING: "/pengaturan",
   CONTACT: "/hubungi-kami",
+  LAMPID_BULANAN: "/kelola-lampid/bulanan",
+  LAMPID_USIA: "/kelola-lampid/usia",
   KTP_REQUEST: "/permohonan-ktp",
   KTP_REQUEST_CREATE: "/permohonan-ktp/tambah",
   KTP_REQUEST_EDIT: "/permohonan-ktp/edit",

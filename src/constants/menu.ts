@@ -1,5 +1,5 @@
 import { Role } from "@/generated/prisma";
-import { IconChartBar, IconDashboard, IconListDetails, IconSettings2, IconUsers } from "@tabler/icons-react";
+import { IconChartBar, IconDashboard, IconListDetails, IconReport, IconSettings2, IconUsers } from "@tabler/icons-react";
 import { IconNews } from "@tabler/icons-react";
 import { PATHS } from "./paths";
 
@@ -18,6 +18,8 @@ export const MENU = {
         { name: "Permohonan Saya", url: "/permohonan-saya", icon: IconListDetails, roles: RU },
         { name: "Perbaikan Desil Saya", url: "/perbaikan-desil", icon: IconListDetails, roles: ALL },
         { name: "Kelola Data Warga", url: "/data-warga", icon: IconUsers, roles: [Role.ADMIN, Role.PETUGAS, Role.RT] },
+        { name: "Kelola Lampid Bulanan", url: PATHS.LAMPID_BULANAN, icon: IconReport, roles: AP },
+        { name: "Laporan Berdasarkan Usia", url: PATHS.LAMPID_USIA, icon: IconReport, roles: AP },
     ],
     ADMIN: [
         { name: "Kelola Pengguna", url: PATHS.USER, icon: IconUsers, roles: A },

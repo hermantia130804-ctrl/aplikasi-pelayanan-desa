@@ -651,3 +651,33 @@ model SuratPengantar {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+// ===== LAMPID (Laporan Penduduk) — fitur Kelola Lampid =====
+// Laporan Bulanan: snapshot per bulan/tahun, format sheet JULI 2026 Excel.
+// Laporan Usia: snapshot distribusi penduduk per kelompok umur.
+// Data disimpan sebagai JSON string (struktur lengkap laporan saat di-generate).
+model LaporanLampidBulanan {
+  id         Int      @id @default(autoincrement())
+  bulan      Int
+  tahun      Int
+  data       String   // JSON: { rows: [...], agamaRows: [...], totals: {...} }
+  keterangan String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([bulan, tahun])
+  @@map("laporan_lampid_bulanan")
+}
+
+model LaporanLampidUsia {
+  id         Int      @id @default(autoincrement())
+  bulan      Int
+  tahun      Int
+  data       String   // JSON: { rows: [...], total: {l, p, jml} }
+  keterangan String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([bulan, tahun])
+  @@map("laporan_lampid_usia")
+}
