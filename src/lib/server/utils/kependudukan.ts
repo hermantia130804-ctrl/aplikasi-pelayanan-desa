@@ -32,3 +32,10 @@ export function isTanggalLahirInvalid(tanggalLahir: string | Date): boolean {
 export function validateNIK(nik: string): boolean { return /^\d{16}$/.test(nik); }
 export function validateNoKK(nkk: string): boolean { return /^\d{16}$/.test(nkk); }
 export function toUpperCase(str: string): string { return str.toUpperCase().trim(); }
+
+// Auto-fill KTP status: jika umur >= 19 tahun, otomatis "PUNYA"
+// (sesuai aturan: warga 19+ wajib punya KTP)
+export function autoKtpStatus(tanggalLahir: string | Date): string {
+  const { umurTahun } = hitungUmur(tanggalLahir);
+  return umurTahun >= 19 ? "PUNYA" : "BELUM";
+}

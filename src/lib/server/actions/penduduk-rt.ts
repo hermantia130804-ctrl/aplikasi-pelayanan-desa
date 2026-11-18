@@ -5,7 +5,7 @@ import { ApiError } from "next/dist/server/api-utils";
 import status from "http-status";
 import { prisma } from "@/lib/prisma";
 import { findCurrentSessionService } from "../services/session";
-import { toUpperCase, validateNIK, validateNoKK } from "../utils/kependudukan";
+import { toUpperCase, validateNIK, validateNoKK, autoKtpStatus } from "../utils/kependudukan";
 import * as XLSX from "xlsx";
 
 type Detail = { nomor?: string; nama?: string; alasan?: string; pengaju?: string };
@@ -111,7 +111,14 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
           namaIbu: toUpperCase(String(d.namaIbu ?? "-")),
           namaPanggilan: d.namaPanggilan ? toUpperCase(String(d.namaPanggilan)) : null,
           noHp: (d.noHp as string) || null,
-          punyaKtp: ["PUNYA", "BELUM", "RUSAK", "HILANG"].includes(String(d.punyaKtp)) ? String(d.punyaKtp) : "BELUM",
+          // Auto-fill KTP: jika umur >= 19 tahun, otomatis "PUNYA" (override input user)
+          punyaKtp: (() => {
+            const tglLahir = new Date(String(d.tanggalLahir));
+            const autoStatus = autoKtpStatus(tglLahir);
+            if (autoStatus === "PUNYA") return "PUNYA"; // umur >= 19 → wajib PUNYA
+            // umur < 19: pakai input user kalau valid, kalau tidak default BELUM
+            return ["PUNYA", "BELUM", "RUSAK", "HILANG"].includes(String(d.punyaKtp)) ? String(d.punyaKtp) : "BELUM";
+          })(),
           bantuan: Array.isArray(d.bantuan) ? d.bantuan : [],
           bpjs: (d.bpjs as string) || null,
           desil: (d.desil as string) || null,
@@ -145,11 +152,22 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
       if (d.noKk !== undefined) { if (!validateNoKK(String(d.noKk))) throw new ApiError(status.BAD_REQUEST, "No. KK harus 16 digit"); u.noKk = String(d.noKk); }
       if (d.nik !== undefined) { if (!validateNIK(String(d.nik))) throw new ApiError(status.BAD_REQUEST, "NIK harus 16 digit"); u.nik = String(d.nik); }
       str("namaLengkap"); str("jenisKelamin"); str("statusKeluarga"); str("tempatLahir");
-      if (d.tanggalLahir !== undefined) u.tanggalLahir = new Date(String(d.tanggalLahir));
+      if (d.tanggalLahir !== undefined) {
+        u.tanggalLahir = new Date(String(d.tanggalLahir));
+        // Auto-fill KTP saat tanggalLahir diubah: umur >= 19 → PUNYA
+        const autoStatus = autoKtpStatus(new Date(String(d.tanggalLahir)));
+        if (autoStatus === "PUNYA") u.punyaKtp = "PUNYA";
+      }
       str("agama"); str("pendidikan"); str("pekerjaan"); str("statusPerkawinan");
       if (d.namaPanggilan !== undefined) u.namaPanggilan = d.namaPanggilan ? toUpperCase(String(d.namaPanggilan)) : null;
       if (d.noHp !== undefined) u.noHp = (d.noHp as string) || null;
-      if (d.punyaKtp !== undefined && ["PUNYA", "BELUM", "RUSAK", "HILANG"].includes(String(d.punyaKtp))) u.punyaKtp = String(d.punyaKtp);
+      // punyaKtp: jika user set manual DAN umur >= 19, override ke PUNYA
+      if (d.punyaKtp !== undefined && ["PUNYA", "BELUM", "RUSAK", "HILANG"].includes(String(d.punyaKtp))) {
+        // Cek umur dari tanggalLahir existing atau yang baru di-set
+        const tglForKtp = d.tanggalLahir !== undefined ? new Date(String(d.tanggalLahir)) : existing.tanggalLahir;
+        const autoStatus = autoKtpStatus(tglForKtp);
+        u.punyaKtp = autoStatus === "PUNYA" ? "PUNYA" : String(d.punyaKtp);
+      }
       if (d.bantuan !== undefined) u.bantuan = Array.isArray(d.bantuan) ? d.bantuan : [];
       if (d.bpjs !== undefined) u.bpjs = (d.bpjs as string) || null;
       if (d.desil !== undefined) u.desil = (d.desil as string) || null;
@@ -336,6 +354,8 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
               namaIbu: toUpperCase(String(r[C.ibu] ?? "-")),
               namaPanggilan: r[C.panggilan] ? toUpperCase(String(r[C.panggilan])) : null,
               noHp: r[C.nik] && C.ket + 1 >= 0 ? (String(r[C.nik] ?? "").trim() ? null : null) : null,
+              // Auto-fill KTP: umur >= 19 → PUNYA
+              punyaKtp: autoKtpStatus(tgl),
               alamat: "KP. CEMPLANG",
               noRt: me.noRt, noRw: me.noRw,
               keterangan: r[C.ket] ? String(r[C.ket]) : null,
@@ -350,6 +370,40 @@ export async function pendudukRTAction(operation: string, payload?: unknown) {
       revalidatePath("/");
       revalidatePath("/kelola-data-warga");
       return { status: 200, message: "Impor selesai: " + created + " tersimpan, " + skipped + " dilewati", created, skipped, dateParseFails, noKkFails, errors };
+    }
+
+    // ===== MIGRATE KTP STATUS — update data lama: umur >= 19 → PUNYA =====
+    // Dipanggil oleh admin/petugas untuk update semua DataWarga yang sudah ada di server.
+    // Hanya update yang umurnya >= 19 DAN punyaKtp-nya bukan "PUNYA".
+    if (operation === "migrateKtpStatus") {
+      if (!isStaff) throw new ApiError(status.FORBIDDEN, "Hanya Admin/Petugas yang dapat menjalankan migrasi.");
+      const allWarga = await prisma.dataWarga.findMany({
+        select: { dataWargaId: true, tanggalLahir: true, punyaKtp: true },
+      });
+      let updated = 0;
+      let skipped = 0;
+      for (const w of allWarga) {
+        const autoStatus = autoKtpStatus(w.tanggalLahir);
+        if (autoStatus === "PUNYA" && w.punyaKtp !== "PUNYA") {
+          await prisma.dataWarga.update({
+            where: { dataWargaId: w.dataWargaId },
+            data: { punyaKtp: "PUNYA" },
+          });
+          updated++;
+        } else {
+          skipped++;
+        }
+      }
+      revalidatePath("/data-warga");
+      revalidatePath("/dashboard");
+      revalidatePath("/");
+      return {
+        status: 200,
+        message: `Migrasi KTP selesai: ${updated} warga diupdate ke PUNYA, ${skipped} warga tidak berubah.`,
+        updated,
+        skipped,
+        total: allWarga.length,
+      };
     }
 
     return { status: 400, error: "Operasi tidak dikenal" };

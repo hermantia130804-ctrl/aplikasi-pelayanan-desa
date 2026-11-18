@@ -5,7 +5,7 @@ import { ApiError } from "next/dist/server/api-utils";
 import status from "http-status";
 import { prisma } from "@/lib/prisma";
 import { findCurrentSessionService } from "../services/session";
-import { toUpperCase } from "../utils/kependudukan";
+import { toUpperCase, autoKtpStatus } from "../utils/kependudukan";
 
 const getSession = async () => {
   const s = await findCurrentSessionService();
@@ -244,7 +244,11 @@ export async function kejadianRTAction(operation: string, payload?: unknown) {
               statusPerkawinan: toUpperCase(String(a.statusPerkawinan ?? "")) || "BELUM MENIKAH",
               namaAyah: toUpperCase(String(a.namaAyah ?? "")) || "-",
               namaIbu: toUpperCase(String(a.namaIbu ?? "")) || "-",
-              punyaKtp: String(a.punyaKtp ?? "BELUM"),
+              // Auto-fill KTP: umur >= 19 → PUNYA
+              punyaKtp: (() => {
+                const tgl = a.tanggalLahir ? new Date(String(a.tanggalLahir)) : tanggal;
+                return autoKtpStatus(tgl);
+              })(),
               noRt: me?.noRt ?? "001", noRw: me?.noRw ?? "002",
             },
           });
