@@ -28,40 +28,6 @@ const profilDesa = {
   },
 };
 
-const statistikPenduduk = {
-  totalPenduduk: 12450,
-  jumlahKeluarga: 3820,
-  lakiLaki: 6320,
-  perempuan: 6130,
-  pekerjaan: [
-    { label: "Petani", nilai: 2100, emoji: "🌾" },
-    { label: "Karyawan Swasta", nilai: 3400, emoji: "🏢" },
-    { label: "Wirausaha", nilai: 1500, emoji: "💼" },
-    { label: "PNS/TNI/Polri", nilai: 320, emoji: "🏛️" },
-    { label: "Buruh Harian", nilai: 1800, emoji: "👷" },
-    { label: "Lainnya", nilai: 3330, emoji: "🔧" },
-  ],
-  pendidikan: [
-    { label: "SD/Sederajat", nilai: 4100 },
-    { label: "SMP/Sederajat", nilai: 3500 },
-    { label: "SMA/Sederajat", nilai: 3200 },
-    { label: "Diploma/Sarjana", nilai: 1450 },
-    { label: "Tidak/Belum Sekolah", nilai: 200 },
-  ],
-  agama: [
-    { label: "Islam", nilai: 12100, emoji: "🕌" },
-    { label: "Kristen", nilai: 180, emoji: "⛪" },
-    { label: "Katolik", nilai: 90, emoji: "⛪" },
-    { label: "Hindu/Buddha/Lainnya", nilai: 80, emoji: "🛕" },
-  ],
-};
-
-const perangkatDesa = [
-  { jabatan: "Kepala Desa", nama: "Bpk. [Nama Kepala Desa]", deskripsi: "Memimpin pemerintahan dan pembangunan desa.", emoji: "👔" },
-  { jabatan: "Sekretaris Desa", nama: "Bpk. [Nama Sekretaris]", deskripsi: "Mengkoordinasikan administrasi pemerintahan.", emoji: "📋" },
-  { jabatan: "Kaur Pelayanan", nama: "Ibu [Nama Kaur]", deskripsi: "Melayani kebutuhan administrasi warga.", emoji: "🗂️" },
-];
-
 const testimoni = [
   { nama: "Bapak Asep", peran: "Warga RT 03", isi: "Sekarang mengurus surat jauh lebih cepat. Cukup daftar online, tidak perlu antre lama di kantor desa.", rating: 5 },
   { nama: "Ibu Yati", peran: "Pemilik Warung", isi: "Pembuatan surat keterangan usaha dibantu dari awal sampai selesai. Pelayanannya ramah dan jelas.", rating: 5 },
@@ -94,8 +60,30 @@ function StatCard({ label, value, emoji }: { label: string; value: number | stri
   );
 }
 
+// Helper: konversi hasil groupBy Prisma ke array { label, nilai }.
+type GroupResult = { field: string | null; _count: { _all: number } };
+function toBars(rows: GroupResult[]): Array<{ label: string; nilai: number }> {
+  return rows
+    .filter((r) => r.field && r.field.trim() !== "")
+    .map((r) => ({ label: r.field as string, nilai: r._count._all }))
+    .sort((a, b) => b.nilai - a.nilai);
+}
+
 export default async function BerandaPage() {
-  const [totalPengguna, ktp, sktm, skl, skk, sku, skd, pindah] = await Promise.all([
+  // Statistik dari DB real (tabel DataWarga):
+  // - totalPenduduk: count semua baris yang diinput RT di Kelola Data Warga
+  // - totalKK: count baris dengan statusKeluarga = "KEPALA KELUARGA"
+  // - distribusi jenisKelamin / pekerjaan / pendidikan / agama via groupBy
+  const [
+    totalPengguna,
+    ktp, sktm, skl, skk, sku, skd, pindah,
+    totalPenduduk,
+    totalKK,
+    jenisKelaminRows,
+    pekerjaanRows,
+    pendidikanRows,
+    agamaRows,
+  ] = await Promise.all([
     prisma.user.count(),
     prisma.permohonanKTP.count(),
     prisma.permohonanSKTM.count(),
@@ -104,10 +92,24 @@ export default async function BerandaPage() {
     prisma.permohonanSKU.count(),
     prisma.permohonanSKD.count(),
     prisma.permohonanPindah.count(),
+    prisma.dataWarga.count(),
+    prisma.dataWarga.count({ where: { statusKeluarga: "KEPALA KELUARGA" } }),
+    prisma.dataWarga.groupBy({ by: ["jenisKelamin"], _count: { _all: true } }),
+    prisma.dataWarga.groupBy({ by: ["pekerjaan"], _count: { _all: true } }),
+    prisma.dataWarga.groupBy({ by: ["pendidikan"], _count: { _all: true } }),
+    prisma.dataWarga.groupBy({ by: ["agama"], _count: { _all: true } }),
   ]);
   const totalPermohonan = ktp + sktm + skl + skk + sku + skd + pindah;
-  const totalPekerjaan = statistikPenduduk.pekerjaan.reduce((a, b) => a + b.nilai, 0);
-  const totalPendidikan = statistikPenduduk.pendidikan.reduce((a, b) => a + b.nilai, 0);
+
+  const jkBars = toBars(jenisKelaminRows as GroupResult[]);
+  const pekerjaanBars = toBars(pekerjaanRows as GroupResult[]);
+  const pendidikanBars = toBars(pendidikanRows as GroupResult[]);
+  const agamaBars = toBars(agamaRows as GroupResult[]);
+  const totalPekerjaan = pekerjaanBars.reduce((a, b) => a + b.nilai, 0);
+  const totalPendidikan = pendidikanBars.reduce((a, b) => a + b.nilai, 0);
+
+  const lakiLaki = jkBars.find((b) => b.label.toUpperCase().includes("LAKI"))?.nilai ?? 0;
+  const perempuan = jkBars.find((b) => b.label.toUpperCase().includes("PEREMPUAN"))?.nilai ?? 0;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -132,8 +134,8 @@ export default async function BerandaPage() {
           </section>
 
           <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard label="Total Penduduk (2026)" value={statistikPenduduk.totalPenduduk} emoji="👥" />
-            <StatCard label="Jumlah Keluarga" value={statistikPenduduk.jumlahKeluarga} emoji="🏠" />
+            <StatCard label="Total Penduduk" value={totalPenduduk} emoji="👥" />
+            <StatCard label="Jumlah Keluarga" value={totalKK} emoji="🏠" />
             <StatCard label="Warga Terdaftar Online" value={totalPengguna} emoji="💻" />
             <StatCard label="Total Permohonan" value={totalPermohonan} emoji="📄" />
           </section>
@@ -171,53 +173,52 @@ export default async function BerandaPage() {
           <section className="flex flex-col gap-4">
             <div>
               <h2 className="text-xl font-bold">👥 Statistik Penduduk &amp; SDM</h2>
-              <p className="text-sm text-muted-foreground">Data penduduk ter-update tahun 2026.</p>
+              <p className="text-sm text-muted-foreground">Data penduduk real-time dari input seluruh RT di Kelola Data Warga.</p>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
                 <h3 className="font-semibold">Jenis Kelamin</h3>
-                <div className="mt-4 space-y-4">
-                  <Bar label="Laki-laki" nilai={statistikPenduduk.lakiLaki} total={statistikPenduduk.totalPenduduk} />
-                  <Bar label="Perempuan" nilai={statistikPenduduk.perempuan} total={statistikPenduduk.totalPenduduk} />
-                </div>
+                {lakiLaki === 0 && perempuan === 0 ? (
+                  <p className="mt-4 text-sm text-muted-foreground">Belum ada data penduduk.</p>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    <Bar label="Laki-laki" nilai={lakiLaki} total={totalPenduduk} />
+                    <Bar label="Perempuan" nilai={perempuan} total={totalPenduduk} />
+                  </div>
+                )}
                 <h3 className="mt-6 font-semibold">Pendidikan</h3>
-                <div className="mt-4 space-y-4">
-                  {statistikPenduduk.pendidikan.map((p) => (
-                    <Bar key={p.label} label={p.label} nilai={p.nilai} total={totalPendidikan} />
-                  ))}
-                </div>
+                {pendidikanBars.length === 0 ? (
+                  <p className="mt-4 text-sm text-muted-foreground">Belum ada data pendidikan.</p>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    {pendidikanBars.map((p) => (
+                      <Bar key={p.label} label={p.label} nilai={p.nilai} total={totalPendidikan} />
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
                 <h3 className="font-semibold">Mata Pencaharian</h3>
-                <div className="mt-4 space-y-4">
-                  {statistikPenduduk.pekerjaan.map((p) => (
-                    <Bar key={p.label} label={`${p.emoji} ${p.label}`} nilai={p.nilai} total={totalPekerjaan} />
-                  ))}
-                </div>
+                {pekerjaanBars.length === 0 ? (
+                  <p className="mt-4 text-sm text-muted-foreground">Belum ada data pekerjaan.</p>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    {pekerjaanBars.map((p) => (
+                      <Bar key={p.label} label={p.label} nilai={p.nilai} total={totalPekerjaan} />
+                    ))}
+                  </div>
+                )}
                 <h3 className="mt-6 font-semibold">Agama</h3>
-                <div className="mt-4 space-y-4">
-                  {statistikPenduduk.agama.map((p) => (
-                    <Bar key={p.label} label={`${p.emoji} ${p.label}`} nilai={p.nilai} total={statistikPenduduk.totalPenduduk} />
-                  ))}
-                </div>
+                {agamaBars.length === 0 ? (
+                  <p className="mt-4 text-sm text-muted-foreground">Belum ada data agama.</p>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    {agamaBars.map((p) => (
+                      <Bar key={p.label} label={p.label} nilai={p.nilai} total={totalPenduduk} />
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          </section>
-
-          <section className="flex flex-col gap-4">
-            <div>
-              <h2 className="text-xl font-bold">👔 Perangkat Desa</h2>
-              <p className="text-sm text-muted-foreground">Struktur perangkat yang melayani warga.</p>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {perangkatDesa.map((s) => (
-                <div key={s.jabatan} className="rounded-xl border bg-card p-4 text-center shadow-sm">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted text-3xl">{s.emoji}</div>
-                  <h3 className="mt-3 font-semibold">{s.jabatan}</h3>
-                  <p className="text-sm text-primary">{s.nama}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{s.deskripsi}</p>
-                </div>
-              ))}
             </div>
           </section>
 
