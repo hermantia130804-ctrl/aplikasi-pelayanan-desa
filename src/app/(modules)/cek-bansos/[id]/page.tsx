@@ -5,6 +5,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import moment from "moment";
+import { ZoomableImage } from "@/components/zoomable-image";
 
 export const dynamic = "force-dynamic";
 
@@ -54,8 +55,7 @@ export default async function CekBansosDetailPage({ params }: { params: Promise<
 
           <div className="rounded-2xl border bg-card p-5">
             <h2 className="mb-2 font-bold">Foto KK</h2>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={d.fotoKkUrl} alt="Foto KK" className="h-48 w-full rounded-lg border object-contain bg-muted" />
+            <ZoomableImage src={d.fotoKkUrl} alt="Foto KK" className="h-48 w-full rounded-lg border object-contain bg-muted" />
           </div>
 
           {(d.statusPermohonan === "DITOLAK" || d.statusPermohonan === "SELESAI") && (
@@ -69,8 +69,7 @@ export default async function CekBansosDetailPage({ params }: { params: Promise<
                   <Baris label="Keterangan" value={d.keteranganSelesai} />
                   {d.fotoHasilUrl && (
                     <div className="mt-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={d.fotoHasilUrl} alt="Foto hasil" className="h-48 w-full rounded-lg border object-contain bg-muted" />
+                      <ZoomableImage src={d.fotoHasilUrl} alt="Foto hasil" className="h-48 w-full rounded-lg border object-contain bg-muted" />
                     </div>
                   )}
                 </>

@@ -6,6 +6,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import moment from "moment";
+import { ZoomableImage } from "@/components/zoomable-image";
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +56,7 @@ export default async function KelolaCekBansosDetailPage({ params }: { params: Pr
 
           <div className="rounded-2xl border bg-card p-5">
             <h2 className="mb-2 font-bold">Foto KK</h2>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={d.fotoKkUrl} alt="Foto KK" className="h-48 w-full rounded-lg border object-contain bg-muted" />
+            <ZoomableImage src={d.fotoKkUrl} alt="Foto KK" className="h-48 w-full rounded-lg border object-contain bg-muted" downloadable downloadName={`Foto_KK_${d.noKk}.jpg`} />
           </div>
 
           <CekBansosTindakLanjut
