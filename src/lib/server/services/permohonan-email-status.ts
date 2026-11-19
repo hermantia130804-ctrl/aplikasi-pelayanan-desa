@@ -6,6 +6,7 @@ const STATUS_LABEL: Record<string, string> = {
   DIAJUKAN: "Menunggu Proses",
   DISETUJUI: "✅ DISETUJUI",
   DITOLAK: "❌ DITOLAK",
+  SELESAI: "✅ SELESAI",
 };
 
 /**
@@ -45,6 +46,18 @@ export const kirimEmailStatusWarga = async (jenis: string, id: string) => {
     case "DESIL":
       data = await prisma.perbaikanDesil.findUnique({ where: { perbaikanDesilId: id }, include: { user: true } });
       break;
+    case "BANSOS": {
+      const cb = await prisma.cekBansos.findUnique({ where: { cekBansosId: id }, include: { user: { select: { email: true, name: true } } } });
+      if (cb) {
+        data = {
+          nomorPermohonan: cb.nomorPermohonan,
+          statusPermohonan: cb.statusPermohonan,
+          catatan: cb.alasanDitolak ?? cb.keteranganSelesai ?? null,
+          user: cb.user,
+        };
+      }
+      break;
+    }
     case "PINDAH":
       data = await prisma.permohonanPindah.findUnique({ where: { permohonanPindahId: id }, include: { user: true } });
       break;
