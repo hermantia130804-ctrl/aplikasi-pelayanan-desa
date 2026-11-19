@@ -136,6 +136,7 @@ model User {
 
   @@map("users")
   perbaikanDesil        PerbaikanDesil[]
+  cekBansos             CekBansos[]
   dataWarga            DataWarga[]
   pendudukSementara      PendudukSementara[]
   kejadian               Kejadian[]
@@ -503,6 +504,26 @@ model PerbaikanDesil {
   user             User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@map("perbaikan_desil")
+}
+
+model CekBansos {
+  cekBansosId        String   @id @default(cuid()) @map("cek_bansos_id")
+  userId             String   @map("user_id")
+  nomorPermohonan    String   @unique @map("nomor_permohonan")
+  namaKepalaKeluarga String   @map("nama_kepala_keluarga")
+  noKk               String   @map("no_kk")
+  nik                String   @map("nik")
+  fotoKkUrl          String   @map("foto_kk_url")
+  statusPermohonan   String   @default("DIAJUKAN") @map("status_permohonan")
+  alasanDitolak      String?  @map("alasan_ditolak")
+  keteranganSelesai  String?  @map("keterangan_selesai")
+  fotoHasilUrl       String?  @map("foto_hasil_url")
+  petugasId          String?  @map("petugas_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  user               User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("cek_bansos")
 }
 
 model DataWarga {

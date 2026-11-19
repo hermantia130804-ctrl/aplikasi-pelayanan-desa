@@ -71,9 +71,9 @@ export const SignInForm = ({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Email atau NIK</FormLabel>
                 <FormControl>
-                  <Input placeholder="contoh@email.com" {...field} />
+                  <Input placeholder="email atau NIK (16 digit)" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -46,7 +46,19 @@ export const signInAction = async (payload: TSignInSchema) => {
             );
         }
 
-        const { data } = await findUserByEmailService(email);
+        // Login pakai email ATAU NIK (16 digit) — RT/warga bisa pakai NIK.
+        let data: any = null;
+        const isNik = /^\d{16}$/.test(email.trim());
+        if (isNik) {
+          const { prisma } = await import("@/lib/prisma");
+          data = await prisma.user.findUnique({
+            where: { nik: email.trim() },
+            select: { userId: true, password: true, verifiedAt: true, status: true, email: true, name: true, nik: true },
+          });
+        } else {
+          const r = await findUserByEmailService(email);
+          data = r.data;
+        }
         if (!data) throw new ApiError(status.UNAUTHORIZED, global.UNAUTHORIZED);
         if (!data.verifiedAt) throw new ApiError(status.UNAUTHORIZED, message.SIGN_IN_NOT_VERIFIED);
         if (data.status !== "ACTIVE") throw new ApiError(status.UNAUTHORIZED, message.SIGN_IN_NOT_ACTIVE);

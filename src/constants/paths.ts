@@ -38,4 +38,7 @@ export const PATHS = {
   PINDAH_REQUEST: "/permohonan-pindah",
   PINDAH_REQUEST_CREATE: "/permohonan-pindah/tambah",
   PINDAH_REQUEST_EDIT: "/permohonan-pindah/edit",
+  CEK_BANSOS: "/cek-bansos",
+  CEK_BANSOS_CREATE: "/cek-bansos/tambah",
+  KELOLA_CEK_BANSOS: "/kelola-cek-bansos",
 };

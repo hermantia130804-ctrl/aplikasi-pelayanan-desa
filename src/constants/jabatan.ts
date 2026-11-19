@@ -15,7 +15,7 @@ export type TJabatanPetugas = (typeof JABATAN_PETUGAS)[number];
 
 export const TUGAS_JABATAN: Record<string, string[]> = {
   "Kasi Pemerintahan": ["KTP", "KK", "SKL", "SKTM", "SKK", "SKU", "SKD"],
-  "Kasi Kesejahteraan": ["Perbaikan Desil"],
+  "Kasi Kesejahteraan": ["Perbaikan Desil", "Cek Status Bansos"],
   "Kasi Pelayanan": [],
   "Global": [],
 };

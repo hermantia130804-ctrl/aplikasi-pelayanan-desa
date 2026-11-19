@@ -10,6 +10,7 @@ const KONFIG: Record<string, { model: keyof typeof prisma; prefix: string; field
   SKD: { model: "permohonanSKD", prefix: "SKD", field: "nomorPermohonan" },
   PINDAH: { model: "permohonanPindah", prefix: "PND", field: "nomorPermohonan" },
   DESIL: { model: "perbaikanDesil", prefix: "DESIL", field: "nomorPermohonan" },
+  BANSOS: { model: "cekBansos", prefix: "BANSOS", field: "nomorPermohonan" },
 };
 
 /**

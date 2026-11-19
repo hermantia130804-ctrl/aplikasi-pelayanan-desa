@@ -2,7 +2,10 @@ import { z } from "zod";
 import { VALIDATION_MESSAGE } from "@/constants/validation-message";
 
 export const signInSchema = z.object({
-  email: z.string().email(VALIDATION_MESSAGE.INVALID_EMAIL),
+  email: z.string().min(1, "Email atau NIK wajib diisi").refine(
+    (v) => /^\d{16}$/.test(v.trim()) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()),
+    "Masukkan email yang valid atau NIK 16 digit"
+  ),
   password: z.string().min(8, VALIDATION_MESSAGE.INVALID_PASSWORD),
 });
 

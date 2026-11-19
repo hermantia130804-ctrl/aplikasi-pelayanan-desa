@@ -17,6 +17,7 @@ export const MENU = {
         { name: "Beranda", url: "/dashboard", icon: IconDashboard, roles: ALL },
         { name: "Permohonan Saya", url: "/permohonan-saya", icon: IconListDetails, roles: RU },
         { name: "Perbaikan Desil Saya", url: "/perbaikan-desil", icon: IconListDetails, roles: ALL },
+        { name: "Status Cek Bansos", url: "/cek-bansos", icon: IconListDetails, roles: RU },
         { name: "Kelola Data Warga", url: "/data-warga", icon: IconUsers, roles: [Role.ADMIN, Role.PETUGAS, Role.RT] },
         { name: "Kelola Lampid Bulanan", url: PATHS.LAMPID_BULANAN, icon: IconReport, roles: AP },
         { name: "Laporan Berdasarkan Usia", url: PATHS.LAMPID_USIA, icon: IconReport, roles: AP },
@@ -33,6 +34,7 @@ export const MENU = {
         { name: "Struktur Organisasi", url: "/struktur-organisasi", icon: IconUsers, roles: A },
         { name: "Kegiatan Desa", url: "/berita-kegiatan", icon: IconNews, roles: AP },
         { name: "Kelola Perbaikan Desil", url: "/kelola-perbaikan-desil", icon: IconChartBar, roles: AP },
+        { name: "Kelola Status Cek Bansos", url: "/kelola-cek-bansos", icon: IconChartBar, roles: AP },
 
     ],
     USER: [
@@ -44,6 +46,7 @@ export const MENU = {
         { name: "Ajukan SKU", url: "/permohonan-sku-mandiri/tambah", icon: IconChartBar, roles: RU },
         { name: "Ajukan SKD", url: "/permohonan-skd-mandiri/tambah", icon: IconChartBar, roles: RU },
         { name: "Ajukan Perbaikan Desil", url: "/perbaikan-desil/tambah", icon: IconChartBar, roles: RU },
+        { name: "Ajukan Cek Status Bansos", url: "/cek-bansos/tambah", icon: IconChartBar, roles: RU },
     ],
     FOOTER: [
         { name: "Pengaturan", url: PATHS.SETTING, icon: IconSettings2, roles: ALL },
