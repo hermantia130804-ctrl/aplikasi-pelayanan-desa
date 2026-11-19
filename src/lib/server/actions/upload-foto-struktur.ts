@@ -8,6 +8,8 @@ export const uploadFotoStrukturAction = async (formData: FormData) => {
   try {
     const session = await findCurrentSessionService();
     if (!session?.user) return { error: "Anda harus login terlebih dahulu" };
+    const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
+    if (!isStaff) return { error: "Hanya admin/petugas yang dapat mengunggah" };
 
     const file = formData.get("file") as File | null;
     if (!file) return { error: "Foto tidak ditemukan" };

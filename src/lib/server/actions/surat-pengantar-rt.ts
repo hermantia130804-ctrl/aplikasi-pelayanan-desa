@@ -14,7 +14,8 @@ const getSession = async () => {
 
 export async function suratPengantarRTAction(operation: string, payload?: unknown) {
   try {
-    await getSession();
+    const session = await getSession();
+    const isStaff = session.user.role === "ADMIN" || session.user.role === "PETUGAS";
 
     // ===== LIST (port: GET /api/surat-pengantar) =====
     if (operation === "list") {
@@ -31,6 +32,20 @@ export async function suratPengantarRTAction(operation: string, payload?: unknow
         });
         const nikSet = new Set(nikList.map(n => n.nik));
         data = data.filter(s => nikSet.has(s.nik));
+      }
+      // FIX #2: Non-staff (RT/USER) hanya lihat surat pengantar milik RT-nya sendiri (via NIK lookup)
+      if (!isStaff) {
+        const me = await prisma.user.findUnique({ where: { userId: session.user.userId }, select: { noRt: true, noRw: true } });
+        if (me?.noRt && me?.noRw) {
+          const nikList = await prisma.dataWarga.findMany({
+            where: { noRt: me.noRt, noRw: me.noRw },
+            select: { nik: true },
+          });
+          const nikSet = new Set(nikList.map(n => n.nik));
+          data = data.filter(s => nikSet.has(s.nik));
+        } else {
+          data = []; // RT tanpa wilayah -> tidak lihat apapun
+        }
       }
       return { status: 200, data };
     }

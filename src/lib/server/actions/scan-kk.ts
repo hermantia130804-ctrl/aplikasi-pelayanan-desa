@@ -39,6 +39,11 @@ export async function scanKKAction(imageDataUrl: string) {
     if (!session?.user) {
       return { ok: false, error: "Anda harus login untuk menggunakan fitur scan KK." };
     }
+    // (#4 Fix) Role check: hanya ADMIN, PETUGAS, RT yang bisa scan KK (input data warga)
+    const isStaffOrRT = session.user.role === "ADMIN" || session.user.role === "PETUGAS" || session.user.role === "RT";
+    if (!isStaffOrRT) {
+      return { ok: false, error: "Hanya admin, petugas, atau Ketua RT yang dapat menggunakan scan KK." };
+    }
 
     // (#12) Rate limit per user.
     const rlKey = `scan-kk:user:${session.user.userId}`;

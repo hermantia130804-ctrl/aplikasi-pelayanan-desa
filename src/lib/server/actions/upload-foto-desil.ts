@@ -8,6 +8,7 @@ export const uploadFotoDesilAction = async (formData: FormData) => {
   try {
     const session = await findCurrentSessionService();
     if (!session?.user) return { error: "Anda harus login terlebih dahulu" };
+    // Semua role boleh upload foto desil (USER/RT untuk pengajuan, ADMIN/PETUGAS untuk kelola)
 
     const file = formData.get("file") as File | null;
     if (!file) return { error: "Foto tidak ditemukan" };
