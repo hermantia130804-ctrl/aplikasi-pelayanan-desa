@@ -1,6 +1,6 @@
 "use server"
 
-import { RESPONSE_MESSAGE } from "@/constants/response-message";
+import { MESSAGE as RESPONSE_MESSAGE } from "@/constants/message";
 import { findCurrentSessionService } from "../services/session";
 import { TChangePasswordSchema } from "@/lib/validators/account";
 import { ApiError } from "next/dist/server/api-utils";
