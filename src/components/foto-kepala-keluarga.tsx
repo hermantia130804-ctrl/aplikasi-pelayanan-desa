@@ -7,6 +7,49 @@ import { uploadFotoKkAction } from "@/lib/server/actions/upload-foto-kk";
 import { pendudukRTAction } from "@/lib/server/actions/penduduk-rt";
 import { toast } from "sonner";
 
+/**
+ * Kompres gambar sebelum upload:
+ * - Resize ke max 800×800px (maintain aspect ratio)
+ * - Convert ke JPEG quality 0.8
+ * - Hasil: ~50-100KB per foto (cukup kecil untuk Vercel Blob Hobby 1GB)
+ */
+async function compressImage(file: File | Blob, maxDim = 800, quality = 0.8): Promise<File> {
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Gagal load gambar"));
+      img.src = url;
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+
+  let { naturalWidth: width, naturalHeight: height } = img;
+  if (width > maxDim || height > maxDim) {
+    const ratio = Math.min(maxDim / width, maxDim / height);
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas tidak didukung");
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const blob = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      b => b ? resolve(b) : reject(new Error("Gagal kompres gambar")),
+      "image/jpeg",
+      quality
+    )
+  );
+  return new File([blob], "foto-kk.jpg", { type: "image/jpeg" });
+}
+
 interface FotoKepalaKeluargaProps {
   dataWargaId: string;
   fotoUrl?: string | null;
@@ -120,9 +163,10 @@ export function FotoKepalaKeluarga({
       const blob: Blob = await new Promise((resolve, reject) =>
         canvas.toBlob(b => b ? resolve(b) : reject(new Error("Gagal membuat gambar")), "image/jpeg", 0.9)
       );
-      const file = new File([blob], "foto-kk.jpg", { type: "image/jpeg" });
+      // Kompres: resize max 800x800 + JPEG quality 0.8
+      const compressedFile = await compressImage(blob, 800, 0.8);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedFile);
       const res = await uploadFotoKkAction(formData);
       if (res.url) {
         stopCamera();
@@ -144,8 +188,10 @@ export function FotoKepalaKeluarga({
     setUploading(true);
     setShowUploadMenu(false);
     try {
+      // Kompres: resize max 800x800 + JPEG quality 0.8
+      const compressedFile = await compressImage(file, 800, 0.8);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedFile);
       const res = await uploadFotoKkAction(formData);
       if (res.url) {
         await handleSaveFoto(res.url);
