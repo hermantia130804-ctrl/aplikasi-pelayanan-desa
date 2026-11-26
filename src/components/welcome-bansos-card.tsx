@@ -1,14 +1,4 @@
-"use client";
-
-import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, Save, Loader2, Edit3, RefreshCw, Sparkles } from "lucide-react";
-import { updateDetailBansosAction, autoFetchDetailBansosAction } from "@/lib/server/actions/account";
-import { toast } from "sonner";
-
-const SOCIOMILE_URL = "https://chat.sociomile.com/livechat/6abd3eb90de3aa91408eb350?wbia=6285772646402::herman";
 
 interface WelcomeBansosCardProps {
   nama: string;
@@ -16,56 +6,9 @@ interface WelcomeBansosCardProps {
   detailBansos?: string | null;
 }
 
+// Kartu display-only: detail bansos sudah di-fetch otomatis saat login (signInAction ->
+// fetchDetailBansosByNik -> User.detailBansos). Tidak ada tombol — tampil apa adanya.
 export function WelcomeBansosCard({ nama, nik, detailBansos }: WelcomeBansosCardProps) {
-  const [editing, setEditing] = useState(false);
-  const [bansosText, setBansosText] = useState(detailBansos || "");
-  const [saving, setSaving] = useState(false);
-  const [savedText, setSavedText] = useState(detailBansos || "");
-  const [autoFetching, setAutoFetching] = useState(false);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const r = await updateDetailBansosAction(bansosText);
-      if (r.status === 200) {
-        setSavedText(bansosText.trim());
-        setEditing(false);
-        toast.success("Detail bansos berhasil disimpan");
-      } else {
-        toast.error("Gagal menyimpan detail bansos");
-      }
-    } catch {
-      toast.error("Terjadi kesalahan");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setBansosText(savedText);
-    setEditing(false);
-  };
-
-  // Cek otomatis: panggil chatbot Sociomile (MINSOS) pakai NIK user, simpan + tampilkan hasil.
-  const handleAutoFetch = async () => {
-    setAutoFetching(true);
-    try {
-      const r = await autoFetchDetailBansosAction();
-      if (r.status === 200 && r.data) {
-        setBansosText(r.data);
-        setSavedText(r.data);
-        setEditing(false);
-        toast.success("Detail bansos berhasil diambil otomatis dari Sociomile");
-      } else {
-        toast.error(r.message || "Gagal mengambil detail bansos otomatis");
-      }
-    } catch {
-      toast.error("Terjadi kesalahan saat menghubungi Sociomile");
-    } finally {
-      setAutoFetching(false);
-    }
-  };
-
   return (
     <Card className="border-emerald-200 bg-gradient-to-b from-emerald-50/50 to-white">
       <CardContent className="p-6">
@@ -76,88 +19,15 @@ export function WelcomeBansosCard({ nama, nik, detailBansos }: WelcomeBansosCard
         <p className="text-center text-sm text-muted-foreground mt-1">NIK: {nik}</p>
 
         <div className="mt-4 border-t border-emerald-100 pt-4">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <p className="text-center text-sm font-semibold text-gray-700">Detail Bansos</p>
-            {savedText && !editing && (
-              <button
-                onClick={() => { setEditing(true); setBansosText(savedText); }}
-                className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"
-              >
-                <Edit3 className="h-3 w-3" /> Edit
-              </button>
-            )}
-          </div>
-
-          {!editing ? (
-            <div className="text-center">
-              {savedText ? (
-                <>
-                  <div className="whitespace-pre-line text-sm text-gray-600 bg-gray-50 rounded-lg p-3 max-w-md mx-auto">
-                    {savedText}
-                  </div>
-                  <div className="mt-3 flex flex-col items-center gap-2">
-                    <Button onClick={handleAutoFetch} disabled={autoFetching} size="sm" variant="outline" className="text-emerald-700 border-emerald-300">
-                      {autoFetching ? (
-                        <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Mengecek otomatis...</>
-                      ) : (
-                        <><RefreshCw className="h-4 w-4 mr-1" /> Cek Ulang Otomatis</>
-                      )}
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Belum ada detail bansos. Cek otomatis pakai NIK Anda:
-                  </p>
-                  <div className="flex flex-col items-center gap-2">
-                    <Button onClick={handleAutoFetch} disabled={autoFetching} size="sm">
-                      {autoFetching ? (
-                        <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Mengecek otomatis...</>
-                      ) : (
-                        <><Sparkles className="h-4 w-4 mr-1" /> Cek Otomatis</>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={() => { setEditing(true); setBansosText(""); }}
-                      size="sm"
-                      variant="ghost"
-                      className="text-xs"
-                    >
-                      Input Manual
-                    </Button>
-                    <a href={SOCIOMILE_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline inline-flex items-center gap-1 mt-1">
-                      <ExternalLink className="h-3 w-3" /> Buka Sociomile manual
-                    </a>
-                  </div>
-                </div>
-              )}
+          <p className="text-center text-sm font-semibold text-gray-700 mb-2">Detail Bansos</p>
+          {detailBansos ? (
+            <div className="whitespace-pre-line text-sm text-gray-600 bg-gray-50 rounded-lg p-3 max-w-md mx-auto">
+              {detailBansos}
             </div>
           ) : (
-            <div className="max-w-md mx-auto">
-              <Textarea
-                value={bansosText}
-                onChange={e => setBansosText(e.target.value)}
-                placeholder="Copy-paste hasil cek bansos dari Sociomile di sini..."
-                className="text-sm min-h-[80px] resize-none"
-                autoFocus
-              />
-              <div className="flex gap-2 mt-2 justify-center">
-                <Button onClick={handleSave} disabled={saving} size="sm">
-                  {saving ? (
-                    <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Simpan...</>
-                  ) : (
-                    <><Save className="h-4 w-4 mr-1" /> Simpan</>
-                  )}
-                </Button>
-                <Button onClick={handleCancel} size="sm" variant="outline">Batal</Button>
-              </div>
-              <div className="mt-2 text-center">
-                <a href={SOCIOMILE_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline inline-flex items-center gap-1">
-                  <ExternalLink className="h-3 w-3" /> Buka Sociomile untuk cek bansos
-                </a>
-              </div>
-            </div>
+            <p className="text-center text-sm text-muted-foreground max-w-md mx-auto">
+              Detail bansos akan diambil otomatis dari Kemensos (MINSOS) saat Anda masuk.
+            </p>
           )}
         </div>
       </CardContent>

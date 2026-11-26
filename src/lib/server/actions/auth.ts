@@ -71,6 +71,29 @@ export const signInAction = async (payload: TSignInSchema) => {
 
         const session = await createSessionService(data.userId);
         await setSessionTokenCookie(session.data.sessionId, session.data.expiresAt);
+
+        // ===== AUTO-FETCH DETAIL BANSOS (setiap login, TANPA tombol) =====
+        // Panggil chatbot Sociomile (MINSOS) pakai NIK user -> simpan ke User.detailBansos.
+        // try/catch: login TIDAK boleh gagal karena Sociomile (bot offline / NIK ditolak /
+        // network). Detail tetap null/old kalau gagal -> retry login berikutnya.
+        try {
+            const { prisma } = await import("@/lib/prisma");
+            const u = await prisma.user.findUnique({
+                where: { userId: data.userId },
+                select: { nik: true },
+            });
+            if (u?.nik) {
+                const { fetchDetailBansosByNik } = await import("../services/sociomile-bansos");
+                const detail = await fetchDetailBansosByNik(u.nik);
+                await prisma.user.update({
+                    where: { userId: data.userId },
+                    data: { detailBansos: detail },
+                });
+            }
+        } catch (e) {
+            console.error("[AUTO BANSOS] Gagal fetch detail bansos saat login:", e instanceof Error ? e.message : e);
+        }
+
         return { status: status.OK, message: message.SIGN_IN_OK };
     } catch (error) {
         return errorHandler(error);
