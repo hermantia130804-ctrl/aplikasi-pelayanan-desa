@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { FotoKepalaKeluarga } from '@/components/foto-kepala-keluarga';
 import {
   Dialog,
   DialogContent,
@@ -93,6 +94,7 @@ interface Penduduk {
   statusPerkawinan: string; kewarganegaraan: string; namaAyah: string; namaIbu: string;
   namaPanggilan: string | null; noHp: string | null; punyaKtp: string; bantuan: string[];
   bpjs: string | null; alamat: string; keterangan: string | null;
+  fotoKk?: string | null;
 }
 
 interface KKGroup {
@@ -1229,14 +1231,24 @@ export default function TabPenduduk({ isAdmin = true, canEdit, isActive = false,
                 <Card key={group.noKk} className="overflow-hidden">
                   <CardContent className="p-0">
                     {/* KK Header */}
-                    <button
+                    <div
                       onClick={() => toggleExpand(group.noKk)}
-                      className="w-full flex items-center gap-2 p-3 hover:bg-emerald-50 transition-colors text-left"
+                      className="w-full flex items-center gap-2 p-3 hover:bg-emerald-50 transition-colors text-left cursor-pointer"
                     >
                       {isExpanded ? (
                         <ChevronDown className="h-4 w-4 text-emerald-600 shrink-0" />
                       ) : (
                         <ChevronRight className="h-4 w-4 text-emerald-600 shrink-0" />
+                      )}
+                      {group.kepala && (
+                        <FotoKepalaKeluarga
+                          dataWargaId={group.kepala.dataWargaId}
+                          fotoUrl={group.kepala.fotoKk}
+                          namaKepala={group.kepala.namaLengkap}
+                          canEdit={bolehEdit}
+                          onUpdated={() => fetchPenduduk()}
+                          size={40}
+                        />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm truncate">{group.kepala?.namaLengkap || '-'}</p>
@@ -1246,7 +1258,7 @@ export default function TabPenduduk({ isAdmin = true, canEdit, isActive = false,
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">L:{totalL}</Badge>
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">P:{totalP}</Badge>
                       </div>
-                    </button>
+                    </div>
 
                     {/* Expanded Members */}
                     {isExpanded && (
