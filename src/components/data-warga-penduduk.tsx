@@ -1242,12 +1242,13 @@ export default function TabPenduduk({ isAdmin = true, canEdit, isActive = false,
                       )}
                       {group.kepala && (
                         <FotoKepalaKeluarga
-                          dataWargaId={group.kepala.dataWargaId}
+                          recordId={group.kepala.dataWargaId}
                           fotoUrl={group.kepala.fotoKk}
                           namaKepala={group.kepala.namaLengkap}
                           canEdit={bolehEdit}
                           onUpdated={() => fetchPenduduk()}
                           size={40}
+                          source="penduduk"
                         />
                       )}
                       <div className="flex-1 min-w-0">

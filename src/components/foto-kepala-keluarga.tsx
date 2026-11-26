@@ -5,6 +5,7 @@ import { Camera, Image as ImageIcon, X, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { uploadFotoKkAction } from "@/lib/server/actions/upload-foto-kk";
 import { pendudukRTAction } from "@/lib/server/actions/penduduk-rt";
+import { pendudukSementaraRTAction } from "@/lib/server/actions/penduduk-sementara-rt";
 import { toast } from "sonner";
 
 /**
@@ -51,12 +52,13 @@ async function compressImage(file: File | Blob, maxDim = 800, quality = 0.8): Pr
 }
 
 interface FotoKepalaKeluargaProps {
-  dataWargaId: string;
+  recordId: string;
   fotoUrl?: string | null;
   namaKepala: string;
   canEdit?: boolean;
   onUpdated?: () => void;
-  size?: number; // diameter dalam px, default 48
+  size?: number;
+  source?: "penduduk" | "sementara";
 }
 
 /**
@@ -67,12 +69,13 @@ interface FotoKepalaKeluargaProps {
  * - Hanya untuk KEPALA KELUARGA
  */
 export function FotoKepalaKeluarga({
-  dataWargaId,
+  recordId,
   fotoUrl,
   namaKepala,
   canEdit = false,
   onUpdated,
   size = 48,
+  source = "penduduk",
 }: FotoKepalaKeluargaProps) {
   const [showEnlarged, setShowEnlarged] = useState(false);
   const [showUploadMenu, setShowUploadMenu] = useState(false);
@@ -99,7 +102,8 @@ export function FotoKepalaKeluarga({
   const handleSaveFoto = useCallback(async (url: string) => {
     setUploading(true);
     try {
-      const r = await pendudukRTAction("updateFotoKk", { id: dataWargaId, fotoKk: url });
+      const action = source === "sementara" ? pendudukSementaraRTAction : pendudukRTAction;
+      const r = await action("updateFotoKk", { id: recordId, fotoKk: url });
       if (r.status === 200) {
         setCurrentFoto(url);
         toast.success("Foto kepala keluarga berhasil disimpan");
@@ -114,7 +118,7 @@ export function FotoKepalaKeluarga({
       setShowUploadMenu(false);
       setShowCamera(false);
     }
-  }, [dataWargaId, onUpdated]);
+  }, [recordId, onUpdated, source]);
 
   // === Kamera ===
   const startCamera = async () => {
@@ -276,7 +280,8 @@ export function FotoKepalaKeluarga({
                     setUploading(true);
                     setShowUploadMenu(false);
                     try {
-                      const r = await pendudukRTAction("updateFotoKk", { id: dataWargaId, fotoKk: "" });
+                      const action = source === "sementara" ? pendudukSementaraRTAction : pendudukRTAction;
+                      const r = await action("updateFotoKk", { id: recordId, fotoKk: "" });
                       if (r.status === 200) {
                         setCurrentFoto(null);
                         toast.success("Foto dihapus");

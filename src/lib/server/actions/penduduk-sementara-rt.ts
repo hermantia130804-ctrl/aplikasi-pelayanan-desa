@@ -303,6 +303,24 @@ export async function sementaraRTAction(operation: string, payload?: unknown) {
       return { status: 200, message: "Impor selesai: " + created + " tersimpan, " + skipped + " dilewati", created, skipped, errors };
     }
 
+    // ===== UPDATE FOTO KK — simpan URL foto kepala keluarga =====
+    if (operation === "updateFotoKk") {
+      const { id, fotoKk } = (payload ?? {}) as { id?: string; fotoKk?: string };
+      if (!id) throw new ApiError(status.BAD_REQUEST, "ID diperlukan");
+      const existing = await prisma.pendudukSementara.findUnique({ where: { pendudukSementaraId: id } });
+      if (!existing) throw new ApiError(status.NOT_FOUND, "Data tidak ditemukan.");
+      const bolehKelola = isStaff || existing.userId === session.user.userId || (!!me?.noRt && !!me?.noRw && existing.noRt === me.noRt && existing.noRw === me.noRw);
+      if (!bolehKelola) throw new ApiError(status.FORBIDDEN, "Akses ditolak.");
+      await prisma.pendudukSementara.update({
+        where: { pendudukSementaraId: id },
+        data: { fotoKk: fotoKk || null },
+      });
+      revalidatePath("/data-warga");
+      revalidatePath("/dashboard");
+      revalidatePath("/");
+      return { status: 200, message: "Foto kepala keluarga berhasil disimpan" };
+    }
+
     return { status: 400, error: "Operasi tidak dikenal" };
   } catch (error) {
     if (error instanceof ApiError) return { status: error.statusCode, error: error.message };
