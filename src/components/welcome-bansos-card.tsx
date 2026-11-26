@@ -4,8 +4,8 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, Save, Loader2, Edit3, CheckCircle2 } from "lucide-react";
-import { updateDetailBansosAction } from "@/lib/server/actions/account";
+import { ExternalLink, Save, Loader2, Edit3, RefreshCw, Sparkles } from "lucide-react";
+import { updateDetailBansosAction, autoFetchDetailBansosAction } from "@/lib/server/actions/account";
 import { toast } from "sonner";
 
 const SOCIOMILE_URL = "https://chat.sociomile.com/livechat/6abd3eb90de3aa91408eb350?wbia=6285772646402::herman";
@@ -21,6 +21,7 @@ export function WelcomeBansosCard({ nama, nik, detailBansos }: WelcomeBansosCard
   const [bansosText, setBansosText] = useState(detailBansos || "");
   const [saving, setSaving] = useState(false);
   const [savedText, setSavedText] = useState(detailBansos || "");
+  const [autoFetching, setAutoFetching] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
@@ -45,25 +46,35 @@ export function WelcomeBansosCard({ nama, nik, detailBansos }: WelcomeBansosCard
     setEditing(false);
   };
 
+  // Cek otomatis: panggil chatbot Sociomile (MINSOS) pakai NIK user, simpan + tampilkan hasil.
+  const handleAutoFetch = async () => {
+    setAutoFetching(true);
+    try {
+      const r = await autoFetchDetailBansosAction();
+      if (r.status === 200 && r.data) {
+        setBansosText(r.data);
+        setSavedText(r.data);
+        setEditing(false);
+        toast.success("Detail bansos berhasil diambil otomatis dari Sociomile");
+      } else {
+        toast.error(r.message || "Gagal mengambil detail bansos otomatis");
+      }
+    } catch {
+      toast.error("Terjadi kesalahan saat menghubungi Sociomile");
+    } finally {
+      setAutoFetching(false);
+    }
+  };
+
   return (
     <Card className="border-emerald-200 bg-gradient-to-b from-emerald-50/50 to-white">
       <CardContent className="p-6">
-        {/* Baris 1: Selamat Datang */}
         <p className="text-center text-sm font-medium text-emerald-600 uppercase tracking-wide">
           Selamat Datang
         </p>
+        <h2 className="text-center text-2xl font-bold text-gray-900 mt-1">{nama}</h2>
+        <p className="text-center text-sm text-muted-foreground mt-1">NIK: {nik}</p>
 
-        {/* Baris 2: Nama pengguna */}
-        <h2 className="text-center text-2xl font-bold text-gray-900 mt-1">
-          {nama}
-        </h2>
-
-        {/* Baris 3: NIK */}
-        <p className="text-center text-sm text-muted-foreground mt-1">
-          NIK: {nik}
-        </p>
-
-        {/* Baris 4: Detail Bansos */}
         <div className="mt-4 border-t border-emerald-100 pt-4">
           <div className="flex items-center justify-center gap-2 mb-2">
             <p className="text-center text-sm font-semibold text-gray-700">Detail Bansos</p>
@@ -80,20 +91,33 @@ export function WelcomeBansosCard({ nama, nik, detailBansos }: WelcomeBansosCard
           {!editing ? (
             <div className="text-center">
               {savedText ? (
-                <div className="whitespace-pre-line text-sm text-gray-600 bg-gray-50 rounded-lg p-3 max-w-md mx-auto">
-                  {savedText}
-                </div>
+                <>
+                  <div className="whitespace-pre-line text-sm text-gray-600 bg-gray-50 rounded-lg p-3 max-w-md mx-auto">
+                    {savedText}
+                  </div>
+                  <div className="mt-3 flex flex-col items-center gap-2">
+                    <Button onClick={handleAutoFetch} disabled={autoFetching} size="sm" variant="outline" className="text-emerald-700 border-emerald-300">
+                      {autoFetching ? (
+                        <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Mengecek otomatis...</>
+                      ) : (
+                        <><RefreshCw className="h-4 w-4 mr-1" /> Cek Ulang Otomatis</>
+                      )}
+                    </Button>
+                  </div>
+                </>
               ) : (
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-2">
-                    Belum ada detail bansos. Cek bansos Anda:
+                    Belum ada detail bansos. Cek otomatis pakai NIK Anda:
                   </p>
                   <div className="flex flex-col items-center gap-2">
-                    <a href={SOCIOMILE_URL} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm" className="text-emerald-600 border-emerald-300">
-                        <ExternalLink className="h-4 w-4 mr-1" /> Cek Bansos via Sociomile
-                      </Button>
-                    </a>
+                    <Button onClick={handleAutoFetch} disabled={autoFetching} size="sm">
+                      {autoFetching ? (
+                        <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Mengecek otomatis...</>
+                      ) : (
+                        <><Sparkles className="h-4 w-4 mr-1" /> Cek Otomatis</>
+                      )}
+                    </Button>
                     <Button
                       onClick={() => { setEditing(true); setBansosText(""); }}
                       size="sm"
@@ -102,6 +126,9 @@ export function WelcomeBansosCard({ nama, nik, detailBansos }: WelcomeBansosCard
                     >
                       Input Manual
                     </Button>
+                    <a href={SOCIOMILE_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline inline-flex items-center gap-1 mt-1">
+                      <ExternalLink className="h-3 w-3" /> Buka Sociomile manual
+                    </a>
                   </div>
                 </div>
               )}
@@ -123,23 +150,13 @@ export function WelcomeBansosCard({ nama, nik, detailBansos }: WelcomeBansosCard
                     <><Save className="h-4 w-4 mr-1" /> Simpan</>
                   )}
                 </Button>
-                <Button onClick={handleCancel} size="sm" variant="outline">
-                  Batal
-                </Button>
+                <Button onClick={handleCancel} size="sm" variant="outline">Batal</Button>
               </div>
               <div className="mt-2 text-center">
                 <a href={SOCIOMILE_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline inline-flex items-center gap-1">
                   <ExternalLink className="h-3 w-3" /> Buka Sociomile untuk cek bansos
                 </a>
               </div>
-            </div>
-          )}
-
-          {savedText && !editing && (
-            <div className="mt-2 text-center">
-              <a href={SOCIOMILE_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline inline-flex items-center gap-1">
-                <ExternalLink className="h-3 w-3" /> Cek ulang di Sociomile
-              </a>
             </div>
           )}
         </div>

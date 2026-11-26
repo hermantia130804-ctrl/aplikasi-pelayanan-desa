@@ -8,6 +8,7 @@ import status from "http-status";
 import { verifyPasswordHash } from "../utils/password";
 import { updateUserPasswordService } from "../services/user";
 import { errorHandler } from "../services/error";
+import { fetchDetailBansosByNik } from "../services/sociomile-bansos";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
@@ -38,5 +39,29 @@ export const updateDetailBansosAction = async (detailBansos: string) => {
         return { status: 200, message: "Detail bansos berhasil disimpan" };
     } catch (error) {
         return errorHandler(error);
+    }
+}
+
+// Ambil detail bansos OTOMATIS dari chatbot Sociomile (MINSOS) pakai NIK user.
+// Tidak perlu copy-paste manual. Dipanggil tombol "Cek Otomatis" di welcome-bansos-card.
+export const autoFetchDetailBansosAction = async () => {
+    try {
+        const session = await findCurrentSessionService();
+        if (!session?.user) throw new ApiError(status.UNAUTHORIZED, "Anda belum masuk.");
+        const user = await prisma.user.findUnique({
+            where: { userId: session.user.userId },
+            select: { nik: true },
+        });
+        if (!user?.nik) throw new ApiError(status.BAD_REQUEST, "NIK Anda belum terisi di profil.");
+        const detail = await fetchDetailBansosByNik(user.nik);
+        await prisma.user.update({
+            where: { userId: session.user.userId },
+            data: { detailBansos: detail },
+        });
+        revalidatePath("/dashboard");
+        return { status: 200, message: "Detail bansos berhasil diambil otomatis", data: detail };
+    } catch (error) {
+        const e = await errorHandler(error);
+        return { status: e.status, message: e.message, data: undefined };
     }
 }
