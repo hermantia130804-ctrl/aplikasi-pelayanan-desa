@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { findCurrentSessionService } from "@/lib/server/services/session";
+import { WelcomeBansosCard } from "@/components/welcome-bansos-card";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +72,10 @@ function toBars(rows: GroupResult[]): Array<{ label: string; nilai: number }> {
 }
 
 export default async function BerandaPage() {
+  // Fetch session untuk welcome card (USER & RT only)
+  const session = await findCurrentSessionService();
+  const showWelcome = session?.user && (session.user.role === "USER" || session.user.role === "RT");
+
   // Statistik dari DB real (tabel DataWarga):
   // - totalPenduduk: count semua baris yang diinput RT di Kelola Data Warga
   // - totalKK: count baris dengan statusKeluarga = "KEPALA KELUARGA"
@@ -132,6 +138,15 @@ export default async function BerandaPage() {
               </p>
             </div>
           </section>
+
+          {/* Welcome + Detail Bansos card — hanya untuk USER & RT */}
+          {showWelcome && session?.user && (
+            <WelcomeBansosCard
+              nama={session.user.name}
+              nik={session.user.nik}
+              detailBansos={session.user.detailBansos}
+            />
+          )}
 
           <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatCard label="Total Penduduk" value={totalPenduduk} emoji="👥" />

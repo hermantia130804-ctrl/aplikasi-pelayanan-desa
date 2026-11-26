@@ -116,6 +116,7 @@ model User {
   noRw         String?  @map("no_rw")
   namaKetua    String?  @map("nama_ketua")
   alamatRt     String?  @map("alamat_rt")
+  detailBansos String?  @map("detail_bansos")
   status     Status    @default(INACTIVE)
   verifiedAt DateTime? @map("verified_at")
   createdAt  DateTime  @default(now()) @map("created_at")
