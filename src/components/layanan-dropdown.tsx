@@ -30,7 +30,8 @@ export const layanan: LayananItem[] = [
   },
   {
     label: "Cek Bantuan dan Desil",
-    href: "https://cekbansos.kemensos.go.id",
+    // Buka popup CekBansosDialog (hash #cek-bansos) alih-alih navigasi ke situs Kemensos.
+    href: "/#cek-bansos",
     icon: HandCoins,
     newTab: false,
   },
