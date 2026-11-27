@@ -18,6 +18,7 @@ export const uploadDocumentAction = async (formData: FormData) => {
     return { url };
   } catch (error) {
     console.error("ERROR ASLI (upload):", error);
-    return { error: "Gagal mengunggah dokumen" };
+    // Permukaan pesan error asli (dari uploadFile/put) supaya diagnosa tampak di toast.
+    return { error: error instanceof Error ? error.message : "Gagal mengunggah dokumen" };
   }
 }

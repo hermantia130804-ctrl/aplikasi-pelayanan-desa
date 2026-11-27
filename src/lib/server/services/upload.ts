@@ -11,12 +11,18 @@ export async function uploadFile(file: File, bucketName: string): Promise<string
       // Konsisten dgn uploadFotoCekBansosAction/uploadGambarBeritaAction.
       access: "public",
       contentType: file.type || "application/pdf",
-    } as never);
+      // Token WAJIB eksplisit — jangan andalkan env standar BLOB_READ_WRITE_TOKEN.
+      // 7 action lain pakai BLOB_PUBLIC_BLOB_READ_WRITE_TOKEN; tanpa token -> put() throw
+      // "No token found" -> toast "Gagal mengunggah dokumen".
+      token: process.env.BLOB_PUBLIC_BLOB_READ_WRITE_TOKEN,
+    });
     console.log(`File uploaded to Vercel Blob: ${blob.pathname}`);
     return blob.url;
   } catch (error) {
     console.error("Error uploading file:", error);
-    throw new Error("Gagal mengunggah dokumen");
+    // Pertahankan pesan error asli (mis. "No token found") supaya tampak di toast diagnosa.
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error("Gagal mengunggah dokumen: " + detail);
   }
 }
 
