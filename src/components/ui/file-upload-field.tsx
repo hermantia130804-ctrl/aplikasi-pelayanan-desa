@@ -78,10 +78,11 @@ interface FileUploadFieldProps {
 
 export const FileUploadField = React.forwardRef<HTMLInputElement, FileUploadFieldProps>(
   ({ value, onChange, accept, placeholder, disabled = false, className, bucketName, ...rest }, ref) => {
-    // Default accept: PDF + gambar
-    const effectiveAccept = accept || ".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp";
-    const allowsImage = effectiveAccept.includes("image") || effectiveAccept.includes("jpg") || effectiveAccept.includes("png") || effectiveAccept.includes("webp");
-    const allowsPdf = effectiveAccept.includes("pdf");
+    // Selalu accept PDF + gambar, meskipun form pass accept=".pdf"
+    // (supaya user bisa upload foto dari kamera/galeri untuk semua dokumen)
+    const effectiveAccept = ".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp";
+    const allowsImage = true; // selalu true — user bisa upload gambar untuk semua dokumen
+    const allowsPdf = true;
 
     const [uploading, setUploading] = React.useState(false);
     const [showEditor, setShowEditor] = React.useState(false);
@@ -204,7 +205,9 @@ export const FileUploadField = React.forwardRef<HTMLInputElement, FileUploadFiel
     };
 
     const inputId = React.useId();
-    const acceptLabel = allowsPdf && allowsImage ? "PDF, JPG, PNG, WebP" : allowsPdf ? "PDF" : "JPG, PNG, WebP";
+    const acceptLabel = "PDF, JPG, PNG, WebP";
+    // Hapus "(PDF)" dari placeholder kalau ada, supaya user tidak mengira hanya PDF
+    const cleanPlaceholder = placeholder ? placeholder.replace(/\s*\(PDF\)/gi, "").replace(/\s*PDF\s*$/i, "") : "";
 
     return (
       <div className={cn("flex flex-col gap-2 relative", className)}>
@@ -255,9 +258,9 @@ export const FileUploadField = React.forwardRef<HTMLInputElement, FileUploadFiel
                 <Upload className="h-8 w-8 text-muted-foreground" />
               )}
               <p className="text-sm font-medium">
-                {uploading ? "Mengunggah..." : placeholder || `Klik untuk pilih file (${acceptLabel})`}
+                {uploading ? "Mengunggah..." : (cleanPlaceholder || `Klik untuk pilih file`)}
               </p>
-              <p className="text-[10px] text-muted-foreground">{acceptLabel} · maks 9 MB{allowsImage && " · auto-kompres"}</p>
+              <p className="text-[10px] text-muted-foreground">{acceptLabel} · maks 9 MB · auto-kompres gambar</p>
             </div>
           </div>
         )}
