@@ -2,10 +2,12 @@ import { del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 
 const hapusBlobs = async (urls: (string | null | undefined)[]) => {
-  const list = urls.filter((u): u is string => Boolean(u));
+  const list = urls.filter((u): u is string => Boolean(u) && u.startsWith("http"));
   if (!list.length) return;
   try {
-    await del(list);
+    await del(list, {
+      token: process.env.BLOB_PUBLIC_BLOB_READ_WRITE_TOKEN,
+    });
     console.log(`[DELETE] ${list.length} file blob dihapus`);
   } catch (e) {
     console.error("[DELETE] Gagal hapus file blob (baris tetap dihapus):", e);
