@@ -206,8 +206,16 @@ export const FileUploadField = React.forwardRef<HTMLInputElement, FileUploadFiel
 
     const inputId = React.useId();
     const acceptLabel = "PDF, JPG, PNG, WebP";
-    // Hapus "(PDF)" dari placeholder kalau ada, supaya user tidak mengira hanya PDF
+    // Hapus "(PDF)" dari placeholder kalau ada
     const cleanPlaceholder = placeholder ? placeholder.replace(/\s*\(PDF\)/gi, "").replace(/\s*PDF\s*$/i, "") : "";
+
+    // Merge internal inputRef dengan external ref — HARUS di top level, bukan di JSX
+    // (kalau di JSX conditional → React hooks violation → crash)
+    const mergedInputRef = React.useCallback((node: HTMLInputElement | null) => {
+      inputRef.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
+    }, [ref]);
 
     return (
       <div className={cn("flex flex-col gap-2 relative", className)}>
@@ -238,11 +246,7 @@ export const FileUploadField = React.forwardRef<HTMLInputElement, FileUploadFiel
             uploading && "opacity-50 cursor-not-allowed"
           )}>
             <input
-              ref={React.useCallback((node: HTMLInputElement | null) => {
-                inputRef.current = node;
-                if (typeof ref === "function") ref(node);
-                else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
-              }, [ref])}
+              ref={mergedInputRef}
               type="file"
               accept={effectiveAccept}
               onChange={handleFileChange}
