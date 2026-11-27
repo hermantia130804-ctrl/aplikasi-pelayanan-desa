@@ -4,7 +4,8 @@ import { findPerbaikanDesilByIdAction } from "@/lib/server/actions/perbaikan-des
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -114,7 +115,7 @@ export default async function DetailPerbaikanDesilPage({ params }: { params: Pro
                                 ))}
                             </div>
                         )}
-                        <p className="mt-2 text-xs text-muted-foreground">Diajukan {moment(d.createdAt).format("DD MMMM YYYY HH:mm")}</p>
+                        <p className="mt-2 text-xs text-muted-foreground">Diajukan {format(d.createdAt, "dd MMMM yyyy HH:mm", { locale: id })}</p>
                     </div>
                 </div>
             </div>

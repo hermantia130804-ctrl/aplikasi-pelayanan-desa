@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PermohonanKTP } from "@/generated/prisma";
 import { ArrowLeftIcon, FileCheck2 } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { PermohonanKTPFollowUpModal } from "./permohonan-ktp-follow-up-modal";
@@ -102,7 +103,7 @@ export function PermohonanKTPDetail({ permohonanKTP }: PermohonanKTPDetailProps)
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <DetailRow label="Nama" value={nama} />
               <DetailRow label="NIK" value={nik} />
-              <DetailRow label="Tempat, Tanggal Lahir" value={`${tempatLahir || "-"}, ${tanggalLahir ? moment(tanggalLahir).format("DD MMMM YYYY") : "-"}`} />
+              <DetailRow label="Tempat, Tanggal Lahir" value={`${tempatLahir || "-"}, ${tanggalLahir ? format(tanggalLahir, "dd MMMM yyyy", { locale: id }) : "-"}`} />
               <DetailRow label="Jenis Kelamin" value={jenisKelamin} />
               <DetailRow label="Golongan Darah" value={golonganDarah} />
               <DetailRow label="Status Perkawinan" value={statusPerkawinan} />
@@ -151,8 +152,8 @@ export function PermohonanKTPDetail({ permohonanKTP }: PermohonanKTPDetailProps)
             <h2 className="font-semibold mb-2">Metadata</h2>
             <Separator className="mb-2" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-gray-500">
-              <DetailRow label="Dibuat" value={createdAt ? moment(createdAt).format("DD MMMM YYYY, HH:mm") : '-'} />
-              <DetailRow label="Diupdate" value={updatedAt ? moment(updatedAt).format("DD MMMM YYYY, HH:mm") : '-'} />
+              <DetailRow label="Dibuat" value={createdAt ? format(createdAt, "dd MMMM yyyy, HH:mm", { locale: id }) : '-'} />
+              <DetailRow label="Diupdate" value={updatedAt ? format(updatedAt, "dd MMMM yyyy, HH:mm", { locale: id }) : '-'} />
             </div>
           </section>
         </CardContent>

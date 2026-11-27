@@ -6,7 +6,8 @@ import { ArrowLeftIcon } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function DetailPermohonanSayaKKPage({ params }: { params: P
                         <div>
                             <h1 className="text-2xl font-bold">Detail Permohonan KK</h1>
                             <p className="text-sm text-muted-foreground">
-                                {data.nomorPermohonan ?? "Nomor belum tersedia"} • Diajukan {moment(data.createdAt).format("DD MMMM YYYY")}
+                                {data.nomorPermohonan ?? "Nomor belum tersedia"} • Diajukan {format(data.createdAt, "dd MMMM yyyy", { locale: id })}
                             </p>
                         </div>
                         <Badge variant="outline" className={status.className + " w-fit text-sm"}>{status.label}</Badge>

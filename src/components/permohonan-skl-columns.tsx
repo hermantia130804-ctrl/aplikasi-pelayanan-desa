@@ -6,7 +6,8 @@ import { PATHS } from "@/constants/paths";
 import { PermohonanSKL } from "@/generated/prisma";
 import { ColumnDef } from "@tanstack/react-table";
 import { EyeIcon, PencilIcon } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import Link from "next/link";
 import { PermohonanSKLColumnHeader } from "./permohonan-skl-column-header";
 import { PermohonanSKLDeleteModal } from "./permohonan-skl-delete-modal";
@@ -31,7 +32,7 @@ export const permohonanSKLColumns: ColumnDef<PermohonanSKL>[] = [
     id: "tempatTanggalLahir",
     cell: ({ row }) => {
       const { tempatLahir, tanggalLahir } = row.original;
-      return `${tempatLahir}, ${moment(tanggalLahir).format("DD/MM/YYYY")}`;
+      return `${tempatLahir}, ${format(tanggalLahir, "dd/MM/yyyy", { locale: id })}`;
     },
   },
   // Nama Ayah
@@ -69,7 +70,7 @@ export const permohonanSKLColumns: ColumnDef<PermohonanSKL>[] = [
     accessorKey: "createdAt",
     header: () => PermohonanSKLColumnHeader({ accessorKey: "createdAt", title: "Tanggal Dibuat" }),
     cell: ({ row }) => {
-      return moment(row.original.createdAt).format("DD/MM/YYYY HH:mm");
+      return format(row.original.createdAt, "dd/MM/yyyy HH:mm", { locale: id });
     },
   },
   {

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,7 @@ export default async function KelolaPerbaikanDesilDetailPage({ params }: { param
                         <Badge>{d.statusPermohonan}</Badge>
                     </div>
                     <p className="text-muted-foreground -mt-2 text-sm">
-                        Pemohon: {d.user?.name ?? "-"} ({d.user?.email ?? "-"}) · Diajukan {moment(d.createdAt).format("DD MMMM YYYY HH:mm")}
+                        Pemohon: {d.user?.name ?? "-"} ({d.user?.email ?? "-"}) · Diajukan {format(d.createdAt, "dd MMMM yyyy HH:mm", { locale: id })}
                     </p>
                     {d.catatan && (
                         <div className="rounded-xl border bg-muted/40 p-4 text-sm">

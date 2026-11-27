@@ -4,7 +4,8 @@ import { findManyPerbaikanDesilAction } from "@/lib/server/actions/perbaikan-des
 import { PerbaikanDesilDeleteModal } from "@/components/perbaikan-desil-delete-modal";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,7 @@ export default async function KelolaPerbaikanDesilPage() {
                                         <div>
                                             <p className="font-bold">{d.nomorPermohonan}</p>
                                             <p className="text-sm text-muted-foreground">
-                                                {d.namaKk} · NIK {d.nikKk} · Pengaju: {d.user?.name ?? "-"} · {moment(d.createdAt).format("DD MMM YYYY")}
+                                                {d.namaKk} · NIK {d.nikKk} · Pengaju: {d.user?.name ?? "-"} · {format(d.createdAt, "dd MMM yyyy", { locale: id })}
                                             </p>
                                         </div>
                                         <Badge variant={badgeVarian[d.statusPermohonan] ?? "outline"}>

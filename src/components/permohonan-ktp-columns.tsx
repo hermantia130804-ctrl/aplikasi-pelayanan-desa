@@ -6,7 +6,8 @@ import { PATHS } from "@/constants/paths";
 import { StatusPermohonan } from "@/generated/prisma";
 import { PermohonanKTP } from "@/generated/prisma";
 import { ColumnDef } from "@tanstack/react-table";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import Link from "next/link";
 import { PermohonanKTPColumnHeader } from "./permohonan-ktp-column-header";
 import { EyeIcon, PencilIcon } from "lucide-react";
@@ -71,7 +72,7 @@ export const permohonanKTPColumns: ColumnDef<PermohonanKTP>[] = [
     header: () => PermohonanKTPColumnHeader({ accessorKey: "createdAt", title: "Tanggal Dibuat" }),
     cell: ({ row }) => {
       const date = row.getValue("createdAt") as Date;
-      return moment(date).format("DD MMMM YYYY");
+      return format(date, "dd MMMM yyyy", { locale: id });
     },
   },
   {

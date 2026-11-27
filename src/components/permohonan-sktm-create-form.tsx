@@ -33,7 +33,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, CalendarIcon, CheckCircle2 } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import Link from "next/link";
 
 export const PermohonanSKTMCreateForm = () => {
@@ -195,7 +196,7 @@ export const PermohonanSKTMCreateForm = () => {
                                                     )}
                                                 >
                                                     {field.value ? (
-                                                        moment(field.value).format("DD/MM/YYYY")
+                                                        format(field.value, "dd/MM/yyyy", { locale: id })
                                                     ) : (
                                                         <span>Pilih tanggal lahir</span>
                                                     )}

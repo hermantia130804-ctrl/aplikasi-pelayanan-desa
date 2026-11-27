@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PATHS } from "@/constants/paths";
 import { PermohonanSKK } from "@/generated/prisma";
 import { ArrowLeftIcon, EditIcon } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PermohonanSKKFollowUpModal } from "./permohonan-skk-follow-up-modal";
@@ -87,7 +88,7 @@ export function PermohonanSKKDetail({ permohonanSKK }: PermohonanSKKDetailProps)
                 Tanggal Dibuat
               </label>
               <p className="font-medium">
-                {moment(permohonanSKK.createdAt).format("DD MMMM YYYY, HH:mm")}
+                {format(permohonanSKK.createdAt, "dd MMMM yyyy, HH:mm", { locale: id })}
               </p>
             </div>
             <div>
@@ -95,7 +96,7 @@ export function PermohonanSKKDetail({ permohonanSKK }: PermohonanSKKDetailProps)
                 Terakhir Diperbarui
               </label>
               <p className="font-medium">
-                {moment(permohonanSKK.updatedAt).format("DD MMMM YYYY, HH:mm")}
+                {format(permohonanSKK.updatedAt, "dd MMMM yyyy, HH:mm", { locale: id })}
               </p>
             </div>
           </CardContent>
@@ -146,7 +147,7 @@ export function PermohonanSKKDetail({ permohonanSKK }: PermohonanSKKDetailProps)
               </label>
               <p className="font-medium">
                 {permohonanSKK.tanggalMeninggal
-                  ? moment(permohonanSKK.tanggalMeninggal).format("DD MMMM YYYY")
+                  ? format(permohonanSKK.tanggalMeninggal, "dd MMMM yyyy", { locale: id })
                   : "-"}
               </p>
             </div>

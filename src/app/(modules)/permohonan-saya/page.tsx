@@ -7,7 +7,8 @@ import { FileText, PlusCircle } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +107,7 @@ export default async function PermohonanSayaPage() {
                                                     </Badge>
                                                 </div>
                                                 <p className="text-sm text-muted-foreground">
-                                                    {item.nama} • Diajukan {moment(item.createdAt).format("DD MMMM YYYY HH:mm")}
+                                                    {item.nama} • Diajukan {format(item.createdAt, "dd MMMM yyyy HH:mm", { locale: id })}
                                                 </p>
                                                 {item.catatan && (
                                                     <p className="mt-1 rounded-md bg-muted p-2 text-xs">

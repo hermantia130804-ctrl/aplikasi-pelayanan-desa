@@ -4,7 +4,8 @@ import { findManyBeritaService } from "@/lib/server/services/berita-kegiatan";
 import { PlusCircle, PencilIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export default async function KelolaBeritaPage() {
 )}
                                     <div className="p-4 flex flex-col gap-1">
                                         <p className="text-xs text-muted-foreground">
-                                            📅 {moment(b.tanggalKegiatan).format("DD MMMM YYYY")} · ✍️ {b.penulis.name}
+                                            📅 {format(b.tanggalKegiatan, "dd MMMM yyyy", { locale: id })} · ✍️ {b.penulis.name}
                                         </p>
                                         <h3 className="font-bold leading-snug">{b.judul}</h3>
                                         <p className="text-sm text-muted-foreground">{b.isi.slice(0, 100)}...</p>

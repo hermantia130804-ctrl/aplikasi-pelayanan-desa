@@ -4,7 +4,8 @@ import { PermohonanKKPDFDownloadButton } from "@/components/permohonan-kk-pdf-do
 import { findPermohonanKKData } from "@/lib/server/data/permohonan-kk";
 import { requireAdminPage } from "@/lib/server/guards";
 import { ArrowLeftIcon } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export default async function DetailKKAdminPage({ params }: { params: Promise<{ 
                                     <Badge variant="outline" className={status.className}>{status.label}</Badge>
                                     <Badge variant="default">{data.alasanPermohonan}</Badge>
                                     <span className="text-xs text-muted-foreground">
-                                        {data.nomorPermohonan ?? "Nomor belum tersedia"} • {moment(data.createdAt).format("DD MMM YYYY")}
+                                        {data.nomorPermohonan ?? "Nomor belum tersedia"} • {format(data.createdAt, "dd MMM yyyy", { locale: id })}
                                     </span>
                                 </div>
                             </div>

@@ -4,7 +4,7 @@ import { generateSecureRandomString } from "../utils/random";
 import { sendVerificationEmail } from "../utils/email";
 import status from "http-status";
 import { ApiError } from "next/dist/server/api-utils";
-import moment from "moment";
+import { isBefore } from "date-fns";
 import { MESSAGE } from "@/constants/message";
 
 export const createEmailVerificationService = async (userId: string) => {
@@ -46,7 +46,7 @@ export const validateEmailVerificationService = async (emailVerificationId: stri
     if (!data) throw new ApiError(status.BAD_REQUEST, message.EMAIL_VERIFICATION_NOT_FOUND);
     const isSecretValid = await verifyPasswordHash(data.secretHash, secret);
     if (!isSecretValid) throw new ApiError(status.BAD_REQUEST, message.EMAIL_VERIFICATION_EXPIRED);
-    const isExpires = moment(data.expiresAt).isBefore(moment());
+    const isExpires = isBefore(data.expiresAt, new Date());
     if (isExpires) throw new ApiError(status.BAD_REQUEST, message.EMAIL_VERIFICATION_EXPIRED);
     if (data.consumedAt) throw new ApiError(status.BAD_REQUEST, message.EMAIL_VERIFICATION_ALREADY_USED);
     return { data };

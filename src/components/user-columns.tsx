@@ -6,7 +6,8 @@ import { PATHS } from "@/constants/paths";
 import { User } from "@/generated/prisma";
 import { ColumnDef } from "@tanstack/react-table";
 import { EyeIcon, PencilIcon } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import Link from "next/link";
 import { UserColumnHeader } from "./user-column-header";
 import { UserDeleteModal } from "./user-delete-modal";
@@ -89,7 +90,7 @@ export const userColumns: ColumnDef<Omit<User, "password">>[] = [
     header: () => UserColumnHeader({ accessorKey: "verifiedAt", title: "Verifikasi Pada" }),
     cell: ({ row }) => {
       const date = row.original.verifiedAt;
-      return date ? moment(date).format("DD-MM-YYYY HH:mm:ss") : "Belum Diverifikasi";
+      return date ? format(date, "dd-MM-yyyy HH:mm:ss", { locale: id }) : "Belum Diverifikasi";
     },
   },
   {
@@ -97,7 +98,7 @@ export const userColumns: ColumnDef<Omit<User, "password">>[] = [
     header: () => UserColumnHeader({ accessorKey: "createdAt", title: "Dibuat Pada" }),
     cell: ({ row }) => {
       const date = row.original.createdAt;
-      return date ? moment(date).format("DD-MM-YYYY HH:mm:ss") : "-";
+      return date ? format(date, "dd-MM-yyyy HH:mm:ss", { locale: id }) : "-";
     },
   },
   {

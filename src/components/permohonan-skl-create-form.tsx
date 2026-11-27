@@ -33,7 +33,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, CalendarIcon, CheckCircle2 } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const PermohonanSKLCreateForm = () => {
     const router = useRouter();
@@ -43,7 +44,7 @@ export const PermohonanSKLCreateForm = () => {
         defaultValues: {
             nama: "",
             tempatLahir: "",
-            tanggalLahir: moment().toDate(),
+            tanggalLahir: new Date(),
             jenisKelamin: "LAKI_LAKI",
             alamat: "",
             
@@ -52,7 +53,7 @@ export const PermohonanSKLCreateForm = () => {
             nikAyah: "",
             pekerjaanAyah: "",
             tempatLahirAyah: "",
-            tanggalLahirAyah: moment().toDate(),
+            tanggalLahirAyah: new Date(),
             agamaAyah: "ISLAM",
             
             // Data Ibu
@@ -60,7 +61,7 @@ export const PermohonanSKLCreateForm = () => {
             nikIbu: "",
             pekerjaanIbu: "",
             tempatLahirIbu: "",
-            tanggalLahirIbu: moment().toDate(),
+            tanggalLahirIbu: new Date(),
             agamaIbu: "ISLAM",
             
             // Dokumen
@@ -185,7 +186,7 @@ export const PermohonanSKLCreateForm = () => {
                                                         )}
                                                     >
                                                         {field.value ? (
-                                                            moment(field.value).format("DD/MM/YYYY")
+                                                            format(field.value, "dd/MM/yyyy", { locale: id })
                                                         ) : (
                                                             <span>Pilih tanggal</span>
                                                         )}
@@ -340,7 +341,7 @@ export const PermohonanSKLCreateForm = () => {
                                                         )}
                                                     >
                                                         {field.value ? (
-                                                            moment(field.value).format("DD/MM/YYYY")
+                                                            format(field.value, "dd/MM/yyyy", { locale: id })
                                                         ) : (
                                                             <span>Pilih tanggal</span>
                                                         )}
@@ -481,7 +482,7 @@ export const PermohonanSKLCreateForm = () => {
                                                         )}
                                                     >
                                                         {field.value ? (
-                                                            moment(field.value).format("DD/MM/YYYY")
+                                                            format(field.value, "dd/MM/yyyy", { locale: id })
                                                         ) : (
                                                             <span>Pilih tanggal</span>
                                                         )}

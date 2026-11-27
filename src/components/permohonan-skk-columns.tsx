@@ -7,7 +7,8 @@ import { PATHS } from "@/constants/paths";
 import { PermohonanSKK } from "@/generated/prisma";
 import { ColumnDef } from "@tanstack/react-table";
 import { EyeIcon, PencilIcon } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import Link from "next/link";
 import { Badge } from "./ui/badge";
 
@@ -77,7 +78,7 @@ export const permohonanSKKColumns: ColumnDef<PermohonanSKK>[] = [
       const tanggalMeninggal = row.getValue("tanggalMeninggal") as Date;
       return (
         <div className="text-sm">
-          {tanggalMeninggal ? moment(tanggalMeninggal).format("DD/MM/YYYY") : "-"}
+          {tanggalMeninggal ? format(tanggalMeninggal, "dd/MM/yyyy", { locale: id }) : "-"}
         </div>
       );
     },
@@ -91,7 +92,7 @@ export const permohonanSKKColumns: ColumnDef<PermohonanSKK>[] = [
       const createdAt = row.getValue("createdAt") as Date;
       return (
         <div className="text-sm text-muted-foreground">
-          {moment(createdAt).format("DD/MM/YYYY HH:mm")}
+          {format(createdAt, "dd/MM/yyyy HH:mm", { locale: id })}
         </div>
       );
     },

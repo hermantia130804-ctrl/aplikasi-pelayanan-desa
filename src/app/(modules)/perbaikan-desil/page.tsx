@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { findManyPerbaikanDesilByUserAction } from "@/lib/server/actions/perbaikan-desil";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function PerbaikanDesilPage() {
                                     <div>
                                         <p className="font-bold">{d.nomorPermohonan}</p>
                                         <p className="text-sm text-muted-foreground">
-                                            KK a.n. {d.namaKk} · {d.jumlahAnggota} anggota · Diajukan {moment(d.createdAt).format("DD MMMM YYYY")}
+                                            KK a.n. {d.namaKk} · {d.jumlahAnggota} anggota · Diajukan {format(d.createdAt, "dd MMMM yyyy", { locale: id })}
                                         </p>
                                     </div>
                                     <Badge variant={badgeVarian[d.statusPermohonan] ?? "outline"}>

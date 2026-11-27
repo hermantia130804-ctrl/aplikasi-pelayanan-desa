@@ -33,7 +33,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, CalendarIcon, CheckCircle2 } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const PermohonanKTPCreateForm = () => {
     const router = useRouter();
@@ -49,7 +50,7 @@ export const PermohonanKTPCreateForm = () => {
             statusPerkawinan: "BELUM_KAWIN",
             agama: "ISLAM",
             tempatLahir: "",
-            tanggalLahir: moment().toDate(),
+            tanggalLahir: new Date(),
             alamat: "",
             provinsi: "",
             kabupaten: "",
@@ -153,7 +154,7 @@ export const PermohonanKTPCreateForm = () => {
                                                         )}
                                                     >
                                                         {field.value ? (
-                                                            moment(field.value).format("DD MMMM YYYY")
+                                                            format(field.value, "dd MMMM yyyy", { locale: id })
                                                         ) : (
                                                             <span>Pilih tanggal lahir</span>
                                                         )}

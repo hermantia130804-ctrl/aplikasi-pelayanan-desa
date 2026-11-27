@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PATHS } from "@/constants/paths";
 import { PermohonanSKTM } from "@/generated/prisma";
 import { ArrowLeftIcon, EditIcon, ExternalLinkIcon, FileCheck2 } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -74,11 +75,11 @@ export function PermohonanSKTMDetail({ permohonanSKTM }: PermohonanSKTMDetailPro
           {statusPermohonan}
         </Badge>
         <span className="text-sm text-muted-foreground">
-          Dibuat: {moment(createdAt).format("DD/MM/YYYY HH:mm")}
+          Dibuat: {format(createdAt, "dd/MM/yyyy HH:mm", { locale: id })}
         </span>
         {updatedAt && (
           <span className="text-sm text-muted-foreground">
-            • Diperbarui: {moment(updatedAt).format("DD/MM/YYYY HH:mm")}
+            • Diperbarui: {format(updatedAt, "dd/MM/yyyy HH:mm", { locale: id })}
           </span>
         )}
       </div>
@@ -112,7 +113,7 @@ export function PermohonanSKTMDetail({ permohonanSKTM }: PermohonanSKTMDetailPro
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Tanggal Lahir</label>
-              <p className="text-sm">{moment(tanggalLahir).format("DD/MM/YYYY")}</p>
+              <p className="text-sm">{format(tanggalLahir, "dd/MM/yyyy", { locale: id })}</p>
             </div>
           </div>
           <div>

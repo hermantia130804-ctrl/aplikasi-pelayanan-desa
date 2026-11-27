@@ -34,7 +34,8 @@ import { FileUploadField } from "@/components/ui/file-upload-field";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeftIcon, CalendarIcon, CheckCircle2 } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 type PermohonanKTPUpdateFormProps = {
   permohonanKTP: PermohonanKTP;
@@ -49,7 +50,7 @@ export const PermohonanKTPUpdateForm = ({ permohonanKTP }: PermohonanKTPUpdateFo
       nama: permohonanKTP.nama || "",
       nik: permohonanKTP.nik || "",
       tempatLahir: permohonanKTP.tempatLahir || "",
-      tanggalLahir: permohonanKTP.tanggalLahir ? moment(permohonanKTP.tanggalLahir).toDate() : moment().toDate(),
+      tanggalLahir: permohonanKTP.tanggalLahir ? new Date(permohonanKTP.tanggalLahir) : new Date(),
       jenisKelamin: permohonanKTP.jenisKelamin || "LAKI_LAKI",
       golonganDarah: (["A", "B", "AB", "O"].includes(String(permohonanKTP.golonganDarah)) ? String(permohonanKTP.golonganDarah) : "A") as "A" | "B" | "AB" | "O",
       statusPerkawinan: permohonanKTP.statusPerkawinan || "BELUM_KAWIN",
@@ -155,7 +156,7 @@ export const PermohonanKTPUpdateForm = ({ permohonanKTP }: PermohonanKTPUpdateFo
                           )}
                         >
                           {field.value ? (
-                            moment(field.value).format("DD MMMM YYYY")
+                            format(field.value, "dd MMMM yyyy", { locale: id })
                           ) : (
                             <span>Pilih tanggal lahir</span>
                           )}

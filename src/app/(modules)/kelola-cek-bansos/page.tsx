@@ -2,7 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { findManyCekBansosAction } from "@/lib/server/actions/cek-bansos";
 import { CekBansosDeleteModal } from "@/components/cek-bansos-delete-modal";
 import Link from "next/link";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export default async function KelolaCekBansosPage() {
                     <div>
                       <p className="font-bold">{d.nomorPermohonan}</p>
                       <p className="text-sm text-muted-foreground">
-                        KK a.n. {d.namaKepalaKeluarga} · NIK {d.nik} · Pengaju: {d.user?.name ?? "-"} · {moment(d.createdAt).format("DD MMM YYYY")}
+                        KK a.n. {d.namaKepalaKeluarga} · NIK {d.nik} · Pengaju: {d.user?.name ?? "-"} · {format(d.createdAt, "dd MMM yyyy", { locale: id })}
                       </p>
                     </div>
                     <Badge variant={badgeVarian[d.statusPermohonan] ?? "outline"}>

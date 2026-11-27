@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import { ZoomableImage } from "@/components/zoomable-image";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +45,7 @@ export default async function KelolaCekBansosDetailPage({ params }: { params: Pr
             <Badge variant={badgeVarian[d.statusPermohonan] ?? "outline"}>{d.statusPermohonan}</Badge>
           </div>
           <p className="text-muted-foreground -mt-2 text-sm">
-            Pemohon: {d.user?.name ?? "-"} ({d.user?.email ?? "-"}) · Diajukan {moment(d.createdAt).format("DD MMMM YYYY HH:mm")}
+            Pemohon: {d.user?.name ?? "-"} ({d.user?.email ?? "-"}) · Diajukan {format(d.createdAt, "dd MMMM yyyy HH:mm", { locale: id })}
           </p>
 
           <div className="rounded-2xl border bg-card p-5">

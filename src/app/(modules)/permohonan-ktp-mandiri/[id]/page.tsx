@@ -6,7 +6,8 @@ import { ArrowLeftIcon } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function DetailPermohonanSayaKTPPage({ params }: { params: 
                         <div>
                             <h1 className="text-2xl font-bold">Detail Permohonan KTP</h1>
                             <p className="text-sm text-muted-foreground">
-                                {data.nomorPermohonan ?? "Nomor belum tersedia"} • Diajukan {moment(data.createdAt).format("DD MMMM YYYY")}
+                                {data.nomorPermohonan ?? "Nomor belum tersedia"} • Diajukan {format(data.createdAt, "dd MMMM yyyy", { locale: id })}
                             </p>
                         </div>
                         <Badge variant="outline" className={status.className + " w-fit text-sm"}>{status.label}</Badge>
@@ -62,7 +63,7 @@ export default async function DetailPermohonanSayaKTPPage({ params }: { params: 
                         <h2 className="mb-2 font-semibold">I. Data Diri</h2>
                         <Row label="Nama" value={data.nama} />
                         <Row label="NIK" value={data.nik} />
-                        <Row label="Tempat, Tanggal Lahir" value={`${data.tempatLahir}, ${moment(data.tanggalLahir).format("DD MMMM YYYY")}`} />
+                        <Row label="Tempat, Tanggal Lahir" value={`${data.tempatLahir}, ${format(data.tanggalLahir, "dd MMMM yyyy", { locale: id })}`} />
                         <Row label="Jenis Kelamin" value={data.jenisKelamin} />
                         <Row label="Golongan Darah" value={data.golonganDarah} />
                         <Row label="Status Perkawinan" value={data.statusPerkawinan} />

@@ -6,7 +6,8 @@ import { PATHS } from "@/constants/paths";
 import { StatusPermohonan } from "@/generated/prisma";
 import { PermohonanSKTM } from "@/generated/prisma";
 import { ColumnDef } from "@tanstack/react-table";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import Link from "next/link";
 import { PermohonanSKTMColumnHeader } from "./permohonan-sktm-column-header";
 import { EyeIcon, PencilIcon } from "lucide-react";
@@ -78,7 +79,7 @@ export const permohonanSKTMColumns: ColumnDef<PermohonanSKTM>[] = [
     accessorKey: "createdAt",
     cell: ({ row }) => {
       const date = row.original.createdAt;
-      return <span>{moment(date).format("DD/MM/YYYY")}</span>;
+      return <span>{format(date, "dd/MM/yyyy", { locale: id })}</span>;
     },
   },
   // Actions

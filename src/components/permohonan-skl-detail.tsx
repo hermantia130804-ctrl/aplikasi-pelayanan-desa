@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PATHS } from "@/constants/paths";
 import { PermohonanSKL } from "@/generated/prisma";
 import { ArrowLeftIcon, FileCheck2, PencilIcon } from "lucide-react";
-import moment from "moment";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -102,8 +103,8 @@ export function PermohonanSKLDetail({ permohonanSKL }: PermohonanSKLDetailProps)
                 </Badge>
               } 
             />
-            <DetailRow label="Tanggal Dibuat" value={moment(createdAt).format("DD MMMM YYYY HH:mm")} />
-            <DetailRow label="Terakhir Diperbarui" value={moment(updatedAt).format("DD MMMM YYYY HH:mm")} />
+            <DetailRow label="Tanggal Dibuat" value={format(createdAt, "dd MMMM yyyy HH:mm", { locale: id })} />
+            <DetailRow label="Terakhir Diperbarui" value={format(updatedAt, "dd MMMM yyyy HH:mm", { locale: id })} />
             {catatan && <DetailRow label="Catatan" value={catatan} />}
           </CardContent>
         </Card>
@@ -117,7 +118,7 @@ export function PermohonanSKLDetail({ permohonanSKL }: PermohonanSKLDetailProps)
             <DetailRow label="Nama Lengkap" value={nama} />
             <DetailRow label="Jenis Kelamin" value={jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan"} />
             <DetailRow label="Tempat Lahir" value={tempatLahir} />
-            <DetailRow label="Tanggal Lahir" value={moment(tanggalLahir).format("DD MMMM YYYY")} />
+            <DetailRow label="Tanggal Lahir" value={format(tanggalLahir, "dd MMMM yyyy", { locale: id })} />
             <DetailRow label="Alamat" value={alamat} />
           </CardContent>
         </Card>
@@ -132,7 +133,7 @@ export function PermohonanSKLDetail({ permohonanSKL }: PermohonanSKLDetailProps)
             <DetailRow label="NIK Ayah" value={nikAyah} />
             <DetailRow label="Pekerjaan" value={pekerjaanAyah} />
             <DetailRow label="Tempat Lahir" value={tempatLahirAyah} />
-            <DetailRow label="Tanggal Lahir" value={moment(tanggalLahirAyah).format("DD MMMM YYYY")} />
+            <DetailRow label="Tanggal Lahir" value={format(tanggalLahirAyah, "dd MMMM yyyy", { locale: id })} />
             <DetailRow label="Agama" value={agamaAyah} />
           </CardContent>
         </Card>
@@ -147,7 +148,7 @@ export function PermohonanSKLDetail({ permohonanSKL }: PermohonanSKLDetailProps)
             <DetailRow label="NIK Ibu" value={nikIbu} />
             <DetailRow label="Pekerjaan" value={pekerjaanIbu} />
             <DetailRow label="Tempat Lahir" value={tempatLahirIbu} />
-            <DetailRow label="Tanggal Lahir" value={moment(tanggalLahirIbu).format("DD MMMM YYYY")} />
+            <DetailRow label="Tanggal Lahir" value={format(tanggalLahirIbu, "dd MMMM yyyy", { locale: id })} />
             <DetailRow label="Agama" value={agamaIbu} />
           </CardContent>
         </Card>
