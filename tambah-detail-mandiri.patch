@@ -1,0 +1,604 @@
+diff --git a/src/app/(modules)/permohonan-saya/page.tsx b/src/app/(modules)/permohonan-saya/page.tsx
+index 8cefb17..c4bb226 100644
+--- a/src/app/(modules)/permohonan-saya/page.tsx
++++ b/src/app/(modules)/permohonan-saya/page.tsx
+@@ -50,11 +50,11 @@ export default async function PermohonanSayaPage() {
+     const items: Item[] = [
+         ...ktp.map((k) => ({ jenis: "KTP", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-ktp-mandiri/${k.permohonanKtpId}` })),
+         ...kk.map((k) => ({ jenis: "KK", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-kk-mandiri/${k.permohonanKKId}` })),
+-        ...skl.map((k) => ({ jenis: "SKL", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
+-        ...sktm.map((k) => ({ jenis: "SKTM", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
+-        ...skk.map((k) => ({ jenis: "SKK", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
+-        ...sku.map((k) => ({ jenis: "SKU", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
+-        ...skd.map((k) => ({ jenis: "SKD", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
++        ...skl.map((k) => ({ jenis: "SKL", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-skl-mandiri/${k.permohonanSKLId}` })),
++        ...sktm.map((k) => ({ jenis: "SKTM", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-sktm-mandiri/${k.permohonanSKTMId}` })),
++        ...skk.map((k) => ({ jenis: "SKK", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-skk-mandiri/${k.permohonanSKKId}` })),
++        ...sku.map((k) => ({ jenis: "SKU", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-sku-mandiri/${k.permohonanSKUId}` })),
++        ...skd.map((k) => ({ jenis: "SKD", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-skd-mandiri/${k.permohonanSKDId}` })),
+         ...pindah.map((k) => ({ jenis: "Surat Pindah", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
+     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+ 
+diff --git a/src/app/(modules)/permohonan-skd-mandiri/[id]/page.tsx b/src/app/(modules)/permohonan-skd-mandiri/[id]/page.tsx
+new file mode 100644
+index 0000000..15bc168
+--- /dev/null
++++ b/src/app/(modules)/permohonan-skd-mandiri/[id]/page.tsx
+@@ -0,0 +1,108 @@
++import { Badge } from "@/components/ui/badge";
++import { Button } from "@/components/ui/button";
++import { prisma } from "@/lib/prisma";
++import { findCurrentSessionService } from "@/lib/server/services/session";
++import { format } from "date-fns";
++import { id } from "date-fns/locale";
++import { ArrowLeftIcon } from "lucide-react";
++import { Metadata } from "next";
++import Link from "next/link";
++import { redirect } from "next/navigation";
++
++export const dynamic = "force-dynamic";
++
++export const metadata: Metadata = {
++    title: "Detail Permohonan Saya | Aplikasi Pelayanan Desa Sukamaju",
++};
++
++const statusConfig: Record<string, { label: string; className: string }> = {
++    DIAJUKAN: { label: "Menunggu Proses", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
++    DIPROSES: { label: "Diproses", className: "bg-blue-100 text-blue-800 hover:bg-blue-100" },
++    DISETUJUI: { label: "Disetujui", className: "bg-green-100 text-green-800 hover:bg-green-100" },
++    DITOLAK: { label: "Ditolak", className: "bg-red-100 text-red-800 hover:bg-red-100" },
++};
++
++function fmt(date: Date | string | null | undefined, pattern: string) {
++    if (!date) return "-";
++    return format(new Date(date), pattern, { locale: id });
++}
++
++function Row({ label, value }: { label: string; value?: string | null }) {
++    return (
++        <div className="flex flex-col gap-1 border-b py-2 md:flex-row md:items-center md:justify-between">
++            <span className="text-sm text-muted-foreground">{label}</span>
++            <span className="text-sm font-medium">{value || "-"}</span>
++        </div>
++    );
++}
++
++export default async function DetailPermohonanSayaSKDPage({ params }: { params: Promise<{ id: string }> }) {
++    const { id } = await params;
++    const session = await findCurrentSessionService();
++    if (!session?.user) redirect("/masuk");
++
++    const data = await prisma.permohonanSKD.findUnique({ where: { permohonanSKDId: id } });
++    if (!data) redirect("/permohonan-saya");
++    if (data.userId !== session.user.userId) redirect("/permohonan-saya");
++
++    const status = statusConfig[data.statusPermohonan] ?? statusConfig.DIAJUKAN;
++
++    return (
++        <div className="flex flex-1 flex-col">
++            <div className="@container/main flex flex-1 flex-col gap-2">
++                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
++                    <Button asChild variant="outline" className="w-fit">
++                        <Link href="/permohonan-saya"><ArrowLeftIcon className="w-4 h-4" /> Kembali</Link>
++                    </Button>
++
++                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
++                        <div>
++                            <h1 className="text-2xl font-bold">Detail Permohonan SKD</h1>
++                            <p className="text-sm text-muted-foreground">
++                                {data.nomorPermohonan ?? "Nomor belum tersedia"} • Diajukan {fmt(data.createdAt, "dd MMMM yyyy")}
++                            </p>
++                        </div>
++                        <Badge variant="outline" className={status.className + " w-fit text-sm"}>{status.label}</Badge>
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">I. Data Pribadi</h2>
++                        <Row label="Nama Lengkap" value={data.nama} />
++                        <Row label="NIK" value={data.nik} />
++                        <Row label="Tempat Lahir" value={data.tempatLahir} />
++                        <Row label="Tanggal Lahir" value={fmt(data.tanggalLahir, "dd MMMM yyyy")} />
++                        <Row label="Jenis Kelamin" value={data.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan"} />
++                        <Row label="Agama" value={data.agama} />
++                        <Row label="Warga Negara" value={data.wargaNegara} />
++                        <Row label="Alamat KTP" value={data.alamatKTP} />
++                        <Row label="Alamat Domisili" value={data.alamatDomisili} />
++                        <Row label="Berlaku Hingga" value={fmt(data.expiresAt, "dd MMMM yyyy")} />
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">II. Dokumen</h2>
++                        <Row label="Scan Kartu Keluarga" value={data.dokumenKK ? "Terunggah" : "-"} />
++                        <Row label="Scan KTP" value={data.dokumenKTP ? "Terunggah" : "-"} />
++                        <Row label="Surat Pengantar" value={data.dokumenSP ? "Terunggah" : "-"} />
++                        {data.dokumenKK && (
++                            <a href={`/api/berkas?jenis=skd&id=${data.permohonanSKDId}&field=dokumenKK`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-primary underline">Lihat Dokumen KK</a>
++                        )}
++                        {data.dokumenKTP && (
++                            <a href={`/api/berkas?jenis=skd&id=${data.permohonanSKDId}&field=dokumenKTP`} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">Lihat Scan KTP</a>
++                        )}
++                        {data.dokumenSP && (
++                            <a href={`/api/berkas?jenis=skd&id=${data.permohonanSKDId}&field=dokumenSP`} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">Lihat Surat Pengantar</a>
++                        )}
++                    </div>
++
++                    {data.catatan && (
++                        <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                            <h2 className="mb-2 font-semibold">📝 Catatan Petugas</h2>
++                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.catatan}</p>
++                        </div>
++                    )}
++                </div>
++            </div>
++        </div>
++    );
++}
+diff --git a/src/app/(modules)/permohonan-skk-mandiri/[id]/page.tsx b/src/app/(modules)/permohonan-skk-mandiri/[id]/page.tsx
+new file mode 100644
+index 0000000..10f6d30
+--- /dev/null
++++ b/src/app/(modules)/permohonan-skk-mandiri/[id]/page.tsx
+@@ -0,0 +1,97 @@
++import { Badge } from "@/components/ui/badge";
++import { Button } from "@/components/ui/button";
++import { prisma } from "@/lib/prisma";
++import { findCurrentSessionService } from "@/lib/server/services/session";
++import { format } from "date-fns";
++import { id } from "date-fns/locale";
++import { ArrowLeftIcon } from "lucide-react";
++import { Metadata } from "next";
++import Link from "next/link";
++import { redirect } from "next/navigation";
++
++export const dynamic = "force-dynamic";
++
++export const metadata: Metadata = {
++    title: "Detail Permohonan Saya | Aplikasi Pelayanan Desa Sukamaju",
++};
++
++const statusConfig: Record<string, { label: string; className: string }> = {
++    DIAJUKAN: { label: "Menunggu Proses", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
++    DIPROSES: { label: "Diproses", className: "bg-blue-100 text-blue-800 hover:bg-blue-100" },
++    DISETUJUI: { label: "Disetujui", className: "bg-green-100 text-green-800 hover:bg-green-100" },
++    DITOLAK: { label: "Ditolak", className: "bg-red-100 text-red-800 hover:bg-red-100" },
++};
++
++function fmt(date: Date | string | null | undefined, pattern: string) {
++    if (!date) return "-";
++    return format(new Date(date), pattern, { locale: id });
++}
++
++function Row({ label, value }: { label: string; value?: string | null }) {
++    return (
++        <div className="flex flex-col gap-1 border-b py-2 md:flex-row md:items-center md:justify-between">
++            <span className="text-sm text-muted-foreground">{label}</span>
++            <span className="text-sm font-medium">{value || "-"}</span>
++        </div>
++    );
++}
++
++export default async function DetailPermohonanSayaSKKPage({ params }: { params: Promise<{ id: string }> }) {
++    const { id } = await params;
++    const session = await findCurrentSessionService();
++    if (!session?.user) redirect("/masuk");
++
++    const data = await prisma.permohonanSKK.findUnique({ where: { permohonanSKKId: id } });
++    if (!data) redirect("/permohonan-saya");
++    if (data.userId !== session.user.userId) redirect("/permohonan-saya");
++
++    const status = statusConfig[data.statusPermohonan] ?? statusConfig.DIAJUKAN;
++
++    return (
++        <div className="flex flex-1 flex-col">
++            <div className="@container/main flex flex-1 flex-col gap-2">
++                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
++                    <Button asChild variant="outline" className="w-fit">
++                        <Link href="/permohonan-saya"><ArrowLeftIcon className="w-4 h-4" /> Kembali</Link>
++                    </Button>
++
++                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
++                        <div>
++                            <h1 className="text-2xl font-bold">Detail Permohonan SKK</h1>
++                            <p className="text-sm text-muted-foreground">
++                                {data.nomorPermohonan ?? "Nomor belum tersedia"} • Diajukan {fmt(data.createdAt, "dd MMMM yyyy")}
++                            </p>
++                        </div>
++                        <Badge variant="outline" className={status.className + " w-fit text-sm"}>{status.label}</Badge>
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">I. Data Almarhum</h2>
++                        <Row label="Nama Lengkap" value={data.nama} />
++                        <Row label="NIK" value={data.nik} />
++                        <Row label="Agama" value={data.agama} />
++                        <Row label="Umur" value={data.umur != null ? `${data.umur} tahun` : "-"} />
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">II. Informasi Kematian</h2>
++                        <Row label="Tanggal Meninggal" value={fmt(data.tanggalMeninggal, "dd MMMM yyyy")} />
++                        <Row label="Tempat Meninggal" value={data.tempatMeninggal} />
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">III. Alamat</h2>
++                        <Row label="Alamat Lengkap" value={data.alamat} />
++                    </div>
++
++                    {data.catatan && (
++                        <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                            <h2 className="mb-2 font-semibold">📝 Catatan Petugas</h2>
++                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.catatan}</p>
++                        </div>
++                    )}
++                </div>
++            </div>
++        </div>
++    );
++}
+diff --git a/src/app/(modules)/permohonan-skl-mandiri/[id]/page.tsx b/src/app/(modules)/permohonan-skl-mandiri/[id]/page.tsx
+new file mode 100644
+index 0000000..519a474
+--- /dev/null
++++ b/src/app/(modules)/permohonan-skl-mandiri/[id]/page.tsx
+@@ -0,0 +1,123 @@
++import { Badge } from "@/components/ui/badge";
++import { Button } from "@/components/ui/button";
++import { prisma } from "@/lib/prisma";
++import { findCurrentSessionService } from "@/lib/server/services/session";
++import { format } from "date-fns";
++import { id } from "date-fns/locale";
++import { ArrowLeftIcon } from "lucide-react";
++import { Metadata } from "next";
++import Link from "next/link";
++import { redirect } from "next/navigation";
++
++export const dynamic = "force-dynamic";
++
++export const metadata: Metadata = {
++    title: "Detail Permohonan Saya | Aplikasi Pelayanan Desa Sukamaju",
++};
++
++const statusConfig: Record<string, { label: string; className: string }> = {
++    DIAJUKAN: { label: "Menunggu Proses", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
++    DIPROSES: { label: "Diproses", className: "bg-blue-100 text-blue-800 hover:bg-blue-100" },
++    DISETUJUI: { label: "Disetujui", className: "bg-green-100 text-green-800 hover:bg-green-100" },
++    DITOLAK: { label: "Ditolak", className: "bg-red-100 text-red-800 hover:bg-red-100" },
++};
++
++function fmt(date: Date | string | null | undefined, pattern: string) {
++    if (!date) return "-";
++    return format(new Date(date), pattern, { locale: id });
++}
++
++function Row({ label, value }: { label: string; value?: string | null }) {
++    return (
++        <div className="flex flex-col gap-1 border-b py-2 md:flex-row md:items-center md:justify-between">
++            <span className="text-sm text-muted-foreground">{label}</span>
++            <span className="text-sm font-medium">{value || "-"}</span>
++        </div>
++    );
++}
++
++export default async function DetailPermohonanSayaSKLPage({ params }: { params: Promise<{ id: string }> }) {
++    const { id } = await params;
++    const session = await findCurrentSessionService();
++    if (!session?.user) redirect("/masuk");
++
++    const data = await prisma.permohonanSKL.findUnique({ where: { permohonanSKLId: id } });
++    if (!data) redirect("/permohonan-saya");
++    if (data.userId !== session.user.userId) redirect("/permohonan-saya");
++
++    const status = statusConfig[data.statusPermohonan] ?? statusConfig.DIAJUKAN;
++
++    return (
++        <div className="flex flex-1 flex-col">
++            <div className="@container/main flex flex-1 flex-col gap-2">
++                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
++                    <Button asChild variant="outline" className="w-fit">
++                        <Link href="/permohonan-saya"><ArrowLeftIcon className="w-4 h-4" /> Kembali</Link>
++                    </Button>
++
++                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
++                        <div>
++                            <h1 className="text-2xl font-bold">Detail Permohonan SKL</h1>
++                            <p className="text-sm text-muted-foreground">
++                                {data.nomorPermohonan ?? "Nomor belum tersedia"} • Diajukan {fmt(data.createdAt, "dd MMMM yyyy")}
++                            </p>
++                        </div>
++                        <Badge variant="outline" className={status.className + " w-fit text-sm"}>{status.label}</Badge>
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">I. Data Anak</h2>
++                        <Row label="Nama Lengkap" value={data.nama} />
++                        <Row label="Jenis Kelamin" value={data.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan"} />
++                        <Row label="Tempat Lahir" value={data.tempatLahir} />
++                        <Row label="Tanggal Lahir" value={fmt(data.tanggalLahir, "dd MMMM yyyy")} />
++                        <Row label="Alamat" value={data.alamat} />
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">II. Data Ayah</h2>
++                        <Row label="Nama Ayah" value={data.namaAyah} />
++                        <Row label="NIK Ayah" value={data.nikAyah} />
++                        <Row label="Pekerjaan" value={data.pekerjaanAyah} />
++                        <Row label="Tempat Lahir" value={data.tempatLahirAyah} />
++                        <Row label="Tanggal Lahir" value={fmt(data.tanggalLahirAyah, "dd MMMM yyyy")} />
++                        <Row label="Agama" value={data.agamaAyah} />
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">III. Data Ibu</h2>
++                        <Row label="Nama Ibu" value={data.namaIbu} />
++                        <Row label="NIK Ibu" value={data.nikIbu} />
++                        <Row label="Pekerjaan" value={data.pekerjaanIbu} />
++                        <Row label="Tempat Lahir" value={data.tempatLahirIbu} />
++                        <Row label="Tanggal Lahir" value={fmt(data.tanggalLahirIbu, "dd MMMM yyyy")} />
++                        <Row label="Agama" value={data.agamaIbu} />
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">IV. Dokumen</h2>
++                        <Row label="Scan Kartu Keluarga" value={data.dokumenKK ? "Terunggah" : "-"} />
++                        <Row label="Surat Pengantar RT/RW" value={data.dokumenPengantar ? "Terunggah" : "-"} />
++                        <Row label="Dokumen Surat Lahir" value={data.dokumenSuratLahir ? "Terunggah" : "-"} />
++                        {data.dokumenKK && (
++                            <a href={`/api/berkas?jenis=skl&id=${data.permohonanSKLId}&field=dokumenKK`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-primary underline">Lihat Dokumen KK</a>
++                        )}
++                        {data.dokumenPengantar && (
++                            <a href={`/api/berkas?jenis=skl&id=${data.permohonanSKLId}&field=dokumenPengantar`} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">Lihat Surat Pengantar</a>
++                        )}
++                        {data.dokumenSuratLahir && (
++                            <a href={`/api/berkas?jenis=skl&id=${data.permohonanSKLId}&field=dokumenSuratLahir`} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">Lihat Surat Lahir</a>
++                        )}
++                    </div>
++
++                    {data.catatan && (
++                        <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                            <h2 className="mb-2 font-semibold">📝 Catatan Petugas</h2>
++                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.catatan}</p>
++                        </div>
++                    )}
++                </div>
++            </div>
++        </div>
++    );
++}
+diff --git a/src/app/(modules)/permohonan-sktm-mandiri/[id]/page.tsx b/src/app/(modules)/permohonan-sktm-mandiri/[id]/page.tsx
+new file mode 100644
+index 0000000..65a9e7b
+--- /dev/null
++++ b/src/app/(modules)/permohonan-sktm-mandiri/[id]/page.tsx
+@@ -0,0 +1,110 @@
++import { Badge } from "@/components/ui/badge";
++import { Button } from "@/components/ui/button";
++import { prisma } from "@/lib/prisma";
++import { findCurrentSessionService } from "@/lib/server/services/session";
++import { format } from "date-fns";
++import { id } from "date-fns/locale";
++import { ArrowLeftIcon } from "lucide-react";
++import { Metadata } from "next";
++import Link from "next/link";
++import { redirect } from "next/navigation";
++
++export const dynamic = "force-dynamic";
++
++export const metadata: Metadata = {
++    title: "Detail Permohonan Saya | Aplikasi Pelayanan Desa Sukamaju",
++};
++
++const statusConfig: Record<string, { label: string; className: string }> = {
++    DIAJUKAN: { label: "Menunggu Proses", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
++    DIPROSES: { label: "Diproses", className: "bg-blue-100 text-blue-800 hover:bg-blue-100" },
++    DISETUJUI: { label: "Disetujui", className: "bg-green-100 text-green-800 hover:bg-green-100" },
++    DITOLAK: { label: "Ditolak", className: "bg-red-100 text-red-800 hover:bg-red-100" },
++};
++
++function fmt(date: Date | string | null | undefined, pattern: string) {
++    if (!date) return "-";
++    return format(new Date(date), pattern, { locale: id });
++}
++
++function Row({ label, value }: { label: string; value?: string | null }) {
++    return (
++        <div className="flex flex-col gap-1 border-b py-2 md:flex-row md:items-center md:justify-between">
++            <span className="text-sm text-muted-foreground">{label}</span>
++            <span className="text-sm font-medium">{value || "-"}</span>
++        </div>
++    );
++}
++
++export default async function DetailPermohonanSayaSKTMPage({ params }: { params: Promise<{ id: string }> }) {
++    const { id } = await params;
++    const session = await findCurrentSessionService();
++    if (!session?.user) redirect("/masuk");
++
++    const data = await prisma.permohonanSKTM.findUnique({ where: { permohonanSKTMId: id } });
++    if (!data) redirect("/permohonan-saya");
++    if (data.userId !== session.user.userId) redirect("/permohonan-saya");
++
++    const status = statusConfig[data.statusPermohonan] ?? statusConfig.DIAJUKAN;
++
++    return (
++        <div className="flex flex-1 flex-col">
++            <div className="@container/main flex flex-1 flex-col gap-2">
++                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
++                    <Button asChild variant="outline" className="w-fit">
++                        <Link href="/permohonan-saya"><ArrowLeftIcon className="w-4 h-4" /> Kembali</Link>
++                    </Button>
++
++                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
++                        <div>
++                            <h1 className="text-2xl font-bold">Detail Permohonan SKTM</h1>
++                            <p className="text-sm text-muted-foreground">
++                                {data.nomorPermohonan ?? "Nomor belum tersedia"} • Diajukan {fmt(data.createdAt, "dd MMMM yyyy")}
++                            </p>
++                        </div>
++                        <Badge variant="outline" className={status.className + " w-fit text-sm"}>{status.label}</Badge>
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">I. Data Pemohon</h2>
++                        <Row label="Nama Lengkap" value={data.nama} />
++                        <Row label="NIK" value={data.nik} />
++                        <Row label="Tempat Lahir" value={data.tempatLahir} />
++                        <Row label="Tanggal Lahir" value={fmt(data.tanggalLahir, "dd MMMM yyyy")} />
++                        <Row label="Jenis Kelamin" value={data.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan"} />
++                        <Row label="Agama" value={data.agama} />
++                        <Row label="Alamat" value={data.alamat} />
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">II. Keterangan</h2>
++                        <p className="text-sm whitespace-pre-wrap">{data.keterangan || "-"}</p>
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">III. Dokumen</h2>
++                        <Row label="Scan Kartu Keluarga" value={data.dokumenKK ? "Terunggah" : "-"} />
++                        <Row label="Scan KTP" value={data.dokumenKTP ? "Terunggah" : "-"} />
++                        <Row label="Surat Pengantar RT/RW" value={data.dokumenPengantar ? "Terunggah" : "-"} />
++                        {data.dokumenKK && (
++                            <a href={`/api/berkas?jenis=sktm&id=${data.permohonanSKTMId}&field=dokumenKK`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-primary underline">Lihat Dokumen KK</a>
++                        )}
++                        {data.dokumenKTP && (
++                            <a href={`/api/berkas?jenis=sktm&id=${data.permohonanSKTMId}&field=dokumenKTP`} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">Lihat Scan KTP</a>
++                        )}
++                        {data.dokumenPengantar && (
++                            <a href={`/api/berkas?jenis=sktm&id=${data.permohonanSKTMId}&field=dokumenPengantar`} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">Lihat Surat Pengantar</a>
++                        )}
++                    </div>
++
++                    {data.catatan && (
++                        <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                            <h2 className="mb-2 font-semibold">📝 Catatan Petugas</h2>
++                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.catatan}</p>
++                        </div>
++                    )}
++                </div>
++            </div>
++        </div>
++    );
++}
+diff --git a/src/app/(modules)/permohonan-sku-mandiri/[id]/page.tsx b/src/app/(modules)/permohonan-sku-mandiri/[id]/page.tsx
+new file mode 100644
+index 0000000..bb1b03d
+--- /dev/null
++++ b/src/app/(modules)/permohonan-sku-mandiri/[id]/page.tsx
+@@ -0,0 +1,115 @@
++import { Badge } from "@/components/ui/badge";
++import { Button } from "@/components/ui/button";
++import { prisma } from "@/lib/prisma";
++import { findCurrentSessionService } from "@/lib/server/services/session";
++import { format } from "date-fns";
++import { id } from "date-fns/locale";
++import { ArrowLeftIcon } from "lucide-react";
++import { Metadata } from "next";
++import Link from "next/link";
++import { redirect } from "next/navigation";
++
++export const dynamic = "force-dynamic";
++
++export const metadata: Metadata = {
++    title: "Detail Permohonan Saya | Aplikasi Pelayanan Desa Sukamaju",
++};
++
++const statusConfig: Record<string, { label: string; className: string }> = {
++    DIAJUKAN: { label: "Menunggu Proses", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
++    DIPROSES: { label: "Diproses", className: "bg-blue-100 text-blue-800 hover:bg-blue-100" },
++    DISETUJUI: { label: "Disetujui", className: "bg-green-100 text-green-800 hover:bg-green-100" },
++    DITOLAK: { label: "Ditolak", className: "bg-red-100 text-red-800 hover:bg-red-100" },
++};
++
++function fmt(date: Date | string | null | undefined, pattern: string) {
++    if (!date) return "-";
++    return format(new Date(date), pattern, { locale: id });
++}
++
++function Row({ label, value }: { label: string; value?: string | null }) {
++    return (
++        <div className="flex flex-col gap-1 border-b py-2 md:flex-row md:items-center md:justify-between">
++            <span className="text-sm text-muted-foreground">{label}</span>
++            <span className="text-sm font-medium">{value || "-"}</span>
++        </div>
++    );
++}
++
++export default async function DetailPermohonanSayaSKUPage({ params }: { params: Promise<{ id: string }> }) {
++    const { id } = await params;
++    const session = await findCurrentSessionService();
++    if (!session?.user) redirect("/masuk");
++
++    const data = await prisma.permohonanSKU.findUnique({ where: { permohonanSKUId: id } });
++    if (!data) redirect("/permohonan-saya");
++    if (data.userId !== session.user.userId) redirect("/permohonan-saya");
++
++    const status = statusConfig[data.statusPermohonan] ?? statusConfig.DIAJUKAN;
++
++    return (
++        <div className="flex flex-1 flex-col">
++            <div className="@container/main flex flex-1 flex-col gap-2">
++                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
++                    <Button asChild variant="outline" className="w-fit">
++                        <Link href="/permohonan-saya"><ArrowLeftIcon className="w-4 h-4" /> Kembali</Link>
++                    </Button>
++
++                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
++                        <div>
++                            <h1 className="text-2xl font-bold">Detail Permohonan SKU</h1>
++                            <p className="text-sm text-muted-foreground">
++                                {data.nomorPermohonan ?? "Nomor belum tersedia"} • Diajukan {fmt(data.createdAt, "dd MMMM yyyy")}
++                            </p>
++                        </div>
++                        <Badge variant="outline" className={status.className + " w-fit text-sm"}>{status.label}</Badge>
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">I. Data Pribadi</h2>
++                        <Row label="Nama Lengkap" value={data.nama} />
++                        <Row label="NIK" value={data.nik} />
++                        <Row label="Tempat, Tanggal Lahir" value={`${data.tempatLahir ?? "-"}, ${fmt(data.tanggalLahir, "dd MMMM yyyy")}`} />
++                        <Row label="Jenis Kelamin" value={data.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan"} />
++                        <Row label="Alamat" value={data.alamat} />
++                        <Row label="Berlaku Hingga" value={fmt(data.expiresAt, "dd MMMM yyyy")} />
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">II. Data Usaha</h2>
++                        <Row label="Jenis Usaha" value={data.jenisUsaha} />
++                        <Row label="Tahun Berdiri Usaha" value={String(data.tahunBerdiriUsaha)} />
++                        <Row label="Lokasi Usaha" value={data.lokasiUsaha} />
++                    </div>
++
++                    <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                        <h2 className="mb-2 font-semibold">III. Dokumen</h2>
++                        <Row label="Scan Kartu Keluarga" value={data.dokumenKK ? "Terunggah" : "-"} />
++                        <Row label="Scan KTP" value={data.dokumenKTP ? "Terunggah" : "-"} />
++                        <Row label="Surat Pengantar" value={data.dokumenSP ? "Terunggah" : "-"} />
++                        <Row label="Dokumen Usaha" value={data.dokumenUsaha ? "Terunggah" : "-"} />
++                        {data.dokumenKK && (
++                            <a href={`/api/berkas?jenis=sku&id=${data.permohonanSKUId}&field=dokumenKK`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-primary underline">Lihat Dokumen KK</a>
++                        )}
++                        {data.dokumenKTP && (
++                            <a href={`/api/berkas?jenis=sku&id=${data.permohonanSKUId}&field=dokumenKTP`} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">Lihat Scan KTP</a>
++                        )}
++                        {data.dokumenSP && (
++                            <a href={`/api/berkas?jenis=sku&id=${data.permohonanSKUId}&field=dokumenSP`} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">Lihat Surat Pengantar</a>
++                        )}
++                        {data.dokumenUsaha && (
++                            <a href={`/api/berkas?jenis=sku&id=${data.permohonanSKUId}&field=dokumenUsaha`} target="_blank" rel="noopener noreferrer" className="ml-4 inline-block text-sm text-primary underline">Lihat Dokumen Usaha</a>
++                        )}
++                    </div>
++
++                    {data.catatan && (
++                        <div className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
++                            <h2 className="mb-2 font-semibold">📝 Catatan Petugas</h2>
++                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.catatan}</p>
++                        </div>
++                    )}
++                </div>
++            </div>
++        </div>
++    );
++}

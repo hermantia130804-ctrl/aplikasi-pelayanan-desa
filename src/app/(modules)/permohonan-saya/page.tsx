@@ -51,11 +51,11 @@ export default async function PermohonanSayaPage() {
     const items: Item[] = [
         ...ktp.map((k) => ({ jenis: "KTP", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-ktp-mandiri/${k.permohonanKtpId}` })),
         ...kk.map((k) => ({ jenis: "KK", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-kk-mandiri/${k.permohonanKKId}` })),
-        ...skl.map((k) => ({ jenis: "SKL", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
-        ...sktm.map((k) => ({ jenis: "SKTM", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
-        ...skk.map((k) => ({ jenis: "SKK", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
-        ...sku.map((k) => ({ jenis: "SKU", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
-        ...skd.map((k) => ({ jenis: "SKD", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
+        ...skl.map((k) => ({ jenis: "SKL", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-skl-mandiri/${k.permohonanSKLId}` })),
+        ...sktm.map((k) => ({ jenis: "SKTM", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-sktm-mandiri/${k.permohonanSKTMId}` })),
+        ...skk.map((k) => ({ jenis: "SKK", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-skk-mandiri/${k.permohonanSKKId}` })),
+        ...sku.map((k) => ({ jenis: "SKU", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-sku-mandiri/${k.permohonanSKUId}` })),
+        ...skd.map((k) => ({ jenis: "SKD", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan, detailUrl: `/permohonan-skd-mandiri/${k.permohonanSKDId}` })),
         ...pindah.map((k) => ({ jenis: "Surat Pindah", status: k.statusPermohonan, nomor: k.nomorPermohonan, nama: k.nama, createdAt: k.createdAt, catatan: k.catatan })),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
