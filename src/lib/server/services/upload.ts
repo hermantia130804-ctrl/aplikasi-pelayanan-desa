@@ -6,7 +6,10 @@ export async function uploadFile(file: File, bucketName: string): Promise<string
     const ext = file.name.split(".").pop() || "pdf";
     const pathname = `${bucketName}/${randomUUID()}.${ext}`;
     const blob = await put(pathname, file, {
-      access: "private",
+      // "public" wajib agar URL bisa di-load di <img> preview + tampil di detail.
+      // "private" -> URL 401/403 saat browser fetch -> gambar tidak tampil meski upload sukses.
+      // Konsisten dgn uploadFotoCekBansosAction/uploadGambarBeritaAction.
+      access: "public",
       contentType: file.type || "application/pdf",
     } as never);
     console.log(`File uploaded to Vercel Blob: ${blob.pathname}`);
