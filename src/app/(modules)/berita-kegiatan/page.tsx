@@ -3,6 +3,7 @@ import { BeritaDeleteButton } from "@/components/berita-delete-button";
 import { findManyBeritaService } from "@/lib/server/services/berita-kegiatan";
 import { PlusCircle, PencilIcon } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import moment from "moment";
 
 export const dynamic = "force-dynamic";
@@ -35,10 +36,10 @@ export default async function KelolaBeritaPage() {
                             {beritaList.map((b) => (
                                 <div key={b.beritaId} className="overflow-hidden rounded-xl border bg-card shadow-sm">
                                     {b.gambarUrl && (
-    <img src={b.gambarUrl} alt={b.judul} className="h-40 w-full object-cover" />
+    <div className="relative h-40 w-full"><Image src={b.gambarUrl} alt={b.judul} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover" /></div>
 )}
 {!b.gambarUrl && b.youtubeId && (
-    <img src={`https://img.youtube.com/vi/${b.youtubeId}/hqdefault.jpg`} alt={b.judul} className="h-40 w-full object-cover" />
+    <div className="relative h-40 w-full"><Image src={`https://img.youtube.com/vi/${b.youtubeId}/hqdefault.jpg`} alt={b.judul} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover" /></div>
 )}
                                     <div className="p-4 flex flex-col gap-1">
                                         <p className="text-xs text-muted-foreground">
