@@ -1,6 +1,7 @@
 import { AppHeader } from "@/components/app-header";
 import { AppSidebar } from "@/components/app-sidebar";
 import { IdleGuard } from "@/components/idle-guard";
+import { LiveChatWidget } from "@/components/live-chat-widget";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { findCurrentSessionService } from "@/lib/server/services/session";
 import { redirect } from "next/navigation";
@@ -28,6 +29,7 @@ export default async function ModuleLayout({
         <AppHeader />
         {children}
       </SidebarInset>
+      <LiveChatWidget />
     </SidebarProvider>
   );
 }
