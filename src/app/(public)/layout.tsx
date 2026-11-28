@@ -6,7 +6,7 @@ import { PublicMobileMenu } from "@/components/public-mobile-menu";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { IdleGuard } from "@/components/idle-guard";
 import { LayananDropdown } from "@/components/layanan-dropdown";
-import { CekBansosDialog } from "@/components/cek-bansos-dialog";
+import { CsAiChat } from "@/components/cs-ai-chat";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
     const session = await findCurrentSessionService();
@@ -89,6 +89,9 @@ export default async function PublicLayout({ children }: { children: React.React
 
             <main className="flex-1">{children}</main>
 
+            {/* CS AI Desa Sukamaju - floating chat button */}
+            <CsAiChat />
+
             <footer className="border-t bg-muted/30">
                 <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-3">
                     <div>
@@ -125,9 +128,6 @@ export default async function PublicLayout({ children }: { children: React.React
                     © 2026 Pemerintah Desa Sukamaju · Kecamatan Cibungbulang · Kabupaten Bogor
                 </div>
             </footer>
-
-            {/* Popup Cek Bantuan dan Desil (dipicu menu Layanan Masyarakat -> hash #cek-bansos) */}
-            <CekBansosDialog />
         </div>
     );
 }

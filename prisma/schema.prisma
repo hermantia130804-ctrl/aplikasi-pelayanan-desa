@@ -117,6 +117,7 @@ model User {
   namaKetua    String?  @map("nama_ketua")
   alamatRt     String?  @map("alamat_rt")
   detailBansos String?  @map("detail_bansos")
+  isLivechatAgent Boolean @default(false) @map("is_livechat_agent")
   status     Status    @default(INACTIVE)
   verifiedAt DateTime? @map("verified_at")
   createdAt  DateTime  @default(now()) @map("created_at")
