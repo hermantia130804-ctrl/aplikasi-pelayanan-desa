@@ -1,0 +1,791 @@
+diff --git a/src/app/api/livechat/email/route.ts b/src/app/api/livechat/email/route.ts
+new file mode 100644
+index 0000000..3350d98
+--- /dev/null
++++ b/src/app/api/livechat/email/route.ts
+@@ -0,0 +1,115 @@
++import { NextRequest, NextResponse } from "next/server";
++import { findCurrentSessionService } from "@/lib/server/services/session";
++import { sendEmail } from "@/lib/server/utils/email";
++
++export const dynamic = "force-dynamic";
++
++type ChatMsg = { role: "user" | "assistant"; content: string };
++
++function escapeHtml(s: string): string {
++  return s
++    .replace(/&/g, "&amp;")
++    .replace(/</g, "&lt;")
++    .replace(/>/g, "&gt;")
++    .replace(/"/g, "&quot;");
++}
++
++function formatWaktuId(date: Date): string {
++  try {
++    return date.toLocaleString("id-ID", {
++      timeZone: "Asia/Jakarta",
++      dateStyle: "long",
++      timeStyle: "short",
++    });
++  } catch {
++    return date.toLocaleString("id-ID");
++  }
++}
++
++/**
++ * POST /api/livechat/email
++ * Body: { messages: ChatMsg[], email?: string, name?: string }
++ * Balasan: { ok: true, sentTo: string }
++ *
++ * Mengirim riwayat percakapan livechat ke email.
++ * - Jika pengguna login: kirim ke email sesi (body.email diabaikan).
++ * - Jika tamu (belum login): wajib menyertakan body.email yang valid.
++ */
++const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
++
++export async function POST(req: NextRequest) {
++  try {
++    const session = await findCurrentSessionService();
++
++    const body = await req.json().catch(() => ({}));
++    const rawMessages: unknown = body?.messages;
++
++    if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
++      return NextResponse.json({ error: "Riwayat percakapan kosong." }, { status: 400 });
++    }
++
++    const messages: ChatMsg[] = rawMessages
++      .filter(
++        (m): m is ChatMsg =>
++          !!m &&
++          (m.role === "user" || m.role === "assistant") &&
++          typeof m.content === "string" &&
++          m.content.trim().length > 0
++      );
++
++    if (messages.length === 0) {
++      return NextResponse.json({ error: "Riwayat percakapan kosong." }, { status: 400 });
++    }
++
++    // Tentukan email tujuan + nama: prioritas sesi login; tamu wajib input email.
++    let email: string;
++    let nama: string;
++    if (session?.user?.email) {
++      email = session.user.email;
++      nama = session.user.name || "Warga";
++    } else {
++      const rawEmail: unknown = body?.email;
++      if (typeof rawEmail !== "string" || !EMAIL_RE.test(rawEmail.trim())) {
++        return NextResponse.json({ error: "Email penerima tidak valid. Silakan masukkan email aktif Anda." }, { status: 400 });
++      }
++      email = rawEmail.trim();
++      nama = typeof body?.name === "string" && body.name.trim() ? body.name.trim() : "Tamu";
++    }
++
++    const rows = messages
++      .map(
++        (m) => `
++        <tr>
++          <td style="padding:10px;border:1px solid #e5e7eb;font-weight:600;width:110px;vertical-align:top;background:#f9fafb;">
++            ${m.role === "user" ? "Anda" : "Asisten AI"}
++          </td>
++          <td style="padding:10px;border:1px solid #e5e7eb;white-space:pre-wrap;line-height:1.5;">
++            ${escapeHtml(m.content)}
++          </td>
++        </tr>`
++      )
++      .join("");
++
++    const html = `
++      <div style="font-family:Arial,Helvetica,sans-serif;max-width:640px;margin:0 auto;padding:20px;color:#1f2937;">
++        <h2 style="color:#065f46;margin:0 0 8px;">Riwayat Percakapan Livechat</h2>
++        <p style="margin:0 0 4px;">Halo <strong>${escapeHtml(nama)}</strong>,</p>
++        <p style="margin:0 0 16px;color:#6b7280;">
++          Berikut riwayat percakapan Anda dengan Asisten Digital Desa Sukamaju pada
++          <strong>${formatWaktuId(new Date())}</strong> (WIB).
++        </p>
++        <table style="border-collapse:collapse;width:100%;font-size:14px;">${rows}</table>
++        <p style="margin-top:20px;color:#6b7280;font-size:12px;">
++          Email ini dikirim otomatis dari Aplikasi Pelayanan Desa Sukamaju. Jangan balas email ini secara langsung.
++        </p>
++      </div>`;
++
++    await sendEmail(email, "Riwayat Percakapan Livechat - Desa Sukamaju", html);
++
++    return NextResponse.json({ ok: true, sentTo: email });
++  } catch (error: unknown) {
++    const msg = error instanceof Error ? error.message : "Gagal mengirim email.";
++    console.error("[livechat-email] error:", msg);
++    return NextResponse.json({ error: msg }, { status: 500 });
++  }
++}
+diff --git a/src/app/api/livechat/route.ts b/src/app/api/livechat/route.ts
+new file mode 100644
+index 0000000..5a2732a
+--- /dev/null
++++ b/src/app/api/livechat/route.ts
+@@ -0,0 +1,51 @@
++import { NextRequest, NextResponse } from "next/server";
++import { findCurrentSessionService } from "@/lib/server/services/session";
++import { getLivechatUserContext, generateLivechatReply, ChatMessage } from "@/lib/server/services/livechat-ai";
++
++export const dynamic = "force-dynamic";
++
++/**
++ * POST /api/livechat
++ * Body: { message: string, history?: ChatMessage[] }
++ * Balasan: { reply: string }
++ *
++ * Server stateless — riwayat percakapan dikirim klien (tidak disimpan server-side).
++ * Sesi opsional: jika login, konteks user (NIK + detailBansos) diambil dari sesi
++ * (untuk personalisasi "cek bansos saya"); jika tamu belum login, jawaban bersifat
++ * umum (pejabat/layanan/alamat) dan bila ditanya bansos pribadi user disuruh login.
++ */
++export async function POST(req: NextRequest) {
++  try {
++    const session = await findCurrentSessionService();
++
++    const body = await req.json().catch(() => ({}));
++    const message: unknown = body?.message;
++    const rawHistory: unknown = body?.history;
++
++    if (typeof message !== "string" || !message.trim()) {
++      return NextResponse.json({ error: "Pesan tidak valid." }, { status: 400 });
++    }
++
++    const history: ChatMessage[] = Array.isArray(rawHistory)
++      ? rawHistory
++          .filter(
++            (m): m is ChatMessage =>
++              !!m &&
++              (m.role === "user" || m.role === "assistant") &&
++              typeof m.content === "string"
++          )
++          .slice(-10)
++      : [];
++
++    const userCtx = session?.user
++      ? await getLivechatUserContext(session.user.userId)
++      : null;
++
++    const reply = await generateLivechatReply(userCtx, history, message.trim());
++    return NextResponse.json({ reply });
++  } catch (error: unknown) {
++    const msg = error instanceof Error ? error.message : "Gagal memproses pesan.";
++    console.error("[livechat] error:", msg);
++    return NextResponse.json({ error: msg }, { status: 500 });
++  }
++}
+diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+index bb78df7..e441a88 100644
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -4,6 +4,8 @@ import "./globals.css";
+ import { ThemeProvider } from "@/components/theme-provider";
+ import { Toaster } from "@/components/ui/sonner";
+ import { NuqsAdapter } from 'nuqs/adapters/next/app'
++import { LiveChatWidget } from "@/components/live-chat-widget";
++import { findCurrentSessionService } from "@/lib/server/services/session";
+ 
+ const geistSans = Geist({
+   variable: "--font-geist-sans",
+@@ -24,11 +26,15 @@ export const metadata: Metadata = {
+     "Portal resmi Pelayanan Desa Sukamaju: pengajuan surat administrasi online, informasi desa, dan transparansi pelayanan publik.",
+ };
+ 
+-export default function RootLayout({
++export default async function RootLayout({
+   children,
+ }: Readonly<{
+   children: React.ReactNode;
+ }>) {
++  // Sesi diambil sekali di root layout agar LiveChatWidget tampil di SEMUA
++  // halaman (publik + dashboard) dan tahu status login: login -> jawab personal
++  // (NIK + bansos); tamu -> jawab umum + arahkan login untuk cek bansos pribadi.
++  const session = await findCurrentSessionService();
+   return (
+     <html lang="id" suppressHydrationWarning>
+       <body
+@@ -44,6 +50,7 @@ export default function RootLayout({
+             {children}
+             </NuqsAdapter>
+             <Toaster />
++            <LiveChatWidget loggedIn={!!session?.user} />
+           </ThemeProvider>
+       </body>
+     </html>
+diff --git a/src/components/live-chat-widget.tsx b/src/components/live-chat-widget.tsx
+new file mode 100644
+index 0000000..1a0346b
+--- /dev/null
++++ b/src/components/live-chat-widget.tsx
+@@ -0,0 +1,307 @@
++"use client";
++
++import { useState, useRef, useEffect, FormEvent } from "react";
++import { Button } from "@/components/ui/button";
++import { Input } from "@/components/ui/input";
++import { MessageCircle, X, Send, Mail, Loader2 } from "lucide-react";
++import { toast } from "sonner";
++
++type Msg = { role: "user" | "assistant"; content: string };
++
++const SUGGESTI = [
++  "Cek bansos saya",
++  "Bagaimana cara mengajukan KTP?",
++  "Surat apa saja yang tersedia?",
++];
++
++const PEMBUKA_LOGIN =
++  "Halo! Saya Asisten Digital Desa Sukamaju. Saya bisa bantu mengecek status bansos Anda (dengan NIK terdaftar) dan menjelaskan cara mengurus surat-surat desa. Ada yang bisa saya bantu?";
++const PEMBUKA_TAMU =
++  "Halo! Saya Asisten Digital Desa Sukamaju. Saya bisa menjelaskan layanan desa, cara mengurus surat, dan info pejabat desa. Untuk cek bansos pribadi, silakan masuk (login) dulu. Ada yang bisa saya bantu?";
++
++export function LiveChatWidget({ loggedIn = true }: { loggedIn?: boolean }) {
++  const [open, setOpen] = useState(false);
++  const [messages, setMessages] = useState<Msg[]>([]);
++  const [input, setInput] = useState("");
++  const [loading, setLoading] = useState(false);
++  const [sendingEmail, setSendingEmail] = useState(false);
++  const [emailInput, setEmailInput] = useState("");
++  const [showEmailInput, setShowEmailInput] = useState(false);
++  const endRef = useRef<HTMLDivElement>(null);
++  // Catat apakah riwayat percakapan saat ini sudah pernah dikirim ke email,
++  // agar auto-kirim saat chat ditutup tidak mengirim berulang untuk percakapan yg sama.
++  const autoSentRef = useRef(false);
++
++  useEffect(() => {
++    if (open) {
++      endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
++    }
++  }, [messages, open, loading]);
++
++  const kirim = async (teks: string) => {
++    const trimmed = teks.trim();
++    if (!trimmed || loading) return;
++
++    // Percakapan baru dimulai -> reset penanda auto-kirim email.
++    if (messages.length === 0) autoSentRef.current = false;
++
++    const userMsg: Msg = { role: "user", content: trimmed };
++    const riwayat = [...messages, userMsg];
++    setMessages(riwayat);
++    setInput("");
++    setLoading(true);
++
++    try {
++      const res = await fetch("/api/livechat", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({ message: trimmed, history: messages }),
++      });
++      const data = await res.json();
++      if (!res.ok) {
++        throw new Error(data?.error || "Gagal menghubungi asisten.");
++      }
++      setMessages([...riwayat, { role: "assistant", content: data.reply }]);
++    } catch (e) {
++      const msg = e instanceof Error ? e.message : "Terjadi kesalahan.";
++      toast.error(msg);
++      setMessages([
++        ...riwayat,
++        {
++          role: "assistant",
++          content:
++            "Maaf, terjadi kendala teknis saat memproses pesan Anda. Silakan coba kirim ulang sebentar lagi.",
++        },
++      ]);
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  const kirimEmail = async () => {
++    if (messages.length === 0 || sendingEmail) return;
++    // Tamu (belum login) wajib isi email dulu sebelum kirim riwayat.
++    if (!loggedIn && !emailInput.trim()) {
++      setShowEmailInput(true);
++      return;
++    }
++    setSendingEmail(true);
++    try {
++      const payload: { messages: Msg[]; email?: string } = { messages };
++      if (!loggedIn) payload.email = emailInput.trim();
++      const res = await fetch("/api/livechat/email", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify(payload),
++      });
++      const data = await res.json();
++      if (!res.ok) throw new Error(data?.error || "Gagal mengirim email.");
++      toast.success(`Riwayat terkirim ke ${data.sentTo}`);
++      setShowEmailInput(false);
++      setEmailInput("");
++    } catch (e) {
++      const msg = e instanceof Error ? e.message : "Gagal mengirim email.";
++      toast.error(msg);
++    } finally {
++      setSendingEmail(false);
++    }
++  };
++
++  const onSubmit = (e: FormEvent) => {
++    e.preventDefault();
++    kirim(input);
++  };
++
++  // Menutup chat: bila ada percakapan, otomatis kirim riwayat ke email user
++  // (sekali per percakapan) lalu tutup panel. Memenuhi: "saat chat berakhir/keluar,
++  // histori dikirim ke email".
++  const tutup = () => {
++    // Auto-kirim riwayat saat chat ditutup hanya untuk pengguna yang login
++    // (email diambil dari sesi). Tamu belum punya email -> gunakan tombol
++    // "Kirim riwayat ke email" + isi email secara manual.
++    if (loggedIn && messages.length > 0 && !autoSentRef.current && !sendingEmail) {
++      autoSentRef.current = true;
++      void kirimEmail();
++    }
++    setOpen(false);
++  };
++
++  const hapusRiwayat = () => {
++    setMessages([]);
++    setInput("");
++    autoSentRef.current = false;
++  };
++
++  return (
++    <>
++      <button
++        type="button"
++        onClick={() => (open ? tutup() : setOpen(true))}
++        aria-label={open ? "Tutup livechat" : "Buka livechat"}
++        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
++      >
++        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
++      </button>
++
++      {open && (
++        <div
++          role="dialog"
++          aria-label="Livechat Asisten Digital Desa"
++          className="fixed bottom-24 right-5 z-50 flex h-[70vh] max-h-[560px] w-[calc(100vw-2.5rem)] max-w-sm flex-col overflow-hidden rounded-xl border bg-card shadow-xl"
++        >
++          {/* Header */}
++          <div className="flex items-center justify-between border-b bg-primary/5 px-4 py-3">
++            <div className="flex items-center gap-2">
++              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
++                <MessageCircle className="h-4 w-4" />
++              </span>
++              <div>
++                <p className="text-sm font-semibold leading-tight">Asisten Digital Desa</p>
++                <p className="text-xs text-muted-foreground leading-tight">Tanya seputar layanan &amp; bansos</p>
++              </div>
++            </div>
++            <button
++              type="button"
++              onClick={tutup}
++              aria-label="Tutup"
++              className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
++            >
++              <X className="h-4 w-4" />
++            </button>
++          </div>
++
++          {/* Daftar pesan */}
++          <div className="flex-1 space-y-3 overflow-y-auto p-3">
++            {messages.length === 0 ? (
++              <div className="space-y-3">
++                <div className="flex justify-start">
++                  <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm">
++                    {loggedIn ? PEMBUKA_LOGIN : PEMBUKA_TAMU}
++                  </div>
++                </div>
++                <div className="flex flex-col gap-2 pt-1">
++                  {SUGGESTI.map((s) => (
++                    <button
++                      key={s}
++                      type="button"
++                      onClick={() => kirim(s)}
++                      className="rounded-lg border px-3 py-2 text-left text-sm hover:bg-accent disabled:opacity-50"
++                      disabled={loading}
++                    >
++                      {s}
++                    </button>
++                  ))}
++                </div>
++              </div>
++            ) : (
++              messages.map((m, i) => (
++                <div
++                  key={i}
++                  className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
++                >
++                  <div
++                    className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
++                      m.role === "user"
++                        ? "rounded-br-sm bg-primary text-primary-foreground"
++                        : "rounded-bl-sm bg-muted"
++                    }`}
++                  >
++                    {m.content}
++                  </div>
++                </div>
++              ))
++            )}
++
++            {loading && (
++              <div className="flex justify-start">
++                <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm">
++                  <Loader2 className="h-4 w-4 animate-spin" />
++                  <span className="text-muted-foreground">Asisten sedang mengetik...</span>
++                </div>
++              </div>
++            )}
++            <div ref={endRef} />
++          </div>
++
++          {/* Aksi bawah + input */}
++          <div className="space-y-2 border-t p-2">
++            {messages.length > 0 && (
++              <div className="space-y-2">
++                {!loggedIn && showEmailInput && (
++                  <div className="flex gap-2">
++                    <Input
++                      type="email"
++                      value={emailInput}
++                      onChange={(e) => setEmailInput(e.target.value)}
++                      placeholder="email Anda..."
++                      disabled={sendingEmail}
++                      maxLength={120}
++                      aria-label="Email untuk kirim riwayat"
++                    />
++                    <Button
++                      type="button"
++                      size="icon"
++                      onClick={kirimEmail}
++                      disabled={sendingEmail || !emailInput.trim()}
++                      aria-label="Kirim ke email ini"
++                    >
++                      <Send className="h-4 w-4" />
++                    </Button>
++                  </div>
++                )}
++                <div className="flex gap-2">
++                  <Button
++                    type="button"
++                    variant="ghost"
++                    size="sm"
++                    onClick={kirimEmail}
++                    disabled={sendingEmail || loading}
++                    className="flex-1 text-xs"
++                  >
++                    {sendingEmail ? (
++                      <>
++                        <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Mengirim...
++                      </>
++                    ) : (
++                      <>
++                        <Mail className="mr-1 h-3 w-3" /> {loggedIn ? "Kirim riwayat ke email saya" : "Kirim riwayat ke email"}
++                      </>
++                    )}
++                  </Button>
++                  <Button
++                    type="button"
++                    variant="ghost"
++                    size="sm"
++                    onClick={hapusRiwayat}
++                    disabled={loading || sendingEmail}
++                    className="text-xs text-muted-foreground"
++                  >
++                    Bersihkan
++                  </Button>
++                </div>
++              </div>
++            )}
++            <form onSubmit={onSubmit} className="flex gap-2">
++              <Input
++                value={input}
++                onChange={(e) => setInput(e.target.value)}
++                placeholder="Ketik pesan..."
++                disabled={loading}
++                maxLength={1000}
++                aria-label="Pesan livechat"
++              />
++              <Button
++                type="submit"
++                size="icon"
++                disabled={loading || !input.trim()}
++                aria-label="Kirim pesan"
++              >
++                <Send className="h-4 w-4" />
++              </Button>
++            </form>
++          </div>
++        </div>
++      )}
++    </>
++  );
++}
+diff --git a/src/components/welcome-bansos-card.tsx b/src/components/welcome-bansos-card.tsx
+index 31cf75f..4b60d03 100644
+--- a/src/components/welcome-bansos-card.tsx
++++ b/src/components/welcome-bansos-card.tsx
+@@ -4,12 +4,10 @@ import { useState } from "react";
+ import { Card, CardContent } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+ import { Textarea } from "@/components/ui/textarea";
+-import { ExternalLink, Save, Loader2, Edit3, CheckCircle2 } from "lucide-react";
++import { Save, Loader2, Edit3, CheckCircle2 } from "lucide-react";
+ import { updateDetailBansosAction } from "@/lib/server/actions/account";
+ import { toast } from "sonner";
+ 
+-const SOCIOMILE_URL = "https://chat.sociomile.com/livechat/6abd3eb90de3aa91408eb350?wbia=6285772646402::herman";
+-
+ interface WelcomeBansosCardProps {
+   nama: string;
+   nik: string;
+@@ -86,23 +84,19 @@ export function WelcomeBansosCard({ nama, nik, detailBansos }: WelcomeBansosCard
+               ) : (
+                 <div className="text-center">
+                   <p className="text-sm text-muted-foreground mb-2">
+-                    Belum ada detail bansos. Cek bansos Anda:
++                    Belum ada detail bansos tersimpan.
++                  </p>
++                  <Button
++                    onClick={() => { setEditing(true); setBansosText(""); }}
++                    size="sm"
++                    variant="outline"
++                    className="text-emerald-600 border-emerald-300"
++                  >
++                    Input Manual Bansos
++                  </Button>
++                  <p className="mt-2 text-xs text-muted-foreground">
++                    Cek status bansos lewat Asisten AI (pojok kanan bawah) atau kantor desa, lalu simpan hasilnya di sini.
+                   </p>
+-                  <div className="flex flex-col items-center gap-2">
+-                    <a href={SOCIOMILE_URL} target="_blank" rel="noopener noreferrer">
+-                      <Button variant="outline" size="sm" className="text-emerald-600 border-emerald-300">
+-                        <ExternalLink className="h-4 w-4 mr-1" /> Cek Bansos via Sociomile
+-                      </Button>
+-                    </a>
+-                    <Button
+-                      onClick={() => { setEditing(true); setBansosText(""); }}
+-                      size="sm"
+-                      variant="ghost"
+-                      className="text-xs"
+-                    >
+-                      Input Manual
+-                    </Button>
+-                  </div>
+                 </div>
+               )}
+             </div>
+@@ -111,7 +105,7 @@ export function WelcomeBansosCard({ nama, nik, detailBansos }: WelcomeBansosCard
+               <Textarea
+                 value={bansosText}
+                 onChange={e => setBansosText(e.target.value)}
+-                placeholder="Copy-paste hasil cek bansos dari Sociomile di sini..."
++                placeholder="Tulis detail bansos Anda di sini (mis. peserta PKH/DTKS, atau hasil cek dari kantor desa)..."
+                 className="text-sm min-h-[80px] resize-none"
+                 autoFocus
+               />
+@@ -127,19 +121,17 @@ export function WelcomeBansosCard({ nama, nik, detailBansos }: WelcomeBansosCard
+                   Batal
+                 </Button>
+               </div>
+-              <div className="mt-2 text-center">
+-                <a href={SOCIOMILE_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline inline-flex items-center gap-1">
+-                  <ExternalLink className="h-3 w-3" /> Buka Sociomile untuk cek bansos
+-                </a>
+-              </div>
+             </div>
+           )}
+ 
+           {savedText && !editing && (
+             <div className="mt-2 text-center">
+-              <a href={SOCIOMILE_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline inline-flex items-center gap-1">
+-                <ExternalLink className="h-3 w-3" /> Cek ulang di Sociomile
+-              </a>
++              <button
++                onClick={() => { setEditing(true); setBansosText(savedText); }}
++                className="text-xs text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1"
++              >
++                <Edit3 className="h-3 w-3" /> Edit detail bansos
++              </button>
+             </div>
+           )}
+         </div>
+diff --git a/src/lib/server/services/livechat-ai.ts b/src/lib/server/services/livechat-ai.ts
+new file mode 100644
+index 0000000..ae92f74
+--- /dev/null
++++ b/src/lib/server/services/livechat-ai.ts
+@@ -0,0 +1,167 @@
++import { prisma } from "@/lib/prisma";
++
++/**
++ * Livechat AI service.
++ *
++ * LLM dipanggil via fetch langsung ke endpoint OpenAI-compatible
++ * (z.ai / Groq / OpenAI / Gemini OpenAI-compat). Tidak memakai SDK agar
++ * tidak butuh file konfigurasi rahasia di repo — cukup env var di Vercel.
++ *
++ * Env var:
++ *  LLM_BASE_URL  wajib  contoh: https://internal-api.z.ai/v1  atau  https://api.groq.com/openai/v1
++ *  LLM_API_KEY   wajib  bearer key
++ *  LLM_TOKEN     opsional, khusus z.ai (header X-Token). Kosongkan utk Groq/OpenAI.
++ *  LLM_MODEL     opsional, nama model. Kosongkan utk pakai default endpoint.
++ */
++
++const LLM_BASE_URL = process.env.LLM_BASE_URL || "";
++const LLM_API_KEY = process.env.LLM_API_KEY || "";
++const LLM_TOKEN = process.env.LLM_TOKEN || "";
++const LLM_MODEL = process.env.LLM_MODEL || "";
++
++export type ChatMessage = { role: "user" | "assistant"; content: string };
++
++export type LivechatUserContext = {
++  name: string;
++  nik: string;
++  detailBansos?: string | null;
++};
++
++type StrukturItem = { nama: string; jabatan: string; urutan: number };
++
++/**
++ * Ambil konteks user (nama, NIK, status bansos) untuk dimasukkan ke system prompt.
++ * NIK dipakai sebagai kunci data bansos — "NIK yang dimasukkan dari awal" (saat daftar).
++ */
++export const getLivechatUserContext = async (userId: string): Promise<LivechatUserContext | null> => {
++  const user = await prisma.user.findUnique({
++    where: { userId },
++    select: { name: true, nik: true, detailBansos: true },
++  });
++  return user ?? null;
++};
++
++/**
++ * Ambil daftar perangkat desa (struktur organisasi) dari database.
++ * Ini sumber FAKTA nama pejabat (kepala desa, sekdes, kaur, dll) agar AI
++ * tidak mengarang nama saat ditanya "siapa sekdes" dll.
++ * Gagal query -> return [] (chat tetap jalan, AI hanya tidak punya data pejabat).
++ */
++const getStrukturForPrompt = async (): Promise<StrukturItem[]> => {
++  try {
++    const rows = await prisma.strukturOrganisasi.findMany({
++      orderBy: [{ tingkat: "asc" }, { urutan: "asc" }],
++      select: { nama: true, jabatan: true, urutan: true },
++    });
++    return rows;
++  } catch {
++    return [];
++  }
++};
++
++const formatStruktur = (struktur: StrukturItem[]): string => {
++  if (struktur.length === 0) {
++    return "Data struktur organisasi/perangkat desa belum tersedia di sistem. Jika ditanya nama pejabat desa, sampaikan bahwa data belum tersedia dan arahkan warga menghubungi kantor desa. JANGAN mengarang nama pejabat.";
++  }
++  return struktur
++    .map((s, i) => `${i + 1}. ${s.nama} — jabatan: ${s.jabatan}`)
++    .join("\n");
++};
++
++const buildSystemPrompt = (user: LivechatUserContext | null, struktur: StrukturItem[]): string => {
++  const identitasBlock = user
++    ? `IDENTITAS PENGGUNA SAAT INI (sudah login, NIK terverifikasi saat pendaftaran):\n- Nama: ${user.name}\n- NIK: ${user.nik}`
++    : `PENGGUNA SAAT INI: tamu/pengunjung yang BELUM LOGIN. Anda tidak mengetahui identitas atau NIK pengguna.`;
++
++  const bansosBlock = user
++    ? (user.detailBansos && user.detailBansos.trim()
++      ? `Data bansos yang TERCATAT untuk NIK pengguna saat ini:\n"""\n${user.detailBansos.trim()}\n"""`
++      : `Belum ada data bansos yang tercatat untuk NIK pengguna. Jika ditanya status bansos, sampaikan belum ada data tersimpan dan sarankan mengajukan cek bansos via menu "Cek Bansos" atau menghubungi kantor desa.`)
++    : `Pengguna belum login, jadi Anda TIDAK punya data bansos pribadinya. Jika pengguna menanyakan "cek bansos saya" atau status bansos pribadinya, arahkan untuk MASUK (login) dulu via menu "Masuk" agar sistem dapat memeriksa NIK terdaftar. DILARANG mengarang status bansos.`;
++
++  return `Anda adalah "Asisten Digital Desa Sukamaju" (Kec. Cibungbulang, Kab. Bogor, Jawa Barat), sebuah chatbot AI resmi yang melayani warga melalui aplikasi pelayanan desa. Jawab selalu dalam Bahasa Indonesia yang sopan, jelas, ringkas, dan FAKTUAL — jangan pernah mengarang fakta.
++
++${identitasBlock}
++
++${bansosBlock}
++
++STRUKTUR ORGANISASI / PERANGKAT DESA SAAT INI (data resmi dari database desa):
++${formatStruktur(struktur)}
++PENTING: Jika pengguna bertanya siapa kepala desa / sekretaris desa (sekdes) / kaur / bendahara / perangkat desa lainnya, GUNAKAN daftar di atas. JANGAN mengarang nama yang tidak ada di daftar.
++
++LAYANAN DESA YANG TERSEDIA DI APLIKASI:
++- KTP, Kartu Keluarga (KK), Surat Keterangan Kelahiran (SKL), Surat Keterangan Tidak Mampu (SKTM), Surat Keterangan Kematian (SKK), Surat Keterangan Usaha (SKU), Surat Keterangan Domisili (SKD), dan Cek Status Bansos.
++Warga dapat mengajukan sendiri via menu "Permohonan Saya" lalu memilih jenis surat; status dapat dipantau di halaman yang sama.
++
++ATURAN MENJAWAB (WAJIB DIIKUTI):
++1. Cek bansos: bila pengguna SUDAH login, GUNAKAN NIK di data + data bansos tercatat (jangan minta NIK lagi). bila BELUM login, arahkan MASUK dulu via menu "Masuk". Jangan mengarang status bansos.
++2. Cara mengurus surat: arahkan ke menu "Permohonan Saya" + sebut jenis surat yang sesuai.
++3. Pertanyaan faktual tentang desa (nama pejabat, struktur, layanan): GUNAKAN data di atas. Jika data tidak ada di atas, jawab JUJUR: "Saya tidak memiliki data tersebut, silakan hubungi kantor desa." DILARANG mengarang nama, nomor telepon, tanggal, angka, atau kebijakan yang tidak ada di data.
++4. Jangan meminta data sensitif tambahan (password, nomor kartu, OTP). Anda tidak pernah memerlukan itu.
++5. Jika kasus terlalu kompleks atau berupa keluhan, sarankan menghubungi kantor desa.
++6. Jawab maksimal 4-5 kalimat kecuali diminta lebih detail.`;
++};
++
++/**
++ * Panggil LLM via fetch. Pesan pertama harus role "system".
++ * Kompatibel dengan z.ai (glm) maupun OpenAI/Groq/Gemini (OpenAI-compat).
++ */
++export const callLLM = async (messages: { role: string; content: string }[]): Promise<string> => {
++  if (!LLM_BASE_URL || !LLM_API_KEY) {
++    throw new Error("LLM belum dikonfigurasi di server. Set LLM_BASE_URL dan LLM_API_KEY (serta LLM_TOKEN untuk z.ai) pada environment variable.");
++  }
++
++  const headers: Record<string, string> = {
++    "Content-Type": "application/json",
++    Authorization: `Bearer ${LLM_API_KEY}`,
++    "X-Z-AI-From": "Z",
++  };
++  if (LLM_TOKEN) headers["X-Token"] = LLM_TOKEN;
++
++  const body: Record<string, unknown> = {
++    messages,
++    thinking: { type: "disabled" },
++  };
++  if (LLM_MODEL) body.model = LLM_MODEL;
++
++  const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
++    method: "POST",
++    headers,
++    body: JSON.stringify(body),
++  });
++
++  if (!res.ok) {
++    const errText = await res.text().catch(() => "");
++    throw new Error(`Layanan AI merespons ${res.status}: ${errText.slice(0, 200)}`);
++  }
++
++  const data = await res.json();
++  const reply: string | undefined = data?.choices?.[0]?.message?.content;
++  if (!reply || !reply.trim()) {
++    throw new Error("Layanan AI mengembalikan jawaban kosong. Silakan coba lagi.");
++  }
++  return reply.trim();
++};
++
++/**
++ * Hasilkan balasan AI untuk pesan warga.
++ * System prompt dibangun dari konteks user (NIK + bansos) + struktur organisasi
++ * desa (nama pejabat) agar AI menjawab faktual, bukan mengarang.
++ * - user != null: pengguna sudah login -> prompt personal (NIK + bansos).
++ * - user == null: tamu belum login -> prompt umum (struktur + layanan); bila
++ *   ditanya bansos pribadi, AI arahkan login dulu.
++ * History dibatasi 10 pesan terakhir agar token tetap ringan.
++ */
++export const generateLivechatReply = async (
++  user: LivechatUserContext | null,
++  history: ChatMessage[],
++  userMessage: string
++): Promise<string> => {
++  const struktur = await getStrukturForPrompt();
++  const messages = [
++    { role: "system", content: buildSystemPrompt(user, struktur) },
++    ...history.slice(-10).map((m) => ({ role: m.role, content: m.content })),
++    { role: "user", content: userMessage },
++  ];
++  return callLLM(messages);
++};
