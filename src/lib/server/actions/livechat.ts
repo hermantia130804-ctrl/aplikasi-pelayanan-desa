@@ -51,24 +51,42 @@ interface ChatMessage {
   content: string;
 }
 
-// === AI CHAT ===
+// === AI CHAT — pakai Z.ai REST API langsung (tanpa SDK package) ===
 export async function aiChatAction(messages: ChatMessage[]) {
   try {
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    const zai = await ZAI.create();
+    const apiKey = process.env.ZAI_API_KEY;
+    if (!apiKey) {
+      return { status: 200, reply: "Maaf, layanan AI sedang tidak tersedia. Silakan hubungi petugas." };
+    }
 
-    const response = await zai.chat.completions.create({
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...messages.map(m => ({ role: m.role, content: m.content })),
-      ],
-      thinking: { type: "disabled" },
+    const response = await fetch("https://api.z.ai/api/paas/v4/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "glm-4-flash",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...messages.map(m => ({ role: m.role, content: m.content })),
+        ],
+        thinking: { type: "disabled" },
+      }),
     });
 
-    return { status: 200, reply: response.choices[0]?.message?.content || "Maaf, saya tidak dapat menjawab saat ini." };
+    if (!response.ok) {
+      console.error("Z.ai API error:", response.status, await response.text());
+      return { status: 200, reply: "Maaf, terjadi kesalahan teknis. Silakan coba lagi." };
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || "Maaf, saya tidak dapat menjawab saat ini.";
+
+    return { status: 200, reply };
   } catch (error) {
     console.error("ERROR AI chat:", error);
-    return { status: 500, reply: "Maaf, terjadi kesalahan. Silakan coba lagi atau hubungi petugas." };
+    return { status: 200, reply: "Maaf, terjadi kesalahan. Silakan coba lagi atau ketik 'cs' untuk hubungi petugas." };
   }
 }
 
