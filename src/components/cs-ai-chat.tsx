@@ -1,25 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Loader2, Bot } from "lucide-react";
+import { X, Send, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
 import { aiChatAction, getLivechatAgentsAction, sendChatHistoryEmailAction } from "@/lib/server/actions/livechat";
 
 // === Custom Logo: Headset + Chat Bubble ===
 function CsLogo({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Headset band */}
       <path d="M12 34 Q12 14 32 14 Q52 14 52 34" stroke="#1e3a5f" strokeWidth="4" strokeLinecap="round" fill="none" />
-      {/* Left ear cup */}
       <rect x="8" y="32" width="10" height="16" rx="4" fill="#1e3a5f" />
-      {/* Right ear cup */}
       <rect x="46" y="32" width="10" height="16" rx="4" fill="#1e3a5f" />
-      {/* Chat bubble */}
       <path d="M22 34 Q22 28 28 28 L44 28 Q50 28 50 34 L50 42 Q50 48 44 48 L34 48 L30 52 L31 48 Q22 48 22 42 Z" fill="#e85d3a" />
-      {/* Three dots */}
       <circle cx="30" cy="38" r="2" fill="#fff" />
       <circle cx="36" cy="38" r="2" fill="#fff" />
       <circle cx="42" cy="38" r="2" fill="#fff" />
@@ -36,11 +30,21 @@ interface Message {
 type OnboardingState = "name" | "nik" | "email" | "chat" | "ended";
 
 interface Agent {
-  userId: string;
-  name: string;
-  phone: string;
-  jabatan: string | null;
-  tugasPetugas: string | null;
+  userId: string; name: string; phone: string;
+  jabatan: string | null; tugasPetugas: string | null;
+}
+
+// === Validasi NIK: harus 16 digit angka ===
+function isValidNIK(nik: string): boolean {
+  return /^\d{16}$/.test(nik.trim());
+}
+
+// === Validasi email: harus ada @ dan domain ===
+function isValidEmail(email: string): boolean {
+  const trimmed = email.trim();
+  if (!trimmed.includes("@")) return false;
+  const domain = trimmed.split("@")[1];
+  return !!domain && domain.includes(".") && domain.length > 3;
 }
 
 export function CsAiChat() {
@@ -76,9 +80,8 @@ export function CsAiChat() {
   }, []);
 
   const handleOpen = () => {
-    resetChat();
-    setIsOpen(true);
-    addMessage("assistant", "Selamat datang di CS AI Desa Sukamaju!\n\nSaya AI yang akan membantu menjawab pertanyaan seputar layanan desa, bantuan sosial, dan pertanyaan umum lainnya.\n\nUntuk memulai, silakan masukkan Nama Anda:");
+    resetChat(); setIsOpen(true);
+    addMessage("assistant", "Selamat datang di CS AI Desa Sukamaju!\n\nSaya akan membantu menjawab pertanyaan seputar layanan desa, bansos, dan pertanyaan umum.\n\nSilakan masukkan Nama Anda:");
   };
 
   const handleClose = () => {
@@ -100,19 +103,25 @@ export function CsAiChat() {
 
   const endChat = useCallback(async (finalMessage: string) => {
     addMessage("assistant", finalMessage);
-    if (userInfo.email) {
-      addMessage("assistant", "Histori chat sedang dikirim ke email Anda...");
+
+    // Kirim email histori
+    if (userInfo.email && isValidEmail(userInfo.email)) {
+      addMessage("assistant", "Mengirim histori chat ke email Anda...");
       try {
         const r = await sendChatHistoryEmailAction(userInfo.email, userInfo.nama, chatHistoryRef.current);
-        addMessage("assistant", r.status === 200
-          ? "Histori berhasil dikirim ke " + userInfo.email + ". Terima kasih!"
-          : "Gagal kirim email. Terima kasih telah menggunakan CS AI!");
+        if (r.status === 200) {
+          addMessage("assistant", "Histori berhasil dikirim ke " + userInfo.email + ". Terima kasih telah menggunakan CS AI!");
+        } else {
+          addMessage("assistant", "Gagal mengirim histori: " + (r.error || "email tidak valid") + ". Terima kasih!");
+        }
       } catch {
-        addMessage("assistant", "Gagal kirim email. Terima kasih!");
+        addMessage("assistant", "Gagal kirim email. Terima kasih telah menggunakan CS AI!");
       }
     } else {
-      addMessage("assistant", "Terima kasih telah menggunakan CS AI Desa Sukamaju!");
+      addMessage("assistant", "Email tidak valid, histori tidak dikirim. Terima kasih!");
     }
+
+    setOnboarding("ended");
     setTimeout(() => handleClose(), 3000);
   }, [userInfo, addMessage]);
 
@@ -122,15 +131,15 @@ export function CsAiChat() {
       const r = await getLivechatAgentsAction();
       const fetchedAgents = (r.status === 200 ? r.agents : []) as Agent[];
       if (fetchedAgents.length === 0) {
-        await endChat("Saat ini petugas belum ada yang terdaftar di livechat. Silakan hubungi kantor desa di +62 812-8569-9854 (WA) pada jam Senin-Jumat 08.00-14.00 WIB.");
+        await endChat("Petugas belum ada yang terdaftar di livechat. Hubungi kantor desa di +62 812-8569-9854 (WA), Senin-Jumat 08.00-14.00 WIB.");
       } else {
-        let list = "Berikut petugas yang tersedia:\n\n";
+        let list = "Petugas tersedia:\n\n";
         fetchedAgents.forEach((a, i) => {
           const tugas = a.tugasPetugas ? (() => { try { return JSON.parse(a.tugasPetugas).join(", "); } catch { return a.jabatan || "Umum"; } })() : a.jabatan || "Umum";
           const phone = a.phone?.startsWith("0") ? "62" + a.phone.slice(1) : a.phone?.replace("+", "").replace(/\s/g, "");
-          list += `${i + 1}. ${a.name} (${tugas})\n   WhatsApp: https://wa.me/${phone}\n\n`;
+          list += `${i + 1}. ${a.name} (${tugas})\n   https://wa.me/${phone}\n\n`;
         });
-        list += "Klik link untuk chat WhatsApp. Chat ini akan ditutup otomatis.";
+        list += "Klik link untuk chat WhatsApp. Chat akan ditutup otomatis.";
         await endChat(list);
       }
     } else {
@@ -148,7 +157,7 @@ export function CsAiChat() {
       const r = await aiChatAction(chatMessages);
       if (r.reply) {
         if ((r as any).isPetugasRequest) {
-          addMessage("assistant", r.reply);
+          addMessage("assistant", r.reply || "Apakah ingin terhubung petugas?");
           setShowPetugasPrompt(true);
         } else {
           addMessage("assistant", r.reply);
@@ -156,7 +165,7 @@ export function CsAiChat() {
         }
       }
     } catch {
-      addMessage("assistant", "Maaf, koneksi bermasalah. Ketik 'cs' untuk hubungi petugas.");
+      addMessage("assistant", "Maaf, gangguan koneksi. Ketik 'cs' untuk petugas.");
     } finally {
       setLoading(false);
     }
@@ -168,32 +177,49 @@ export function CsAiChat() {
     setInput("");
     addMessage("user", text);
 
+    // === Onboarding dengan validasi ===
     if (onboarding === "name") {
+      if (text.length < 2) {
+        addMessage("assistant", "Nama terlalu pendek. Silakan masukkan nama yang benar:");
+        return;
+      }
       setUserInfo(p => ({ ...p, nama: text }));
       setOnboarding("nik");
-      addMessage("assistant", `Halo ${text}! Masukkan NIK Anda:`);
+      addMessage("assistant", `Halo ${text}! Masukkan NIK Anda (16 digit angka):`);
       return;
     }
+
     if (onboarding === "nik") {
+      if (!isValidNIK(text)) {
+        addMessage("assistant", `NIK harus 16 digit angka. Anda memasukkan ${text.replace(/\d/g, "x").length} karakter. Silakan masukkan ulang NIK yang benar (16 digit):`);
+        return;
+      }
       setUserInfo(p => ({ ...p, nik: text }));
       setOnboarding("email");
-      addMessage("assistant", "Masukkan email Anda (histori chat akan dikirim ke email ini):");
+      addMessage("assistant", "Terima kasih! Masukkan email Anda (histori chat akan dikirim ke email ini, pastikan email valid dengan domain, contoh: nama@gmail.com):");
       return;
     }
+
     if (onboarding === "email") {
+      if (!isValidEmail(text)) {
+        addMessage("assistant", "Email tidak valid. Pastikan email memiliki @ dan domain (contoh: nama@gmail.com). Silakan masukkan ulang:");
+        return;
+      }
       setUserInfo(p => ({ ...p, email: text }));
       setOnboarding("chat");
       addMessage("assistant", "Sempurna! Sekarang tanyakan apa saja seputar layanan desa, bansos, atau pertanyaan umum. Ketik 'cs' untuk hubungi petugas.");
       return;
     }
+
     if (showPetugasPrompt) { await handlePetugasResponse(text); return; }
+
     setQuestionCount(p => p + 1);
     await sendToAI(text);
   };
 
   return (
     <>
-      {/* Floating button — custom logo headset + chat bubble */}
+      {/* Floating button */}
       {!isOpen && (
         <button
           onClick={handleOpen}
@@ -216,7 +242,7 @@ export function CsAiChat() {
               </div>
               <div>
                 <p className="font-semibold text-sm">CS AI Desa Sukamaju</p>
-                <p className="text-xs text-white/70">AI Online · siap bantu</p>
+                <p className="text-xs text-white/70">Online · siap bantu</p>
               </div>
             </div>
             <button onClick={handleClose} className="hover:bg-white/20 rounded-full p-1.5">
@@ -259,7 +285,7 @@ export function CsAiChat() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
+          {/* Input — hidden saat ended */}
           {onboarding !== "ended" && (
             <div className="border-t p-3 bg-white">
               <div className="flex gap-2">
@@ -268,7 +294,7 @@ export function CsAiChat() {
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                  placeholder={onboarding === "name" ? "Masukkan nama..." : onboarding === "nik" ? "Masukkan NIK..." : onboarding === "email" ? "Masukkan email..." : "Ketik pertanyaan..."}
+                  placeholder={onboarding === "name" ? "Masukkan nama..." : onboarding === "nik" ? "16 digit NIK..." : onboarding === "email" ? "email@domain.com..." : "Ketik pertanyaan..."}
                   disabled={loading}
                   className="flex-1 text-sm"
                 />
