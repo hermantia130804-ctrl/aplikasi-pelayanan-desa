@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Loader2, Bot } from "lucide-react";
+import { X, Send, Loader2, Bot, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { aiChatAction, getLivechatAgentsAction, sendChatHistoryEmailAction } from "@/lib/server/actions/livechat";
-import { LOGO_KAB_BOGOR_BASE64 } from "@/assets/logo-kab-bogor.base64";
 
 interface Message {
   role: "user" | "assistant";
@@ -168,9 +167,15 @@ export function CsAiChat() {
 
       const r = await aiChatAction(chatMessages);
       if (r.reply) {
-        addMessage("assistant", r.reply);
-        if (checkPetugasPrompt(userText)) {
-          setTimeout(() => offerPetugas(), 500);
+        // Cek apakah AI menyarankan hubungi petugas
+        if ((r as any).isPetugasRequest) {
+          addMessage("assistant", "Apakah Anda ingin terhubung dengan petugas? Ketik 'y' untuk ya, atau ketik pertanyaan lain untuk lanjut chat dengan AI.");
+          setShowPetugasPrompt(true);
+        } else {
+          addMessage("assistant", r.reply);
+          if (checkPetugasPrompt(userText)) {
+            setTimeout(() => offerPetugas(), 500);
+          }
         }
       }
     } catch {
@@ -226,25 +231,27 @@ export function CsAiChat() {
 
   return (
     <>
-      {/* Floating button — pakai logo desa */}
+      {/* Floating button — menyerupai logo WhatsApp */}
       {!isOpen && (
         <button
           onClick={handleOpen}
-          className="fixed bottom-5 right-5 z-50 flex items-center justify-center rounded-full bg-white shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-green-500"
+          className="fixed bottom-5 right-5 z-50 flex items-center justify-center rounded-full bg-green-500 shadow-lg hover:shadow-xl transition-all hover:scale-105"
           style={{ width: 56, height: 56 }}
           title="CS AI Desa Sukamaju"
         >
-          <img src={LOGO_KAB_BOGOR_BASE64} alt="CS AI" className="w-10 h-10 object-contain rounded-full" />
+          <MessageCircle className="h-7 w-7 text-white" fill="white" />
         </button>
       )}
 
       {/* Chat window */}
       {isOpen && (
         <div className="fixed bottom-0 right-0 z-50 w-full sm:bottom-5 sm:right-5 sm:w-96 sm:rounded-2xl bg-white shadow-2xl flex flex-col" style={{ height: "80vh", maxHeight: "600px" }}>
-          {/* Header — pakai logo desa */}
+          {/* Header — logo WhatsApp-like */}
           <div className="flex items-center justify-between bg-green-600 text-white px-4 py-3 sm:rounded-t-2xl">
             <div className="flex items-center gap-2">
-              <img src={LOGO_KAB_BOGOR_BASE64} alt="Logo" className="w-8 h-8 object-contain rounded-full bg-white/90 p-0.5" />
+              <div className="bg-white/20 rounded-full p-1.5">
+                <MessageCircle className="h-5 w-5" />
+              </div>
               <div>
                 <p className="font-semibold text-sm">CS AI Desa Sukamaju</p>
                 <p className="text-xs text-white/80">Online</p>
