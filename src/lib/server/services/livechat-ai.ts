@@ -4,14 +4,18 @@ import { prisma } from "@/lib/prisma";
  * Livechat AI service.
  *
  * LLM dipanggil via fetch langsung ke endpoint OpenAI-compatible
- * (z.ai / Groq / OpenAI / Gemini OpenAI-compat). Tidak memakai SDK agar
+ * (Groq / OpenAI / Gemini OpenAI-compat / z.ai). Tidak memakai SDK agar
  * tidak butuh file konfigurasi rahasia di repo — cukup env var di Vercel.
  *
  * Env var:
- *  LLM_BASE_URL  wajib  contoh: https://internal-api.z.ai/v1  atau  https://api.groq.com/openai/v1
+ *  LLM_BASE_URL  wajib  contoh: https://api.groq.com/openai/v1
  *  LLM_API_KEY   wajib  bearer key
  *  LLM_TOKEN     opsional, khusus z.ai (header X-Token). Kosongkan utk Groq/OpenAI.
  *  LLM_MODEL     opsional, nama model. Kosongkan utk pakai default endpoint.
+ *
+ * Flow livechat: saat chat dibuka, widget melakukan onboarding (tanya NAMA →
+ * NIK 16 digit → email valid) satu per satu sebelum chat dimulai. NIK yang
+ * dikumpulkan dipakai untuk mencari data bansos di database.
  */
 
 const LLM_BASE_URL = process.env.LLM_BASE_URL || "";
@@ -30,15 +34,21 @@ export type LivechatUserContext = {
 type StrukturItem = { nama: string; jabatan: string; urutan: number };
 
 /**
- * Ambil konteks user (nama, NIK, status bansos) untuk dimasukkan ke system prompt.
- * NIK dipakai sebagai kunci data bansos — "NIK yang dimasukkan dari awal" (saat daftar).
+ * Cari data bansos berdasarkan NIK yang dimasukkan user saat onboarding.
+ * NIK unik di tabel User. Jika NIK terdaftar -> ambil detailBansos.
+ * Jika NIK tidak terdaftar / query gagal -> null (AI menyampaikan belum ada data).
  */
-export const getLivechatUserContext = async (userId: string): Promise<LivechatUserContext | null> => {
-  const user = await prisma.user.findUnique({
-    where: { userId },
-    select: { name: true, nik: true, detailBansos: true },
-  });
-  return user ?? null;
+export const getBansosByNik = async (nik: string): Promise<string | null> => {
+  if (!nik || !/^\d{16}$/.test(nik)) return null;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { nik },
+      select: { detailBansos: true },
+    });
+    return user?.detailBansos ?? null;
+  } catch {
+    return null;
+  }
 };
 
 /**
@@ -50,7 +60,7 @@ export const getLivechatUserContext = async (userId: string): Promise<LivechatUs
 const getStrukturForPrompt = async (): Promise<StrukturItem[]> => {
   try {
     const rows = await prisma.strukturOrganisasi.findMany({
-      orderBy: [{ tingkat: "asc" }, { urutan: "asc" }],
+      orderBy: [{ urutan: "asc" }],
       select: { nama: true, jabatan: true, urutan: true },
     });
     return rows;
@@ -68,20 +78,21 @@ const formatStruktur = (struktur: StrukturItem[]): string => {
     .join("\n");
 };
 
-const buildSystemPrompt = (user: LivechatUserContext | null, struktur: StrukturItem[]): string => {
-  const identitasBlock = user
-    ? `IDENTITAS PENGGUNA SAAT INI (sudah login, NIK terverifikasi saat pendaftaran):\n- Nama: ${user.name}\n- NIK: ${user.nik}`
-    : `PENGGUNA SAAT INI: tamu/pengunjung yang BELUM LOGIN. Anda tidak mengetahui identitas atau NIK pengguna.`;
-
-  const bansosBlock = user
-    ? (user.detailBansos && user.detailBansos.trim()
-      ? `Data bansos yang TERCATAT untuk NIK pengguna saat ini:\n"""\n${user.detailBansos.trim()}\n"""`
-      : `Belum ada data bansos yang tercatat untuk NIK pengguna. Jika ditanya status bansos, sampaikan belum ada data tersimpan dan sarankan mengajukan cek bansos via menu "Cek Bansos" atau menghubungi kantor desa.`)
-    : `Pengguna belum login, jadi Anda TIDAK punya data bansos pribadinya. Jika pengguna menanyakan "cek bansos saya" atau status bansos pribadinya, arahkan untuk MASUK (login) dulu via menu "Masuk" agar sistem dapat memeriksa NIK terdaftar. DILARANG mengarang status bansos.`;
+/**
+ * Bangun system prompt. User selalu memberikan nama + NIK (dari onboarding),
+ * jadi konteks selalu ada. Bansos dicari di DB berdasarkan NIK tersebut.
+ */
+const buildSystemPrompt = (user: LivechatUserContext, struktur: StrukturItem[]): string => {
+  const bansosBlock =
+    user.detailBansos && user.detailBansos.trim()
+      ? `Data bansos yang TERCATAT di database untuk NIK ${user.nik}:\n"""\n${user.detailBansos.trim()}\n"""`
+      : `Tidak ada data bansos yang tercatat di database untuk NIK ${user.nik}. Jika pengguna menanyakan status bansos, sampaikan bahwa belum ada data tersimpan untuk NIK tersebut dan sarankan mengajukan cek bansos via menu "Cek Bansos" atau menghubungi kantor desa. JANGAN mengarang status bansos.`;
 
   return `Anda adalah "Asisten Digital Desa Sukamaju" (Kec. Cibungbulang, Kab. Bogor, Jawa Barat), sebuah chatbot AI resmi yang melayani warga melalui aplikasi pelayanan desa. Jawab selalu dalam Bahasa Indonesia yang sopan, jelas, ringkas, dan FAKTUAL — jangan pernah mengarang fakta.
 
-${identitasBlock}
+IDENTITAS PENGGUNA (dari data yang diisi pengguna di awal chat):
+- Nama: ${user.name}
+- NIK: ${user.nik}
 
 ${bansosBlock}
 
@@ -94,17 +105,21 @@ LAYANAN DESA YANG TERSEDIA DI APLIKASI:
 Warga dapat mengajukan sendiri via menu "Permohonan Saya" lalu memilih jenis surat; status dapat dipantau di halaman yang sama.
 
 ATURAN MENJAWAB (WAJIB DIIKUTI):
-1. Cek bansos: bila pengguna SUDAH login, GUNAKAN NIK di data + data bansos tercatat (jangan minta NIK lagi). bila BELUM login, arahkan MASUK dulu via menu "Masuk". Jangan mengarang status bansos.
+1. Cek bansos: GUNAKAN NIK pengguna di data di atas. Jika detailBansos ada, sebutkan isinya. Jika tidak ada, sampaikan belum ada data tersimpan untuk NIK tersebut + sarankan ajukan cek bansos / hubungi kantor desa. Jangan mengarang status bansos.
 2. Cara mengurus surat: arahkan ke menu "Permohonan Saya" + sebut jenis surat yang sesuai.
 3. Pertanyaan faktual tentang desa (nama pejabat, struktur, layanan): GUNAKAN data di atas. Jika data tidak ada di atas, jawab JUJUR: "Saya tidak memiliki data tersebut, silakan hubungi kantor desa." DILARANG mengarang nama, nomor telepon, tanggal, angka, atau kebijakan yang tidak ada di data.
 4. Jangan meminta data sensitif tambahan (password, nomor kartu, OTP). Anda tidak pernah memerlukan itu.
-5. Jika kasus terlalu kompleks atau berupa keluhan, sarankan menghubungi kantor desa.
+5. Bantu JAWAB semua pertanyaan pengguna seputar layanan desa, surat, bansos, prosedur, dan info umum desa. Jika kasus terlalu kompleks atau berupa keluhan, sarankan menghubungi kantor desa.
 6. Jawab maksimal 4-5 kalimat kecuali diminta lebih detail.`;
 };
 
 /**
  * Panggil LLM via fetch. Pesan pertama harus role "system".
- * Kompatibel dengan z.ai (glm) maupun OpenAI/Groq/Gemini (OpenAI-compat).
+ * Kompatibel dengan Groq / OpenAI / Gemini (OpenAI-compat) maupun z.ai (glm).
+ *
+ * CATATAN: properti `thinking` HANYA didukung z.ai. Groq/OpenAI/Gemini akan
+ * menolak dengan error 400 "property 'thinking' is unsupported". Jadi properti
+ * ini hanya dikirim bila endpoint adalah z.ai.
  */
 export const callLLM = async (messages: { role: string; content: string }[]): Promise<string> => {
   if (!LLM_BASE_URL || !LLM_API_KEY) {
@@ -118,11 +133,10 @@ export const callLLM = async (messages: { role: string; content: string }[]): Pr
   };
   if (LLM_TOKEN) headers["X-Token"] = LLM_TOKEN;
 
-  const body: Record<string, unknown> = {
-    messages,
-    thinking: { type: "disabled" },
-  };
+  const body: Record<string, unknown> = { messages };
   if (LLM_MODEL) body.model = LLM_MODEL;
+  // `thinking` hanya untuk z.ai (glm). Groq/OpenAI/Gemini menolak properti ini (400).
+  if (LLM_BASE_URL.includes("z.ai")) body.thinking = { type: "disabled" };
 
   const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
     method: "POST",
@@ -145,15 +159,13 @@ export const callLLM = async (messages: { role: string; content: string }[]): Pr
 
 /**
  * Hasilkan balasan AI untuk pesan warga.
- * System prompt dibangun dari konteks user (NIK + bansos) + struktur organisasi
- * desa (nama pejabat) agar AI menjawab faktual, bukan mengarang.
- * - user != null: pengguna sudah login -> prompt personal (NIK + bansos).
- * - user == null: tamu belum login -> prompt umum (struktur + layanan); bila
- *   ditanya bansos pribadi, AI arahkan login dulu.
+ * System prompt dibangun dari konteks user (nama + NIK dari onboarding +
+ * detailBansos hasil lookup NIK di DB) + struktur organisasi desa (nama
+ * pejabat) agar AI menjawab faktual, bukan mengarang.
  * History dibatasi 10 pesan terakhir agar token tetap ringan.
  */
 export const generateLivechatReply = async (
-  user: LivechatUserContext | null,
+  user: LivechatUserContext,
   history: ChatMessage[],
   userMessage: string
 ): Promise<string> => {

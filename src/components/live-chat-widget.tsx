@@ -7,47 +7,113 @@ import { MessageCircle, X, Send, Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Msg = { role: "user" | "assistant"; content: string };
+type Phase = "onboard_nama" | "onboard_nik" | "onboard_email" | "chat";
 
-const SUGGESTI = [
-  "Cek bansos saya",
-  "Bagaimana cara mengajukan KTP?",
-  "Surat apa saja yang tersedia?",
-];
+// NIK wajib 16 digit angka persis.
+const NIK_RE = /^\d{16}$/;
+// Email wajib format valid dengan domain (ada @ + domain dengan titik).
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const PEMBUKA_LOGIN =
-  "Halo! Saya Asisten Digital Desa Sukamaju. Saya bisa bantu mengecek status bansos Anda (dengan NIK terdaftar) dan menjelaskan cara mengurus surat-surat desa. Ada yang bisa saya bantu?";
-const PEMBUKA_TAMU =
-  "Halo! Saya Asisten Digital Desa Sukamaju. Saya bisa menjelaskan layanan desa, cara mengurus surat, dan info pejabat desa. Untuk cek bansos pribadi, silakan masuk (login) dulu. Ada yang bisa saya bantu?";
+const MSG_SAMBUTAN =
+  "Selamat datang di Asisten Digital Desa Sukamaju! Sebelum kita mulai, saya perlu mencatat identitas Anda terlebih dahulu. Silakan ketik NAMA lengkap Anda.";
+
+const labelPhase: Record<Phase, string> = {
+  onboard_nama: "Langkah 1 dari 3 · Nama",
+  onboard_nik: "Langkah 2 dari 3 · NIK",
+  onboard_email: "Langkah 3 dari 3 · Email",
+  chat: "Asisten Digital Desa",
+};
 
 export function LiveChatWidget({ loggedIn = true }: { loggedIn?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [phase, setPhase] = useState<Phase>("onboard_nama");
+  const [nama, setNama] = useState("");
+  const [nik, setNik] = useState("");
+  const [email, setEmail] = useState("");
+  const [messages, setMessages] = useState<Msg[]>([]);        // tampilan: onboarding + chat
+  const [chatHistory, setChatHistory] = useState<Msg[]>([]);   // konteks LLM: Q&A chat saja
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [emailInput, setEmailInput] = useState("");
-  const [showEmailInput, setShowEmailInput] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
-  // Catat apakah riwayat percakapan saat ini sudah pernah dikirim ke email,
-  // agar auto-kirim saat chat ditutup tidak mengirim berulang untuk percakapan yg sama.
   const autoSentRef = useRef(false);
 
   useEffect(() => {
-    if (open) {
-      endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    }
+    if (open) endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, open, loading]);
 
-  const kirim = async (teks: string) => {
+  const pushMsg = (m: Msg) => setMessages((prev) => [...prev, m]);
+
+  // Buka chat -> mulai onboarding dari awal (sapaan + tanya nama).
+  const buka = () => {
+    setPhase("onboard_nama");
+    setNama("");
+    setNik("");
+    setEmail("");
+    setMessages([{ role: "assistant", content: MSG_SAMBUTAN }]);
+    setChatHistory([]);
+    setInput("");
+    autoSentRef.current = false;
+    setOpen(true);
+  };
+
+  const handleOnboard = (teks: string) => {
+    const trimmed = teks.trim();
+
+    if (phase === "onboard_nama") {
+      if (!trimmed) {
+        pushMsg({ role: "assistant", content: "Nama tidak boleh kosong. Silakan ketik NAMA lengkap Anda." });
+        return;
+      }
+      setNama(trimmed);
+      pushMsg({ role: "user", content: trimmed });
+      pushMsg({ role: "assistant", content: `Halo ${trimmed}! Sekarang silakan ketik NIK Anda (16 digit angka).` });
+      setPhase("onboard_nik");
+      return;
+    }
+
+    if (phase === "onboard_nik") {
+      pushMsg({ role: "user", content: trimmed });
+      if (!NIK_RE.test(trimmed)) {
+        pushMsg({
+          role: "assistant",
+          content: "NIK harus terdiri dari 16 digit angka. NIK yang Anda masukkan tidak sesuai. Silakan ketik ulang NIK Anda.",
+        });
+        return;
+      }
+      setNik(trimmed);
+      pushMsg({ role: "assistant", content: "Terima kasih! Terakhir, silakan ketik EMAIL aktif Anda (contoh: nama@gmail.com)." });
+      setPhase("onboard_email");
+      return;
+    }
+
+    if (phase === "onboard_email") {
+      pushMsg({ role: "user", content: trimmed });
+      if (!EMAIL_RE.test(trimmed)) {
+        pushMsg({
+          role: "assistant",
+          content: "Format email tidak valid. Pastikan email memiliki tanda @ dan domain (contoh: nama@gmail.com). Silakan ketik ulang email Anda.",
+        });
+        return;
+      }
+      setEmail(trimmed);
+      pushMsg({
+        role: "assistant",
+        content: `Terima kasih ${nama}! Identitas Anda telah tercatat. NIK: ${nik}, Email: ${trimmed}. Sekarang saya siap membantu — silakan tanyakan apa pun seputar layanan desa, surat-surat, atau bansos.`,
+      });
+      setPhase("chat");
+      return;
+    }
+  };
+
+  const kirimChat = async (teks: string) => {
     const trimmed = teks.trim();
     if (!trimmed || loading) return;
 
-    // Percakapan baru dimulai -> reset penanda auto-kirim email.
-    if (messages.length === 0) autoSentRef.current = false;
-
     const userMsg: Msg = { role: "user", content: trimmed };
-    const riwayat = [...messages, userMsg];
-    setMessages(riwayat);
+    const newHist = [...chatHistory, userMsg];
+    setChatHistory(newHist);
+    pushMsg(userMsg);
     setInput("");
     setLoading(true);
 
@@ -55,88 +121,92 @@ export function LiveChatWidget({ loggedIn = true }: { loggedIn?: boolean }) {
       const res = await fetch("/api/livechat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed, history: messages }),
+        body: JSON.stringify({
+          message: trimmed,
+          history: chatHistory,
+          nama,
+          nik,
+          email,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data?.error || "Gagal menghubungi asisten.");
       }
-      setMessages([...riwayat, { role: "assistant", content: data.reply }]);
+      const replyMsg: Msg = { role: "assistant", content: data.reply };
+      setChatHistory([...newHist, replyMsg]);
+      pushMsg(replyMsg);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Terjadi kesalahan.";
       toast.error(msg);
-      setMessages([
-        ...riwayat,
-        {
-          role: "assistant",
-          content:
-            "Maaf, terjadi kendala teknis saat memproses pesan Anda. Silakan coba kirim ulang sebentar lagi.",
-        },
-      ]);
+      pushMsg({
+        role: "assistant",
+        content: "Maaf, terjadi kendala teknis saat memproses pesan Anda. Silakan coba kirim ulang sebentar lagi.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const teks = input;
+    setInput("");
+    if (!teks.trim()) return;
+    if (phase === "chat") kirimChat(teks);
+    else handleOnboard(teks);
+  };
+
+  // Kirim riwayat percakapan (Q&A chat) ke email yang dikumpulkan di onboarding.
   const kirimEmail = async () => {
-    if (messages.length === 0 || sendingEmail) return;
-    // Tamu (belum login) wajib isi email dulu sebelum kirim riwayat.
-    if (!loggedIn && !emailInput.trim()) {
-      setShowEmailInput(true);
+    if (chatHistory.length === 0 || sendingEmail) return;
+    if (!email) {
+      toast.error("Email belum tersedia. Selesaikan pendaftaran di awal chat.");
       return;
     }
     setSendingEmail(true);
     try {
-      const payload: { messages: Msg[]; email?: string } = { messages };
-      if (!loggedIn) payload.email = emailInput.trim();
       const res = await fetch("/api/livechat/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ messages: chatHistory, email, name: nama }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Gagal mengirim email.");
-      toast.success(`Riwayat terkirim ke ${data.sentTo}`);
-      setShowEmailInput(false);
-      setEmailInput("");
+      toast.success(`Riwayat percakapan terkirim ke ${data.sentTo}`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Gagal mengirim email.";
-      toast.error(msg);
+      toast.error(e instanceof Error ? e.message : "Gagal mengirim email.");
     } finally {
       setSendingEmail(false);
     }
   };
 
-  const onSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    kirim(input);
-  };
-
-  // Menutup chat: bila ada percakapan, otomatis kirim riwayat ke email user
-  // (sekali per percakapan) lalu tutup panel. Memenuhi: "saat chat berakhir/keluar,
-  // histori dikirim ke email".
+  // Tutup chat: bila sudah ada percakapan Q&A, kirim riwayat ke email (sekali),
+  // lalu tutup panel. Memenuhi: "saat chat ditutup/berakhir, histori dikirim ke email".
   const tutup = () => {
-    // Auto-kirim riwayat saat chat ditutup hanya untuk pengguna yang login
-    // (email diambil dari sesi). Tamu belum punya email -> gunakan tombol
-    // "Kirim riwayat ke email" + isi email secara manual.
-    if (loggedIn && messages.length > 0 && !autoSentRef.current && !sendingEmail) {
+    if (phase === "chat" && chatHistory.length > 0 && !autoSentRef.current && !sendingEmail) {
       autoSentRef.current = true;
       void kirimEmail();
     }
     setOpen(false);
   };
 
-  const hapusRiwayat = () => {
-    setMessages([]);
-    setInput("");
-    autoSentRef.current = false;
-  };
+  const placeholder =
+    phase === "onboard_nama"
+      ? "Ketik nama lengkap Anda..."
+      : phase === "onboard_nik"
+        ? "Ketik NIK (16 digit angka)..."
+        : phase === "onboard_email"
+          ? "Ketik email aktif Anda..."
+          : "Ketik pertanyaan Anda...";
+
+  const inputMax = phase === "onboard_nik" ? 16 : phase === "onboard_email" ? 120 : 1000;
 
   return (
     <>
       <button
         type="button"
-        onClick={() => (open ? tutup() : setOpen(true))}
+        onClick={() => (open ? tutup() : buka())}
         aria-label={open ? "Tutup livechat" : "Buka livechat"}
         className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
@@ -157,7 +227,7 @@ export function LiveChatWidget({ loggedIn = true }: { loggedIn?: boolean }) {
               </span>
               <div>
                 <p className="text-sm font-semibold leading-tight">Asisten Digital Desa</p>
-                <p className="text-xs text-muted-foreground leading-tight">Tanya seputar layanan &amp; bansos</p>
+                <p className="text-xs text-muted-foreground leading-tight">{labelPhase[phase]}</p>
               </div>
             </div>
             <button
@@ -172,45 +242,22 @@ export function LiveChatWidget({ loggedIn = true }: { loggedIn?: boolean }) {
 
           {/* Daftar pesan */}
           <div className="flex-1 space-y-3 overflow-y-auto p-3">
-            {messages.length === 0 ? (
-              <div className="space-y-3">
-                <div className="flex justify-start">
-                  <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm">
-                    {loggedIn ? PEMBUKA_LOGIN : PEMBUKA_TAMU}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 pt-1">
-                  {SUGGESTI.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => kirim(s)}
-                      className="rounded-lg border px-3 py-2 text-left text-sm hover:bg-accent disabled:opacity-50"
-                      disabled={loading}
-                    >
-                      {s}
-                    </button>
-                  ))}
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                    m.role === "user"
+                      ? "rounded-br-sm bg-primary text-primary-foreground"
+                      : "rounded-bl-sm bg-muted"
+                  }`}
+                >
+                  {m.content}
                 </div>
               </div>
-            ) : (
-              messages.map((m, i) => (
-                <div
-                  key={i}
-                  className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                      m.role === "user"
-                        ? "rounded-br-sm bg-primary text-primary-foreground"
-                        : "rounded-bl-sm bg-muted"
-                    }`}
-                  >
-                    {m.content}
-                  </div>
-                </div>
-              ))
-            )}
+            ))}
 
             {loading && (
               <div className="flex justify-start">
@@ -225,76 +272,45 @@ export function LiveChatWidget({ loggedIn = true }: { loggedIn?: boolean }) {
 
           {/* Aksi bawah + input */}
           <div className="space-y-2 border-t p-2">
-            {messages.length > 0 && (
-              <div className="space-y-2">
-                {!loggedIn && showEmailInput && (
-                  <div className="flex gap-2">
-                    <Input
-                      type="email"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      placeholder="email Anda..."
-                      disabled={sendingEmail}
-                      maxLength={120}
-                      aria-label="Email untuk kirim riwayat"
-                    />
-                    <Button
-                      type="button"
-                      size="icon"
-                      onClick={kirimEmail}
-                      disabled={sendingEmail || !emailInput.trim()}
-                      aria-label="Kirim ke email ini"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={kirimEmail}
-                    disabled={sendingEmail || loading}
-                    className="flex-1 text-xs"
-                  >
-                    {sendingEmail ? (
-                      <>
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Mengirim...
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="mr-1 h-3 w-3" /> {loggedIn ? "Kirim riwayat ke email saya" : "Kirim riwayat ke email"}
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={hapusRiwayat}
-                    disabled={loading || sendingEmail}
-                    className="text-xs text-muted-foreground"
-                  >
-                    Bersihkan
-                  </Button>
-                </div>
+            {phase === "chat" && (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={kirimEmail}
+                  disabled={sendingEmail || loading}
+                  className="flex-1 text-xs"
+                >
+                  {sendingEmail ? (
+                    <>
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Mengirim...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-1 h-3 w-3" /> Kirim riwayat ke email saya
+                    </>
+                  )}
+                </Button>
               </div>
             )}
             <form onSubmit={onSubmit} className="flex gap-2">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ketik pesan..."
+                placeholder={placeholder}
                 disabled={loading}
-                maxLength={1000}
-                aria-label="Pesan livechat"
+                maxLength={inputMax}
+                inputMode={phase === "onboard_nik" ? "numeric" : "text"}
+                aria-label={
+                  phase === "chat" ? "Pesan livechat" : "Input onboarding livechat"
+                }
               />
               <Button
                 type="submit"
                 size="icon"
                 disabled={loading || !input.trim()}
-                aria-label="Kirim pesan"
+                aria-label="Kirim"
               >
                 <Send className="h-4 w-4" />
               </Button>

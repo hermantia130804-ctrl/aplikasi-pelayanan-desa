@@ -61,19 +61,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Riwayat percakapan kosong." }, { status: 400 });
     }
 
-    // Tentukan email tujuan + nama: prioritas sesi login; tamu wajib input email.
+    // Email tujuan + nama: prioritas email yang dikumpulkan widget di onboarding
+    // (body.email + body.name); fallback ke sesi login bila body.email tidak ada.
+    // Widget onboarding selalu mengirim email yang sudah divalidasi (format + domain).
     let email: string;
     let nama: string;
-    if (session?.user?.email) {
+    const rawEmail: unknown = body?.email;
+    if (typeof rawEmail === "string" && EMAIL_RE.test(rawEmail.trim())) {
+      email = rawEmail.trim();
+      nama = typeof body?.name === "string" && body.name.trim() ? body.name.trim() : "Warga";
+    } else if (session?.user?.email) {
       email = session.user.email;
       nama = session.user.name || "Warga";
     } else {
-      const rawEmail: unknown = body?.email;
-      if (typeof rawEmail !== "string" || !EMAIL_RE.test(rawEmail.trim())) {
-        return NextResponse.json({ error: "Email penerima tidak valid. Silakan masukkan email aktif Anda." }, { status: 400 });
-      }
-      email = rawEmail.trim();
-      nama = typeof body?.name === "string" && body.name.trim() ? body.name.trim() : "Tamu";
+      return NextResponse.json({ error: "Email penerima tidak valid. Silakan masukkan email aktif Anda." }, { status: 400 });
     }
 
     const rows = messages
