@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
+import { LiveChatWidget } from "@/components/live-chat-widget";
+import { findCurrentSessionService } from "@/lib/server/services/session";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,11 +26,15 @@ export const metadata: Metadata = {
     "Portal resmi Pelayanan Desa Sukamaju: pengajuan surat administrasi online, informasi desa, dan transparansi pelayanan publik.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Sesi diambil sekali di root layout agar LiveChatWidget tampil di SEMUA
+  // halaman (publik + dashboard) dan tahu status login: login -> jawab personal
+  // (NIK + bansos); tamu -> jawab umum + arahkan login untuk cek bansos pribadi.
+  const session = await findCurrentSessionService();
   return (
     <html lang="id" suppressHydrationWarning>
       <body
@@ -44,6 +50,7 @@ export default function RootLayout({
             {children}
             </NuqsAdapter>
             <Toaster />
+            <LiveChatWidget loggedIn={!!session?.user} />
           </ThemeProvider>
       </body>
     </html>

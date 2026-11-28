@@ -27,6 +27,8 @@ export type LivechatUserContext = {
   detailBansos?: string | null;
 };
 
+type StrukturItem = { nama: string; jabatan: string; urutan: number };
+
 /**
  * Ambil konteks user (nama, NIK, status bansos) untuk dimasukkan ke system prompt.
  * NIK dipakai sebagai kunci data bansos — "NIK yang dimasukkan dari awal" (saat daftar).
@@ -39,35 +41,63 @@ export const getLivechatUserContext = async (userId: string): Promise<LivechatUs
   return user ?? null;
 };
 
-const buildSystemPrompt = (user: LivechatUserContext): string => {
-  const bansosBlock = user.detailBansos && user.detailBansos.trim()
-    ? `Data bansos yang TERCATAT untuk NIK Anda saat ini:\n"""\n${user.detailBansos.trim()}\n"""`
-    : `Belum ada data bansos yang tercatat untuk NIK Anda saat ini. Jika warga menanyakan status bansos, sampaikan bahwa belum ada data tersimpan dan sarankan mengajukan cek bansos via menu "Cek Bansos" atau menghubungi kantor desa.`;
+/**
+ * Ambil daftar perangkat desa (struktur organisasi) dari database.
+ * Ini sumber FAKTA nama pejabat (kepala desa, sekdes, kaur, dll) agar AI
+ * tidak mengarang nama saat ditanya "siapa sekdes" dll.
+ * Gagal query -> return [] (chat tetap jalan, AI hanya tidak punya data pejabat).
+ */
+const getStrukturForPrompt = async (): Promise<StrukturItem[]> => {
+  try {
+    const rows = await prisma.strukturOrganisasi.findMany({
+      orderBy: [{ tingkat: "asc" }, { urutan: "asc" }],
+      select: { nama: true, jabatan: true, urutan: true },
+    });
+    return rows;
+  } catch {
+    return [];
+  }
+};
 
-  return `Anda adalah "Asisten Digital Desa Sukamaju" (Kec. Cibungbulang, Kab. Bogor, Jawa Barat), sebuah chatbot AI resmi yang melayani warga melalui aplikasi pelayanan desa. Jawab selalu dalam Bahasa Indonesia yang sopan, jelas, dan ringkas.
+const formatStruktur = (struktur: StrukturItem[]): string => {
+  if (struktur.length === 0) {
+    return "Data struktur organisasi/perangkat desa belum tersedia di sistem. Jika ditanya nama pejabat desa, sampaikan bahwa data belum tersedia dan arahkan warga menghubungi kantor desa. JANGAN mengarang nama pejabat.";
+  }
+  return struktur
+    .map((s, i) => `${i + 1}. ${s.nama} — jabatan: ${s.jabatan}`)
+    .join("\n");
+};
 
-IDENTITAS PENGGUNA SAAT INI (sudah login, NIK terverifikasi saat pendaftaran):
-- Nama: ${user.name}
-- NIK: ${user.nik}
+const buildSystemPrompt = (user: LivechatUserContext | null, struktur: StrukturItem[]): string => {
+  const identitasBlock = user
+    ? `IDENTITAS PENGGUNA SAAT INI (sudah login, NIK terverifikasi saat pendaftaran):\n- Nama: ${user.name}\n- NIK: ${user.nik}`
+    : `PENGGUNA SAAT INI: tamu/pengunjung yang BELUM LOGIN. Anda tidak mengetahui identitas atau NIK pengguna.`;
+
+  const bansosBlock = user
+    ? (user.detailBansos && user.detailBansos.trim()
+      ? `Data bansos yang TERCATAT untuk NIK pengguna saat ini:\n"""\n${user.detailBansos.trim()}\n"""`
+      : `Belum ada data bansos yang tercatat untuk NIK pengguna. Jika ditanya status bansos, sampaikan belum ada data tersimpan dan sarankan mengajukan cek bansos via menu "Cek Bansos" atau menghubungi kantor desa.`)
+    : `Pengguna belum login, jadi Anda TIDAK punya data bansos pribadinya. Jika pengguna menanyakan "cek bansos saya" atau status bansos pribadinya, arahkan untuk MASUK (login) dulu via menu "Masuk" agar sistem dapat memeriksa NIK terdaftar. DILARANG mengarang status bansos.`;
+
+  return `Anda adalah "Asisten Digital Desa Sukamaju" (Kec. Cibungbulang, Kab. Bogor, Jawa Barat), sebuah chatbot AI resmi yang melayani warga melalui aplikasi pelayanan desa. Jawab selalu dalam Bahasa Indonesia yang sopan, jelas, ringkas, dan FAKTUAL — jangan pernah mengarang fakta.
+
+${identitasBlock}
 
 ${bansosBlock}
 
+STRUKTUR ORGANISASI / PERANGKAT DESA SAAT INI (data resmi dari database desa):
+${formatStruktur(struktur)}
+PENTING: Jika pengguna bertanya siapa kepala desa / sekretaris desa (sekdes) / kaur / bendahara / perangkat desa lainnya, GUNAKAN daftar di atas. JANGAN mengarang nama yang tidak ada di daftar.
+
 LAYANAN DESA YANG TERSEDIA DI APLIKASI:
-- KTP — pengajuan baru/perubahan/penggantian.
-- Kartu Keluarga (KK) — pengajuan dan perubahan data.
-- Surat Keterangan Kelahiran (SKL).
-- Surat Keterangan Tidak Mampu (SKTM) — untuk beasiswa, keringanan, dll.
-- Surat Keterangan Kematian (SKK).
-- Surat Keterangan Usaha (SKU) — untuk perizinan usaha.
-- Surat Keterangan Domisili (SKD).
-- Cek Status Bansos — pengajuan cek status penerima bansos.
+- KTP, Kartu Keluarga (KK), Surat Keterangan Kelahiran (SKL), Surat Keterangan Tidak Mampu (SKTM), Surat Keterangan Kematian (SKK), Surat Keterangan Usaha (SKU), Surat Keterangan Domisili (SKD), dan Cek Status Bansos.
 Warga dapat mengajukan sendiri via menu "Permohonan Saya" lalu memilih jenis surat; status dapat dipantau di halaman yang sama.
 
-ATURAN MENJAWAB:
-1. Jika warga bertanya status bansos mereka (contoh: "cek bansos saya", "apakah saya dapat bansos"), GUNAKAN NIK di atas — sampaikan data bansos tercatat atau belum ada. Jangan minta NIK lagi, Anda sudah memilikinya.
-2. Jika warga bertanya cara mengurus surat, arahkan ke menu "Permohonan Saya" + sebut jenis surat yang sesuai. Jelaskan singkat persyaratan umum jika ditanya.
-3. Jika warga bertanya hal di luar layanan desa, jawab secukupnya atau arahkan ke kantor desa. Jangan mengarang angka/kebijakan spesifik.
-4. Jangan meminta data sensitif tambahan (password, nomor kartu). Anda tidak pernah memerlukan itu.
+ATURAN MENJAWAB (WAJIB DIIKUTI):
+1. Cek bansos: bila pengguna SUDAH login, GUNAKAN NIK di data + data bansos tercatat (jangan minta NIK lagi). bila BELUM login, arahkan MASUK dulu via menu "Masuk". Jangan mengarang status bansos.
+2. Cara mengurus surat: arahkan ke menu "Permohonan Saya" + sebut jenis surat yang sesuai.
+3. Pertanyaan faktual tentang desa (nama pejabat, struktur, layanan): GUNAKAN data di atas. Jika data tidak ada di atas, jawab JUJUR: "Saya tidak memiliki data tersebut, silakan hubungi kantor desa." DILARANG mengarang nama, nomor telepon, tanggal, angka, atau kebijakan yang tidak ada di data.
+4. Jangan meminta data sensitif tambahan (password, nomor kartu, OTP). Anda tidak pernah memerlukan itu.
 5. Jika kasus terlalu kompleks atau berupa keluhan, sarankan menghubungi kantor desa.
 6. Jawab maksimal 4-5 kalimat kecuali diminta lebih detail.`;
 };
@@ -115,16 +145,21 @@ export const callLLM = async (messages: { role: string; content: string }[]): Pr
 
 /**
  * Hasilkan balasan AI untuk pesan warga.
- * System prompt dibangun dari konteks user (NIK + bansos).
+ * System prompt dibangun dari konteks user (NIK + bansos) + struktur organisasi
+ * desa (nama pejabat) agar AI menjawab faktual, bukan mengarang.
+ * - user != null: pengguna sudah login -> prompt personal (NIK + bansos).
+ * - user == null: tamu belum login -> prompt umum (struktur + layanan); bila
+ *   ditanya bansos pribadi, AI arahkan login dulu.
  * History dibatasi 10 pesan terakhir agar token tetap ringan.
  */
 export const generateLivechatReply = async (
-  user: LivechatUserContext,
+  user: LivechatUserContext | null,
   history: ChatMessage[],
   userMessage: string
 ): Promise<string> => {
+  const struktur = await getStrukturForPrompt();
   const messages = [
-    { role: "system", content: buildSystemPrompt(user) },
+    { role: "system", content: buildSystemPrompt(user, struktur) },
     ...history.slice(-10).map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: userMessage },
   ];

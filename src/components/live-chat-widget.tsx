@@ -14,16 +14,23 @@ const SUGGESTI = [
   "Surat apa saja yang tersedia?",
 ];
 
-const PEMBUKA =
-  "Halo! Saya Asisten Digital Desa Sukamaju. Saya bisa bantu mengecek status bansos Anda (dengan NIK yang terdaftar) dan menjelaskan cara mengurus surat-surat desa. Ada yang bisa saya bantu?";
+const PEMBUKA_LOGIN =
+  "Halo! Saya Asisten Digital Desa Sukamaju. Saya bisa bantu mengecek status bansos Anda (dengan NIK terdaftar) dan menjelaskan cara mengurus surat-surat desa. Ada yang bisa saya bantu?";
+const PEMBUKA_TAMU =
+  "Halo! Saya Asisten Digital Desa Sukamaju. Saya bisa menjelaskan layanan desa, cara mengurus surat, dan info pejabat desa. Untuk cek bansos pribadi, silakan masuk (login) dulu. Ada yang bisa saya bantu?";
 
-export function LiveChatWidget() {
+export function LiveChatWidget({ loggedIn = true }: { loggedIn?: boolean }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [showEmailInput, setShowEmailInput] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  // Catat apakah riwayat percakapan saat ini sudah pernah dikirim ke email,
+  // agar auto-kirim saat chat ditutup tidak mengirim berulang untuk percakapan yg sama.
+  const autoSentRef = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -34,6 +41,9 @@ export function LiveChatWidget() {
   const kirim = async (teks: string) => {
     const trimmed = teks.trim();
     if (!trimmed || loading) return;
+
+    // Percakapan baru dimulai -> reset penanda auto-kirim email.
+    if (messages.length === 0) autoSentRef.current = false;
 
     const userMsg: Msg = { role: "user", content: trimmed };
     const riwayat = [...messages, userMsg];
@@ -70,16 +80,25 @@ export function LiveChatWidget() {
 
   const kirimEmail = async () => {
     if (messages.length === 0 || sendingEmail) return;
+    // Tamu (belum login) wajib isi email dulu sebelum kirim riwayat.
+    if (!loggedIn && !emailInput.trim()) {
+      setShowEmailInput(true);
+      return;
+    }
     setSendingEmail(true);
     try {
+      const payload: { messages: Msg[]; email?: string } = { messages };
+      if (!loggedIn) payload.email = emailInput.trim();
       const res = await fetch("/api/livechat/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Gagal mengirim email.");
       toast.success(`Riwayat terkirim ke ${data.sentTo}`);
+      setShowEmailInput(false);
+      setEmailInput("");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Gagal mengirim email.";
       toast.error(msg);
@@ -93,16 +112,31 @@ export function LiveChatWidget() {
     kirim(input);
   };
 
+  // Menutup chat: bila ada percakapan, otomatis kirim riwayat ke email user
+  // (sekali per percakapan) lalu tutup panel. Memenuhi: "saat chat berakhir/keluar,
+  // histori dikirim ke email".
+  const tutup = () => {
+    // Auto-kirim riwayat saat chat ditutup hanya untuk pengguna yang login
+    // (email diambil dari sesi). Tamu belum punya email -> gunakan tombol
+    // "Kirim riwayat ke email" + isi email secara manual.
+    if (loggedIn && messages.length > 0 && !autoSentRef.current && !sendingEmail) {
+      autoSentRef.current = true;
+      void kirimEmail();
+    }
+    setOpen(false);
+  };
+
   const hapusRiwayat = () => {
     setMessages([]);
     setInput("");
+    autoSentRef.current = false;
   };
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (open ? tutup() : setOpen(true))}
         aria-label={open ? "Tutup livechat" : "Buka livechat"}
         className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
@@ -128,7 +162,7 @@ export function LiveChatWidget() {
             </div>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={tutup}
               aria-label="Tutup"
               className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
             >
@@ -142,7 +176,7 @@ export function LiveChatWidget() {
               <div className="space-y-3">
                 <div className="flex justify-start">
                   <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm">
-                    {PEMBUKA}
+                    {loggedIn ? PEMBUKA_LOGIN : PEMBUKA_TAMU}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 pt-1">
@@ -192,35 +226,59 @@ export function LiveChatWidget() {
           {/* Aksi bawah + input */}
           <div className="space-y-2 border-t p-2">
             {messages.length > 0 && (
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={kirimEmail}
-                  disabled={sendingEmail || loading}
-                  className="flex-1 text-xs"
-                >
-                  {sendingEmail ? (
-                    <>
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Mengirim...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="mr-1 h-3 w-3" /> Kirim riwayat ke email saya
-                    </>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={hapusRiwayat}
-                  disabled={loading || sendingEmail}
-                  className="text-xs text-muted-foreground"
-                >
-                  Bersihkan
-                </Button>
+              <div className="space-y-2">
+                {!loggedIn && showEmailInput && (
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      placeholder="email Anda..."
+                      disabled={sendingEmail}
+                      maxLength={120}
+                      aria-label="Email untuk kirim riwayat"
+                    />
+                    <Button
+                      type="button"
+                      size="icon"
+                      onClick={kirimEmail}
+                      disabled={sendingEmail || !emailInput.trim()}
+                      aria-label="Kirim ke email ini"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={kirimEmail}
+                    disabled={sendingEmail || loading}
+                    className="flex-1 text-xs"
+                  >
+                    {sendingEmail ? (
+                      <>
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Mengirim...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="mr-1 h-3 w-3" /> {loggedIn ? "Kirim riwayat ke email saya" : "Kirim riwayat ke email"}
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={hapusRiwayat}
+                    disabled={loading || sendingEmail}
+                    className="text-xs text-muted-foreground"
+                  >
+                    Bersihkan
+                  </Button>
+                </div>
               </div>
             )}
             <form onSubmit={onSubmit} className="flex gap-2">

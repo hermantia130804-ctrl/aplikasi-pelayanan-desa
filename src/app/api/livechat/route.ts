@@ -10,14 +10,13 @@ export const dynamic = "force-dynamic";
  * Balasan: { reply: string }
  *
  * Server stateless — riwayat percakapan dikirim klien (tidak disimpan server-side).
- * Konteks user (NIK + detailBansos) diambil dari sesi login saat ini.
+ * Sesi opsional: jika login, konteks user (NIK + detailBansos) diambil dari sesi
+ * (untuk personalisasi "cek bansos saya"); jika tamu belum login, jawaban bersifat
+ * umum (pejabat/layanan/alamat) dan bila ditanya bansos pribadi user disuruh login.
  */
 export async function POST(req: NextRequest) {
   try {
     const session = await findCurrentSessionService();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Sesi berakhir. Silakan masuk kembali." }, { status: 401 });
-    }
 
     const body = await req.json().catch(() => ({}));
     const message: unknown = body?.message;
@@ -38,10 +37,9 @@ export async function POST(req: NextRequest) {
           .slice(-10)
       : [];
 
-    const userCtx = await getLivechatUserContext(session.user.userId);
-    if (!userCtx) {
-      return NextResponse.json({ error: "Data pengguna tidak ditemukan." }, { status: 404 });
-    }
+    const userCtx = session?.user
+      ? await getLivechatUserContext(session.user.userId)
+      : null;
 
     const reply = await generateLivechatReply(userCtx, history, message.trim());
     return NextResponse.json({ reply });

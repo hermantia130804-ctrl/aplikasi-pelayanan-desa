@@ -28,17 +28,18 @@ function formatWaktuId(date: Date): string {
 
 /**
  * POST /api/livechat/email
- * Body: { messages: ChatMsg[] }
+ * Body: { messages: ChatMsg[], email?: string, name?: string }
  * Balasan: { ok: true, sentTo: string }
  *
- * Mengirim riwayat percakapan livechat ke email pengguna yang sedang login.
+ * Mengirim riwayat percakapan livechat ke email.
+ * - Jika pengguna login: kirim ke email sesi (body.email diabaikan).
+ * - Jika tamu (belum login): wajib menyertakan body.email yang valid.
  */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(req: NextRequest) {
   try {
     const session = await findCurrentSessionService();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Sesi berakhir. Silakan masuk kembali." }, { status: 401 });
-    }
 
     const body = await req.json().catch(() => ({}));
     const rawMessages: unknown = body?.messages;
@@ -60,6 +61,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Riwayat percakapan kosong." }, { status: 400 });
     }
 
+    // Tentukan email tujuan + nama: prioritas sesi login; tamu wajib input email.
+    let email: string;
+    let nama: string;
+    if (session?.user?.email) {
+      email = session.user.email;
+      nama = session.user.name || "Warga";
+    } else {
+      const rawEmail: unknown = body?.email;
+      if (typeof rawEmail !== "string" || !EMAIL_RE.test(rawEmail.trim())) {
+        return NextResponse.json({ error: "Email penerima tidak valid. Silakan masukkan email aktif Anda." }, { status: 400 });
+      }
+      email = rawEmail.trim();
+      nama = typeof body?.name === "string" && body.name.trim() ? body.name.trim() : "Tamu";
+    }
+
     const rows = messages
       .map(
         (m) => `
@@ -77,7 +93,7 @@ export async function POST(req: NextRequest) {
     const html = `
       <div style="font-family:Arial,Helvetica,sans-serif;max-width:640px;margin:0 auto;padding:20px;color:#1f2937;">
         <h2 style="color:#065f46;margin:0 0 8px;">Riwayat Percakapan Livechat</h2>
-        <p style="margin:0 0 4px;">Halo <strong>${escapeHtml(session.user.name)}</strong>,</p>
+        <p style="margin:0 0 4px;">Halo <strong>${escapeHtml(nama)}</strong>,</p>
         <p style="margin:0 0 16px;color:#6b7280;">
           Berikut riwayat percakapan Anda dengan Asisten Digital Desa Sukamaju pada
           <strong>${formatWaktuId(new Date())}</strong> (WIB).
@@ -88,9 +104,9 @@ export async function POST(req: NextRequest) {
         </p>
       </div>`;
 
-    await sendEmail(session.user.email, "Riwayat Percakapan Livechat - Desa Sukamaju", html);
+    await sendEmail(email, "Riwayat Percakapan Livechat - Desa Sukamaju", html);
 
-    return NextResponse.json({ ok: true, sentTo: session.user.email });
+    return NextResponse.json({ ok: true, sentTo: email });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Gagal mengirim email.";
     console.error("[livechat-email] error:", msg);
